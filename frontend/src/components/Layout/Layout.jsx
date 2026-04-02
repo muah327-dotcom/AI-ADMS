@@ -1,0 +1,187 @@
+import React, { useState } from 'react';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
+import {
+  LayoutDashboard,
+  FileText,
+  Sparkles,
+  Upload,
+  Award,
+  BarChart3,
+  Users,
+  Settings,
+  LogOut,
+  Menu,
+  X,
+  GraduationCap,
+  ChevronDown,
+  Bell
+} from 'lucide-react';
+import toast from 'react-hot-toast';
+
+const Layout = () => {
+  const { user, logout, isAdmin } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    toast.success('Logged out successfully');
+    navigate('/login');
+  };
+
+  const studentNavItems = [
+    { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
+    { name: 'My Applications', icon: FileText, path: '/applications' },
+    { name: 'Program Recommendations', icon: Sparkles, path: '/recommendations' },
+    { name: 'Document Upload', icon: Upload, path: '/documents' },
+    { name: 'Merit List', icon: Award, path: '/merit-list' },
+  ];
+
+  const adminNavItems = [
+    { name: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
+    { name: 'Analytics', icon: BarChart3, path: '/admin/analytics' },
+    { name: 'All Applications', icon: FileText, path: '/admin/applications' },
+    { name: 'Manage Programs', icon: GraduationCap, path: '/admin/programs' },
+    { name: 'Students', icon: Users, path: '/admin/students' },
+    { name: 'Merit Lists', icon: Award, path: '/admin/merit-list' },
+  ];
+
+  const navItems = isAdmin ? adminNavItems : studentNavItems;
+
+  const isActive = (path) => {
+    if (path === '/admin' || path === '/dashboard') {
+      return location.pathname === path;
+    }
+    return location.pathname.startsWith(path);
+  };
+
+  return (
+    <div className="h-screen bg-[#0f0f0f] flex overflow-hidden">
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar - Same height as viewport using flex */}
+      <aside
+        className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-[#1a1a1a] flex flex-col h-screen transform transition-transform duration-300 ease-in-out lg:transform-none ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        {/* Logo */}
+        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-800 flex-shrink-0">
+            <Link to={isAdmin ? '/admin' : '/dashboard'} className="flex items-center space-x-2">
+              <div className="bg-blue-600 p-2 rounded-lg">
+                <GraduationCap className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-lg font-bold text-white leading-tight">AI Admission</h1>
+                <p className="text-xs text-gray-400">Management System</p>
+              </div>
+            </Link>
+            <button
+              className="lg:hidden text-gray-400 hover:text-white"
+              onClick={() => setSidebarOpen(false)}
+            >
+              <X className="h-6 w-6" />
+            </button>
+          </div>
+
+          {/* Navigation */}
+          <nav className="flex-1 px-4 py-2 space-y-1 overflow-y-auto">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.name}
+                  to={item.path}
+                  className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+                    isActive(item.path)
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                  }`}
+                  onClick={() => setSidebarOpen(false)}
+                >
+                  <Icon className={`h-5 w-5 mr-3 ${isActive(item.path) ? 'text-white' : 'text-gray-400'}`} />
+                  {item.name}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* User profile section */}
+          <div className="border-t border-gray-800 p-4 flex-shrink-0">
+            <div className="relative">
+              <button
+                onClick={() => setProfileOpen(!profileOpen)}
+                className="flex items-center w-full px-4 py-3 text-sm font-medium text-gray-300 rounded-lg hover:bg-gray-800 transition-colors"
+              >
+                <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center mr-3">
+                  <span className="text-white font-semibold text-sm">
+                    {user?.full_name?.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-sm font-medium text-white truncate">{user?.full_name}</p>
+                  <p className="text-xs text-gray-400 capitalize">{user?.role}</p>
+                </div>
+                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${profileOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {profileOpen && (
+                <div className="absolute bottom-full left-0 right-0 mb-2 bg-[#1a1a1a] rounded-lg shadow-lg border border-gray-700 py-1">
+                  <Link
+                    to="/settings"
+                    className="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gray-800"
+                  >
+                    <Settings className="h-4 w-4 mr-2" />
+                    Settings
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center w-full px-4 py-2 text-sm text-red-400 hover:bg-gray-800"
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </aside>
+
+      {/* Main content - Flex to fill remaining space, same height as sidebar */}
+      <div className="flex-1 flex flex-col h-screen bg-[#0f0f0f] min-w-0">
+        {/* Top header */}
+        <header className="h-16 bg-[#1a1a1a] border-b border-gray-800 flex items-center justify-between px-4 lg:px-6 flex-shrink-0">
+          <button
+            className="lg:hidden text-gray-400 hover:text-white"
+            onClick={() => setSidebarOpen(true)}
+          >
+            <Menu className="h-6 w-6" />
+          </button>
+
+          <div className="flex items-center space-x-4">
+            <button className="relative p-2 text-gray-400 hover:text-white">
+              <Bell className="h-6 w-6" />
+              <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
+            </button>
+          </div>
+        </header>
+
+        {/* Page content */}
+        <main className="flex-1 px-4 lg:px-6 py-4 overflow-y-auto bg-[#0f0f0f]">
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  );
+};
+
+export default Layout;

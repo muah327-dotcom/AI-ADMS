@@ -1,0 +1,329 @@
+Punjab University College Of Information Technology – Final Project Proposal 
+ 
+ 
+Page 1 of 12 
+ 
+Punjab University College Of Information Technology 
+                                                           
+ 
+Final Year Project Proposal 
+                                                                                                                                                                             
+   
+                              Day                  Month              Year 
+                                 
+DATE 
+ 
+ 
+ 
+PROJECT TITLE AI-Enhanced Admission Management System 
+ 
+STUDENT INFORMATION  
+Sr. Student 
+ID Name Email Mobile # 
+1. 081127 Rida Nadeem rforridanadeem03@gmail.com  0326-2651860 
+2. 081119 Muhammad Ahmad Muah327@gmail.com 0370-0140162 
+3. 081122 Hafiz Muhammad 
+Awais Mawaisrajpoot03@gmail.com 0316-4011101 
+  
+0 2 – 1 0 – 2 0 2   5 Punjab University College Of Information Technology – Final Project Proposal 
+ 
+ 
+Page 2 of 12 
+ 
+PROBLEM STATEMENT 
+The university admission process in Pakistan is largely manual, inefficient, and error-prone. 
+Students fill forms manually, often entering incorrect or fake information. They apply to ineligible 
+programs, wasting both time and administrative resources. Merit list generation is slow, lacks 
+transparency, and can be perceived as biased. 
+Administrators struggle with document verification, application management, student 
+categorization, and reporting. There is no clear visualization of how many students are admitted 
+into each category (merit, quota, self-finance), nor insights into percentage-based eligibility trends.  
+A modern solution is required:  a data-driven, AI-enhanced admission system that automates the 
+entire cycle (from pre-application form filling & data extraction to admin-level analytics & 
+insights) ensuring transparency, fairness, and efficiency. 
+ 
+EXECUTIVE SUMMARY 
+Our proposed AI-Enhanced Admission Management System streamlines admissions by: 
+ Automating Pre-Application with OCR-based CNIC & certificate data extraction. 
+ Ensuring Transparency via eligibility checks and automated merit list generation. 
+ Recommending Programs using AI-driven logic based on student marks and subjects. 
+ Empowering Administrators with dashboards, data visualization, and category-based 
+analytics. 
+ Providing Insights into admission trends, percentage distributions, and subject-specific 
+performance without exposing personal data. 
+This system reduces manual workload, improves accuracy, enhances student experience, and 
+provides administrators with data-driven decision-making. 
+ 
+ Punjab University College Of Information Technology – Final Project Proposal 
+ 
+ 
+Page 3 of 12 
+ 
+INTRODUCTION 
+Admissions are the foundation of academic institutions, yet most universities in Pakistan rely 
+on outdated systems or manual methods. 
+Students face confusion in program selection, delays in merit lists, and lack of clarity on 
+eligibility. 
+Administrators deal with thousands of applications, tedious verification, and manual merit 
+preparation. 
+This project proposes an AI-powered Admission Management System that introduces 
+automation, transparency, and smart decision support. It integrates document verification, 
+program recommendation, automated merit lists, student categorization, and data visualization 
+into a single unified platform. 
+ 
+COMPETITOR ANALYSIS 
+Existing admission portals provide basic online application and fee payment but lack AI-based 
+recommendations, merit transparency, and admin analytics. 
+Current ERP solutions are expensive, complex, and not tailored to student/administrator needs. 
+ 
+Our system is unique because it offers: 
+ OCR-based pre-application automation. 
+ Eligibility verification & program recommendation using AI. 
+ Automated merit list generation. 
+ Admin dashboards with insights & student categorization. 
+ 
+ 
+ Punjab University College Of Information Technology – Final Project Proposal 
+ 
+ 
+Page 4 of 12 
+ 
+OBJECTIVES 
+ Automate Form Filling & Data Extraction  – Use OCR to extract information from 
+CNICs and academic documents. 
+ Eligibility & Merit List Generation  – Ensure accurate eligibility checks and transparent 
+merit list creation. 
+ AI-Based Program Recommendation  – Suggest suitable programs based on student 
+academic profile and preferences. 
+ Admin Dashboard & Visualization  – Provide analytics on admissions by category 
+(merit, quota, self-finance) with clear percentage-based distribution. 
+ Fairness, Security & Scalability  – Maintain unbiased admissions, ensure data protection, 
+and support system growth.  
+ 
+MOTIVATION 
+The admission process in many educational institutions is often challenging for both students and 
+administrators. Students frequently lack proper guidance and face limited transparency during the 
+process, which can lead to confusion and misinformed decisions. On the other hand, administrators 
+struggle with repetitive tasks and managing large-scale admission data, making the process time-
+consuming and error-prone. By introducing an AI-enhanced admission management system, bias 
+and human errors can be minimized, ensuring a fair, transparent, and efficient process. 
+Furthermore, integrating AI into education systems aligns with modern research and industry 
+trends, making this project both academically valuable and practically relevant. A centralized 
+digital platform will help streamline the entire admission cycle, reducing delays and 
+miscommunication while improving the overall user experience. Finally, the project aims to 
+provide a scalable prototype that universities can adopt, adapt, and expand for real-world 
+implementation. 
+ Punjab University College Of Information Technology – Final Project Proposal 
+ 
+ 
+Page 5 of 12 
+ 
+ 
+REQUIREMENTS 
+ 
+   Functional Requirements 
+ Student Side: 
+ CNIC & document upload with OCR-based data extraction. 
+ Eligibility check with percentage & subject-based logic. 
+ AI-based program recommendation. 
+ Program priority selection. 
+ Real-time application tracking. 
+ Merit list notifications. 
+ 
+ Admin Side: 
+ Dashboard with visual analytics. 
+ Categorization of students (Merit / Quota / Self-Finance). 
+ Subject-wise & percentage-based insights. 
+ Report export & monitoring tools. 
+ 
+ System Side: 
+ Automated merit list generation. 
+ Fee management (forms, defaulter tracking). 
+ Secure authentication and access control. 
+ Scalability for thousands of applications. 
+ 
+ 
+ Punjab University College Of Information Technology – Final Project Proposal 
+ 
+ 
+Page 6 of 12 
+ 
+ 
+Non-Functional Requirements 
+ Performance:  Real-time processing for thousands of applications. 
+ Scalability: Cloud-hosted system for peak loads. 
+ Security:  Data encryption, 2FA login, secure payments (sandbox). 
+ Reliability:  99% uptime with daily backups. 
+ Usability:  Mobile-friendly, bilingual interface (English/Urdu).  
+ 
+FEATURES OF PROJECT 
+Student Features 
+ Document Upload & OCR – Upload CNIC and academic certificates with automatic data 
+extraction. 
+ Eligibility Check  – Automatic verification of program requirements. 
+ AI-Based Program Recommendation  – Suggests suitable programs based on student 
+profile and marks. 
+ Online Aptitude/Quiz Test  – Assess student skills and subject knowledge. 
+ Program Priority Selection  – Students can rank and submit their preferred programs. 
+ Application Tracking  – Real-time status updates of submitted applications. 
+ Merit List Notification  – Instant alerts for admission results and updates. 
+Admin Features 
+ Dashboard & Analytics – Visualize applications, admissions by category 
+(merit/quota/self-finance), and percentage-based distributions. 
+ Merit List Automation – Transparent, rule-based merit list generation with AI support 
+for edge cases. 
+ Student Categorization  – Automatic grouping into merit, quota, and self-finance 
+categories. Punjab University College Of Information Technology – Final Project Proposal 
+ 
+ 
+Page 7 of 12 
+ 
+ Performance Insights – Subject-wise performance and pass/fail percentage analysis. 
+. System Features 
+ Secure Data Management  – Encryption, role-based access, and secure backups. 
+ Scalable Deployment – System designed to handle large numbers of users. 
+ User-Friendly Interface  – Accessible on both mobile and desktop devices. 
+ Transparency & Fairness  – Clear, explainable AI logic to minimize bias. 
+ 
+ 
+ARCHITECTURAL DESIGN 
+Hardware: 
+ Student Devices:  Mobile, PC, Tablets. 
+ Server: Cloud-hosted with load balancing. 
+Software Stack: 
+ Frontend:  React.js / Next.js. 
+ Backend:  Python (Django/Flask) or Node.js. 
+ Database:  PostgreSQL + MongoDB. 
+ AI/ML: OCR (Tesseract), Recommendation models (scikit-learn). 
+ Visualization:  Chart.js / Power BI. 
+ Deployment:  Docker + AWS/Azure. 
+ 
+ 
+IMPLEMENTATION METHODOLOGY 
+The project will be developed using the Agile Scrum Methodology, ensuring flexibility, iterative 
+progress, and continuous feedback. Punjab University College Of Information Technology – Final Project Proposal 
+ 
+ 
+Page 8 of 12 
+ 
+ 
+ Agile Development (Scrum-based)  – The project will be divided into short sprints, each 
+focusing on specific deliverables. 
+ Prototyping of Key Features  – Early prototypes will be created for core modules such as 
+OCR-based document verification, Merit List generation, and the Admin Dashboard to 
+gather feedback and refine usability. 
+ Iterative Testing & Deployment  – Each sprint will include testing for functionality, 
+performance, and usability, followed by deployment on a cloud platform for scalability. 
+Development Phases 
+ Requirement Gathering & Design  – Define user roles, workflows, and system 
+architecture with wireframes and mockups. 
+ Pre-Application Module  – Implement OCR-based document upload, data extraction, and 
+eligibility checks. 
+ Program Recommendation & Merit List  – Develop AI-based recommendation logic 
+and automate merit list generation. 
+ Admin Dashboard & Analytics  – Build visualization tools to show admissions by 
+category, merit distribution, and performance insights. 
+ Testing & Feedback – Conduct functional, usability, and security testing; refine based on 
+feedback from students and administrators. 
+ Deployment & Documentation  – Deploy the final system on a scalable cloud 
+environment and prepare technical documentation for maintainability.  
+ 
+PROJECT PLAN 
+Division of Responsibilities 
+This project will be carried out collaboratively by Rida Nadeem, Muhammad Ahmad and Hafiz 
+Awais. Punjab University College Of Information Technology – Final Project Proposal 
+ 
+ 
+Page 9 of 12 
+ 
+ Rida Nadeem  – Frontend development (student & admin dashboards, UI/UX), plus 
+integration of selected AI modules (OCR, Recommendation). 
+ Hafiz Awais  – Backend development, database design, API integration, authentication, 
+and cloud deployment. 
+ Muhammad Ahmad  – System architecture, testing, documentation, and implementation 
+of AI logic for eligibility checks and merit list. 
+All members will work collaboratively to ensure smooth progress and successful completion.  
+Timeline with Milestones (Tentative) 
+Phase 1: Requirement Analysis & Planning (Weeks 1–2) 
+           Milestone 1: Finalized Requirements & Project Plan 
+ Task 1.1 : Literature review on AI in admissions + competitor analysis (Team – 
+Collaborative) 
+ Task 1.2:  Finalize technology stack & tools (Team – Collaborative) 
+ Task 1.3:  Define use cases, functional & non-functional requirements (Team – 
+Collaborative) 
+ Task 1.4:  Create detailed Gantt chart & initial project setup (Team – Collaborative) 
+Phase 2: System Design (Weeks 3–4) 
+           Milestone 2: Architecture & UI/UX Ready 
+ Task 2.1:  Wireframing & mockups for student/admin dashboards (Lead: Rida Nadeem) 
+ Task 2.2:  Database schema design (Lead: Hafiz Awais) 
+ Task 2.3:  High-level system architecture diagram (Team – Collaborative) 
+ Task 2.4:  AI workflow design (OCR, recommendation, merit logic) (Lead: Muhammad 
+Ahmad + Support) 
+Phase 3: Core Backend Development (Weeks 5–7) 
+            Milestone 3: Backend APIs Functional Punjab University College Of Information Technology – Final Project Proposal 
+ 
+ 
+Page 10 of 12 
+ 
+ 
+ Task 3.1:  User authentication & access control (Hafiz Awais) 
+ Task 3.2:  Application form + OCR-based document upload (Rida Nadeem + Muhammad 
+Ahmad) 
+ Task 3.3:  Eligibility check logic (Muhammad Ahmad) 
+ Task 3.4:  Merit list automation API (Hafiz Awais + Muhammad Ahmad) 
+Phase 4: Frontend Development (Weeks 8–9) 
+ Milestone 4: Dashboards Functional 
+ Task 4.1:  Student dashboard (application tracking, priority selection, merit list view) (Rida 
+Nadeem) 
+ Task 4.2:  Admin dashboard (applications overview, analytics charts) (Rida Nadeem) 
+ Task 4.3:  Integration of backend APIs with frontend (Rida Nadeem + Hafiz Awais) 
+ Task 4.4:  UI enhancements & responsiveness (Rida Nadeem) 
+Phase 5: Testing & Optimization (Week 10) 
+            Milestone 5: Tested & Optimized System 
+ Task 5.1:  Unit testing (backend APIs, AI modules) (Muhammad Ahmad) 
+ Task 5.2:  Unit testing (frontend dashboards) (Rida Nadeem) 
+ Task 5.3:  Integration testing (full system) (Team – Collaborative) 
+ Task 5.4:  Bug fixing & performance optimization (Team – Collaborative) 
+Phase 6: Deployment & Documentation (Weeks 11–12) 
+  Milestone 6: Final Deployment & Submission 
+ Task 6.1:  Deploy system on cloud (AWS/Azure/GCP) (Hafiz Awais) 
+ Task 6.2:  Security setup (SSL/TLS, role-based access, backups) (Hafiz Awais) 
+ Task 6.3:  Prepare technical documentation & user manual (Muhammad Ahmad) 
+ Task 6.4:  Final project submission & presentation (Team – Collaborative)  Punjab University College Of Information Technology – Final Project Proposal 
+ 
+ 
+Page 11 of 12 
+ 
+EXPECTED OUTCOMES 
+ Automated pre-application & eligibility checking. 
+ Transparent and faster merit list generation. 
+ Smart program recommendation system. 
+ Admin-level analytics (students per program, merit vs quota distribution, subject-wise 
+insights). 
+ Secure, scalable, and reliable admission platform. 
+ 
+CONCLUSION 
+The AI-Enhanced Admission Management System provides a complete admission cycle 
+solution—from form filling and eligibility to analytics and visualization. It ensures fairness, 
+transparency, and efficiency, reducing workload while improving decision-making for 
+administrators. 
+ 
+  Punjab University College Of Information Technology – Final Project Proposal 
+ 
+ 
+Page 12 of 12 
+ 
+Day 
+Month 
+ Year 
+DATE  
+VERSION CONTROL 
+ 
+1.  02-10-2025 Initial Draft based on project details 
+ 
+……………………………….DO NOT WRITE BELOW THIS LINE………………………………… 
+ 
+FOR OFFICE USE ONLY 
+Approved   Yes  No 
+ 
+ 
