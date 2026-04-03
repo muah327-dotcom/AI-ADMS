@@ -1,0 +1,542 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { useAuth } from '../../hooks/useAuth';
+import { 
+  User, 
+  Lock, 
+  Bell, 
+  Shield, 
+  Camera, 
+  Save, 
+  Loader2, 
+  Eye, 
+  EyeOff,
+  CheckCircle,
+  XCircle
+} from 'lucide-react';
+import toast from 'react-hot-toast';
+
+const Settings = () => {
+  const { user, setUser } = useAuth();
+  const [activeTab, setActiveTab] = useState('profile');
+  const [isLoading, setIsLoading] = useState(false);
+  const fileInputRef = useRef(null);
+
+  // Profile form state
+  const [profileForm, setProfileForm] = useState({
+    full_name: '',
+    email: '',
+    phone: '',
+    address: '',
+    cnic: ''
+  });
+
+  // Password form state
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [showPassword, setShowPassword] = useState({
+    current: false,
+    new: false,
+    confirm: false
+  });
+
+  // Avatar state
+  const [avatar, setAvatar] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
+
+  useEffect(() => {
+    if (user) {
+      setProfileForm({
+        full_name: user.full_name || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        address: user.address || '',
+        cnic: user.cnic || ''
+      });
+      setAvatarPreview(user.avatar_url);
+    }
+  }, [user]);
+
+  const handleProfileChange = (e) => {
+    setProfileForm({ ...profileForm, [e.target.name]: e.target.value });
+  };
+
+  const handlePasswordChange = (e) => {
+    setPasswordForm({ ...passwordForm, [e.target.name]: e.target.value });
+  };
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error('Image size should be less than 2MB');
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatar(file);
+        setAvatarPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const uploadAvatar = async () => {
+    if (!avatarPreview || !avatar) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/auth/upload-avatar', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ 
+          avatar_base64: avatarPreview,
+          file_name: avatar.name
+        })
+      });
+
+      if (!response.ok) throw new Error('Failed to upload avatar');
+      
+      const data = await response.json();
+      setUser({ ...user, avatar_url: data.avatar_url });
+      toast.success('Profile picture updated');
+    } catch (error) {
+      toast.error('Failed to upload profile picture');
+    }
+  };
+
+  const removeAvatar = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/auth/remove-avatar', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) throw new Error('Failed to remove avatar');
+      
+      const data = await response.json();
+      setUser({ ...user, avatar_url: null });
+      setAvatar(null);
+      setAvatarPreview(null);
+      toast.success('Profile picture removed');
+    } catch (error) {
+      toast.error('Failed to remove profile picture');
+    }
+  };
+
+  const updateProfile = async () => {
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/auth/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          full_name: profileForm.full_name,
+          phone: profileForm.phone,
+          address: profileForm.address
+        })
+      });
+
+      if (!response.ok) throw new Error('Failed to update profile');
+      
+      const data = await response.json();
+      setUser({ ...user, ...data.user });
+      
+      if (avatar && avatarPreview !== user?.avatar_url) {
+        await uploadAvatar();
+      }
+      
+      toast.success('Profile updated successfully');
+    } catch (error) {
+      toast.error('Failed to update profile');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const changePassword = async () => {
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+
+    if (passwordForm.newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/auth/change-password', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          currentPassword: passwordForm.currentPassword,
+          newPassword: passwordForm.newPassword
+        })
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to change password');
+      }
+      
+      toast.success('Password changed successfully');
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (error) {
+      toast.error(error.message || 'Failed to change password');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const tabs = [
+    { id: 'profile', label: 'Profile', icon: User },
+    { id: 'security', label: 'Security', icon: Lock },
+  ];
+
+  return (
+    <div className="space-y-6 animate-fade-in max-w-4xl mx-auto">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl lg:text-3xl font-bold text-white">Settings</h1>
+        <p className="text-gray-400 mt-1">Manage your account preferences</p>
+      </div>
+
+      <div className="grid lg:grid-cols-4 gap-6">
+        {/* Sidebar */}
+        <div className="lg:col-span-1">
+          <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-2 space-y-1">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                    activeTab === tab.id
+                      ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
+                      : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                  }`}
+                >
+                  <Icon className="h-5 w-5" />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="lg:col-span-3 space-y-6">
+          {activeTab === 'profile' && (
+            <div className="space-y-6">
+              {/* Profile Picture */}
+              <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-6">
+                <h3 className="text-lg font-semibold text-white mb-4">Profile Picture</h3>
+                <div className="flex items-center gap-6">
+                  <div className="relative">
+                    <div className="h-24 w-24 rounded-full bg-cyan-500/10 flex items-center justify-center border-2 border-cyan-500/20 overflow-hidden">
+                      {avatarPreview || user?.avatar_url ? (
+                        <img 
+                          src={avatarPreview || user?.avatar_url} 
+                          alt="Profile" 
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-3xl text-cyan-400 font-bold">
+                          {user?.full_name?.charAt(0).toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      onClick={handleAvatarClick}
+                      className="absolute -bottom-1 -right-1 p-2 bg-cyan-500 text-white rounded-full hover:bg-cyan-600 transition-colors shadow-lg"
+                    >
+                      <Camera className="h-4 w-4" />
+                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleAvatarChange}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <p className="text-sm text-gray-400 mb-2">
+                      JPG, PNG or GIF. Max size 2MB.
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleAvatarClick}
+                        className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
+                      >
+                        Change Photo
+                      </button>
+                      {(avatarPreview || user?.avatar_url) && (
+                        <button
+                          onClick={removeAvatar}
+                          className="px-4 py-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 transition-colors text-sm border border-red-500/20"
+                        >
+                          Remove Photo
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Personal Information */}
+              <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-6">
+                <h3 className="text-lg font-semibold text-white mb-4">Personal Information</h3>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Full Name
+                    </label>
+                    <input
+                      type="text"
+                      name="full_name"
+                      value={profileForm.full_name}
+                      onChange={handleProfileChange}
+                      className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Email Address
+                    </label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={profileForm.email}
+                      disabled
+                      className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg text-gray-500 cursor-not-allowed"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Phone Number
+                    </label>
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={profileForm.phone}
+                      onChange={handleProfileChange}
+                      placeholder="Enter phone number"
+                      className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white placeholder-gray-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      CNIC
+                    </label>
+                    <input
+                      type="text"
+                      name="cnic"
+                      value={profileForm.cnic}
+                      disabled
+                      className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg text-gray-500 cursor-not-allowed"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">CNIC cannot be changed</p>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Address
+                    </label>
+                    <textarea
+                      name="address"
+                      value={profileForm.address}
+                      onChange={handleProfileChange}
+                      placeholder="Enter your address"
+                      rows={3}
+                      className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white placeholder-gray-500 resize-none"
+                    />
+                  </div>
+                </div>
+                <div className="mt-6 flex justify-end">
+                  <button
+                    onClick={updateProfile}
+                    disabled={isLoading}
+                    className="flex items-center px-6 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors disabled:opacity-50"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4 mr-2" />
+                        Save Changes
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'security' && (
+            <div className="space-y-6">
+              {/* Change Password */}
+              <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-cyan-500/10 rounded-lg border border-cyan-500/20">
+                    <Lock className="h-5 w-5 text-cyan-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">Change Password</h3>
+                    <p className="text-sm text-gray-400">Update your password to keep your account secure</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4 max-w-md">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Current Password
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPassword.current ? 'text' : 'password'}
+                        name="currentPassword"
+                        value={passwordForm.currentPassword}
+                        onChange={handlePasswordChange}
+                        placeholder="Enter current password"
+                        className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white placeholder-gray-500 pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword({ ...showPassword, current: !showPassword.current })}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-300"
+                      >
+                        {showPassword.current ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      New Password
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPassword.new ? 'text' : 'password'}
+                        name="newPassword"
+                        value={passwordForm.newPassword}
+                        onChange={handlePasswordChange}
+                        placeholder="Enter new password"
+                        className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white placeholder-gray-500 pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword({ ...showPassword, new: !showPassword.new })}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-300"
+                      >
+                        {showPassword.new ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Must be at least 6 characters</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Confirm New Password
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPassword.confirm ? 'text' : 'password'}
+                        name="confirmPassword"
+                        value={passwordForm.confirmPassword}
+                        onChange={handlePasswordChange}
+                        placeholder="Confirm new password"
+                        className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white placeholder-gray-500 pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword({ ...showPassword, confirm: !showPassword.confirm })}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-300"
+                      >
+                        {showPassword.confirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={changePassword}
+                    disabled={isLoading || !passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword}
+                    className="w-full sm:w-auto flex items-center justify-center px-6 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors disabled:opacity-50"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
+                        Changing...
+                      </>
+                    ) : (
+                      'Change Password'
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Security Info */}
+              <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-green-500/10 rounded-lg border border-green-500/20">
+                    <Shield className="h-5 w-5 text-green-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">Account Security</h3>
+                    <p className="text-sm text-gray-400">Your account security status</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-[#0f0f0f] rounded-lg border border-gray-800">
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="h-5 w-5 text-green-400" />
+                      <span className="text-sm text-gray-300">Password protected</span>
+                    </div>
+                    <span className="text-xs text-green-400">Active</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-[#0f0f0f] rounded-lg border border-gray-800">
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="h-5 w-5 text-green-400" />
+                      <span className="text-sm text-gray-300">Account verified</span>
+                    </div>
+                    <span className="text-xs text-green-400">Verified</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Settings;

@@ -145,15 +145,15 @@ const MeritList = ({ admin = false }) => {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Merit List</h1>
-          <p className="text-gray-500 mt-1">View program-wise merit rankings and admissions</p>
+          <h1 className="text-2xl lg:text-3xl font-bold text-white">Merit List</h1>
+          <p className="text-gray-400 mt-1">View program-wise merit rankings and admissions</p>
         </div>
         {admin && (
           <div className="flex gap-3">
             <button
               onClick={generateMeritList}
               disabled={generating || !selectedProgram}
-              className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
+              className="inline-flex items-center px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors disabled:opacity-50"
             >
               {generating ? (
                 <>
@@ -167,7 +167,7 @@ const MeritList = ({ admin = false }) => {
                 </>
               )}
             </button>
-            <button className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+            <button className="inline-flex items-center px-4 py-2 bg-[#1a1a1a] border border-gray-700 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors">
               <Download className="h-5 w-5 mr-2" />
               Export
             </button>
@@ -176,12 +176,12 @@ const MeritList = ({ admin = false }) => {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm p-4">
+      <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-4">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1">
-            <label className="text-sm font-medium text-gray-700 mb-1 block">Select Program</label>
+            <label className="text-sm font-medium text-gray-400 mb-1 block">Select Program</label>
             <select
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+              className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white"
               value={selectedProgram}
               onChange={(e) => setSelectedProgram(e.target.value)}
             >
@@ -192,9 +192,9 @@ const MeritList = ({ admin = false }) => {
           </div>
           {admin && (
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 block">Category Filter</label>
+              <label className="text-sm font-medium text-gray-400 mb-1 block">Category Filter</label>
               <select
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+                className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white"
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
               >
@@ -210,43 +210,43 @@ const MeritList = ({ admin = false }) => {
 
       {/* Program Info */}
       {selectedProgramData && (
-        <div className="bg-primary-50 rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-primary-900">{selectedProgramData.name}</h3>
-          <p className="text-primary-700">{selectedProgramData.department}</p>
+        <div className="bg-cyan-500/10 rounded-xl p-6 border border-cyan-500/20">
+          <h3 className="text-lg font-semibold text-white">{selectedProgramData.name}</h3>
+          <p className="text-gray-400">{selectedProgramData.department}</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
-            <div className="bg-white rounded-lg p-3 text-center">
-              <p className="text-2xl font-bold text-gray-900">{selectedProgramData.total_seats}</p>
-              <p className="text-xs text-gray-500">Total Seats</p>
+            <div className="bg-[#1a1a1a] rounded-lg p-3 text-center border border-gray-800">
+              <p className="text-2xl font-bold text-white">{selectedProgramData.total_seats}</p>
+              <p className="text-xs text-gray-400">Total Seats</p>
             </div>
-            <div className="bg-white rounded-lg p-3 text-center">
-              <p className="text-2xl font-bold text-green-600">{stats.selected}</p>
-              <p className="text-xs text-gray-500">Selected</p>
+            <div className="bg-[#1a1a1a] rounded-lg p-3 text-center border border-gray-800">
+              <p className="text-2xl font-bold text-green-400">{stats.selected}</p>
+              <p className="text-xs text-gray-400">Selected</p>
             </div>
-            <div className="bg-white rounded-lg p-3 text-center">
-              <p className="text-2xl font-bold text-yellow-600">{stats.waitlisted}</p>
-              <p className="text-xs text-gray-500">Waitlisted</p>
+            <div className="bg-[#1a1a1a] rounded-lg p-3 text-center border border-gray-800">
+              <p className="text-2xl font-bold text-yellow-400">{stats.waitlisted}</p>
+              <p className="text-xs text-gray-400">Waitlisted</p>
             </div>
-            <div className="bg-white rounded-lg p-3 text-center">
-              <p className="text-2xl font-bold text-blue-600">
+            <div className="bg-[#1a1a1a] rounded-lg p-3 text-center border border-gray-800">
+              <p className="text-2xl font-bold text-cyan-400">
                 {meritList.length > 0 ? Math.round(meritList.reduce((a, b) => a + b.score, 0) / meritList.length) : 0}%
               </p>
-              <p className="text-xs text-gray-500">Avg Score</p>
+              <p className="text-xs text-gray-400">Avg Score</p>
             </div>
           </div>
         </div>
       )}
 
       {/* Merit List Table */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center h-64">
-            <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
+            <Loader2 className="h-8 w-8 animate-spin text-cyan-500" />
           </div>
         ) : meritList.length === 0 ? (
           <div className="p-12 text-center">
-            <Award className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Merit List Available</h3>
-            <p className="text-gray-500">
+            <Award className="h-16 w-16 text-gray-600 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-white mb-2">No Merit List Available</h3>
+            <p className="text-gray-400">
               {admin 
                 ? "Generate a merit list to see the rankings" 
                 : "Merit list has not been published yet"}
@@ -255,7 +255,7 @@ const MeritList = ({ admin = false }) => {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-[#0f0f0f] border-b border-gray-800">
                 <tr>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
@@ -264,51 +264,55 @@ const MeritList = ({ admin = false }) => {
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-800">
                 {meritList.map((entry) => (
-                  <tr key={entry.id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={entry.id} className="hover:bg-gray-800/50 transition-colors">
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full font-bold ${
-                        entry.rank <= 3 ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-700'
+                        entry.rank <= 3 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-gray-700 text-gray-300'
                       }`}>
                         {entry.rank}
                       </span>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center">
-                        <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center mr-3">
-                          <span className="text-primary-700 font-semibold text-sm">
+                        <div className="h-8 w-8 rounded-full bg-cyan-500/10 flex items-center justify-center mr-3 border border-cyan-500/20">
+                          <span className="text-cyan-400 font-semibold text-sm">
                             {entry.student?.full_name?.charAt(0)}
                           </span>
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">{entry.student?.full_name}</p>
-                          <p className="text-sm text-gray-500">{entry.student?.cnic}</p>
+                          <p className="font-medium text-white">{entry.student?.full_name}</p>
+                          <p className="text-sm text-gray-400">{entry.student?.cnic}</p>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getCategoryColor(entry.category)}`}>
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                        entry.category === 'merit' ? 'bg-yellow-500/20 text-yellow-400' :
+                        entry.category === 'quota' ? 'bg-cyan-500/20 text-cyan-400' :
+                        'bg-green-500/20 text-green-400'
+                      }`}>
                         {getCategoryIcon(entry.category)}
                         <span className="ml-2 capitalize">{entry.category.replace('_', ' ')}</span>
                       </span>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center">
-                        <div className="flex-1 w-24 h-2 bg-gray-200 rounded-full overflow-hidden mr-3">
+                        <div className="flex-1 w-24 h-2 bg-gray-700 rounded-full overflow-hidden mr-3">
                           <div
-                            className="h-full bg-primary-500 rounded-full"
+                            className="h-full bg-cyan-500 rounded-full"
                             style={{ width: `${entry.score}%` }}
                           />
                         </div>
-                        <span className="text-sm font-medium text-gray-900">{entry.score.toFixed(1)}%</span>
+                        <span className="text-sm font-medium text-white">{entry.score.toFixed(1)}%</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
                         entry.status === 'selected' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-yellow-100 text-yellow-800'
+                          ? 'bg-green-500/20 text-green-400' 
+                          : 'bg-yellow-500/20 text-yellow-400'
                       }`}>
                         {entry.status === 'selected' ? (
                           <CheckCircle className="h-3 w-3 mr-1" />

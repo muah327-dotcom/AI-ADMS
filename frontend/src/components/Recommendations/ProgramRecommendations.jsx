@@ -117,15 +117,15 @@ const ProgramRecommendations = () => {
       </div>
 
       {recommendations.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-          <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No Recommendations Available</h3>
-          <p className="text-gray-500 mb-4">
+        <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-12 text-center">
+          <BookOpen className="h-16 w-16 text-gray-600 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-white mb-2">No Recommendations Available</h3>
+          <p className="text-gray-400 mb-4">
             Upload your academic documents to get personalized program recommendations
           </p>
           <a
-            href="/documents"
-            className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+            href="/dashboard/documents"
+            className="inline-flex items-center px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
           >
             Upload Documents
             <ArrowRight className="h-4 w-4 ml-2" />
@@ -135,21 +135,21 @@ const ProgramRecommendations = () => {
         <>
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4">
-            <div className="bg-white rounded-xl p-4 shadow-sm text-center">
-              <p className="text-2xl font-bold text-gray-900">{recommendations.length}</p>
-              <p className="text-sm text-gray-500">Total Programs</p>
+            <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-4 text-center">
+              <p className="text-2xl font-bold text-white">{recommendations.length}</p>
+              <p className="text-sm text-gray-400">Total Programs</p>
             </div>
-            <div className="bg-white rounded-xl p-4 shadow-sm text-center">
-              <p className="text-2xl font-bold text-green-600">
+            <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-4 text-center">
+              <p className="text-2xl font-bold text-green-400">
                 {recommendations.filter(r => r.match_level === 'high').length}
               </p>
-              <p className="text-sm text-gray-500">High Matches</p>
+              <p className="text-sm text-gray-400">High Matches</p>
             </div>
-            <div className="bg-white rounded-xl p-4 shadow-sm text-center">
-              <p className="text-2xl font-bold text-blue-600">
+            <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-4 text-center">
+              <p className="text-2xl font-bold text-cyan-400">
                 {Math.round(recommendations.reduce((acc, r) => acc + r.eligibility_score, 0) / recommendations.length)}%
               </p>
-              <p className="text-sm text-gray-500">Avg. Match Score</p>
+              <p className="text-sm text-gray-400">Avg. Match Score</p>
             </div>
           </div>
 
@@ -158,21 +158,26 @@ const ProgramRecommendations = () => {
             {recommendations.map((rec, index) => (
               <div
                 key={index}
-                className={`bg-white rounded-xl shadow-sm overflow-hidden border-2 transition-all card-hover ${
-                  rec.match_level === 'high' ? 'border-green-200' :
-                  rec.match_level === 'medium' ? 'border-blue-200' :
-                  rec.match_level === 'moderate' ? 'border-yellow-200' :
-                  'border-red-200'
+                className={`bg-[#1a1a1a] rounded-xl border-2 overflow-hidden transition-all hover:border-cyan-500/50 ${
+                  rec.match_level === 'high' ? 'border-green-500/30' :
+                  rec.match_level === 'medium' ? 'border-cyan-500/30' :
+                  rec.match_level === 'moderate' ? 'border-yellow-500/30' :
+                  'border-red-500/30'
                 }`}
               >
                 <div className="p-6">
                   {/* Header */}
                   <div className="flex items-start justify-between mb-4">
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900">{rec.program.name}</h3>
-                      <p className="text-gray-500">{rec.program.department}</p>
+                      <h3 className="text-lg font-semibold text-white">{rec.program.name}</h3>
+                      <p className="text-gray-400">{rec.program.department}</p>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getMatchColor(rec.match_level)}`}>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${
+                      rec.match_level === 'high' ? 'bg-green-500/20 text-green-400 border-green-500/30' :
+                      rec.match_level === 'medium' ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30' :
+                      rec.match_level === 'moderate' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
+                      'bg-red-500/20 text-red-400 border-red-500/30'
+                    }`}>
                       {rec.match_level === 'high' && <ThumbsUp className="h-3 w-3 inline mr-1" />}
                       {rec.match_level === 'low' && <ThumbsDown className="h-3 w-3 inline mr-1" />}
                       {rec.match_level.charAt(0).toUpperCase() + rec.match_level.slice(1)} Match
@@ -183,16 +188,21 @@ const ProgramRecommendations = () => {
                   <div className="flex items-center gap-4 mb-4">
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm text-gray-600">Match Score</span>
-                        <span className={`text-lg font-bold ${getScoreColor(rec.eligibility_score)}`}>
+                        <span className="text-sm text-gray-400">Match Score</span>
+                        <span className={`text-lg font-bold ${
+                          rec.eligibility_score >= 80 ? 'text-green-400' :
+                          rec.eligibility_score >= 60 ? 'text-cyan-400' :
+                          rec.eligibility_score >= 40 ? 'text-yellow-400' :
+                          'text-red-400'
+                        }`}>
                           {rec.eligibility_score}%
                         </span>
                       </div>
-                      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
                         <div
                           className={`h-full rounded-full transition-all ${
                             rec.eligibility_score >= 80 ? 'bg-green-500' :
-                            rec.eligibility_score >= 60 ? 'bg-blue-500' :
+                            rec.eligibility_score >= 60 ? 'bg-cyan-500' :
                             rec.eligibility_score >= 40 ? 'bg-yellow-500' :
                             'bg-red-500'
                           }`}
@@ -210,7 +220,7 @@ const ProgramRecommendations = () => {
                       ) : (
                         <AlertCircle className="h-4 w-4 text-red-500" />
                       )}
-                      <span className={rec.details.meets_percentage ? 'text-green-700' : 'text-red-700'}>
+                      <span className={rec.details.meets_percentage ? 'text-green-400' : 'text-red-400'}>
                         Percentage: {rec.details.student_percentage}% / Required: {rec.details.required_percentage}%
                       </span>
                     </div>
@@ -220,7 +230,7 @@ const ProgramRecommendations = () => {
                       ) : (
                         <AlertCircle className="h-4 w-4 text-yellow-500" />
                       )}
-                      <span>
+                      <span className="text-gray-400">
                         Subjects: {rec.details.matching_subjects}/{rec.details.total_required_subjects} matched
                       </span>
                     </div>
@@ -228,8 +238,8 @@ const ProgramRecommendations = () => {
 
                   {/* Missing Subjects */}
                   {rec.details.missing_subjects.length > 0 && (
-                    <div className="bg-yellow-50 rounded-lg p-3 mb-4">
-                      <p className="text-sm text-yellow-800">
+                    <div className="bg-yellow-500/10 rounded-lg p-3 mb-4 border border-yellow-500/20">
+                      <p className="text-sm text-yellow-400">
                         <span className="font-medium">Missing subjects:</span>{' '}
                         {rec.details.missing_subjects.join(', ')}
                       </p>
@@ -240,14 +250,14 @@ const ProgramRecommendations = () => {
                   <div className="flex items-center gap-3">
                     <button
                       onClick={() => fetchExplanation(rec.program.id)}
-                      className="flex-1 flex items-center justify-center px-4 py-2 text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors text-sm font-medium"
+                      className="flex-1 flex items-center justify-center px-4 py-2 text-cyan-400 bg-cyan-500/10 rounded-lg hover:bg-cyan-500/20 transition-colors text-sm font-medium"
                     >
                       <Info className="h-4 w-4 mr-2" />
                       Why This Match?
                     </button>
                     <a
-                      href={`/applications/new?program=${rec.program.id}`}
-                      className="flex-1 flex items-center justify-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium"
+                      href={`/dashboard/applications/new?program=${rec.program.id}`}
+                      className="flex-1 flex items-center justify-center px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors text-sm font-medium"
                     >
                       <Target className="h-4 w-4 mr-2" />
                       Apply Now
@@ -260,16 +270,21 @@ const ProgramRecommendations = () => {
 
           {/* Explanation Modal */}
           {selectedProgram && explanation && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-              <div className="bg-white rounded-xl max-w-lg w-full p-6 animate-scale-in">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-70">
+              <div className="bg-[#1a1a1a] rounded-xl max-w-lg w-full p-6 animate-scale-in border border-gray-800">
                 <div className="flex items-center gap-3 mb-4">
-                  <Award className="h-6 w-6 text-primary-600" />
-                  <h3 className="text-lg font-semibold text-gray-900">Match Explanation</h3>
+                  <Award className="h-6 w-6 text-cyan-400" />
+                  <h3 className="text-lg font-semibold text-white">Match Explanation</h3>
                 </div>
                 
                 <div className="mb-4">
-                  <h4 className="font-medium text-gray-900">{explanation.program}</h4>
-                  <p className={`text-2xl font-bold mt-1 ${getScoreColor(explanation.eligibility_score)}`}>
+                  <h4 className="font-medium text-white">{explanation.program}</h4>
+                  <p className={`text-2xl font-bold mt-1 ${
+                    explanation.eligibility_score >= 80 ? 'text-green-400' :
+                    explanation.eligibility_score >= 60 ? 'text-cyan-400' :
+                    explanation.eligibility_score >= 40 ? 'text-yellow-400' :
+                    'text-red-400'
+                  }`}>
                     {explanation.eligibility_score}% Match
                   </p>
                 </div>
@@ -283,17 +298,17 @@ const ProgramRecommendations = () => {
                         ) : exp.includes('below') || exp.includes('Missing') || exp.includes('improved') ? (
                           <AlertCircle className="h-5 w-5 text-yellow-500" />
                         ) : (
-                          <Info className="h-5 w-5 text-blue-500" />
+                          <Info className="h-5 w-5 text-cyan-400" />
                         )}
                       </div>
-                      <p className="text-gray-700">{exp}</p>
+                      <p className="text-gray-300">{exp}</p>
                     </div>
                   ))}
                 </div>
 
                 <button
                   onClick={() => { setSelectedProgram(null); setExplanation(null); }}
-                  className="mt-6 w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                  className="mt-6 w-full px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors font-medium"
                 >
                   Close
                 </button>

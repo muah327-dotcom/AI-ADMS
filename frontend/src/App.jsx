@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { useAuth } from './hooks/useAuth';
 import Layout from './components/Layout/Layout';
+import LandingPage from './components/Landing/LandingPage';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import StudentDashboard from './components/Dashboard/StudentDashboard';
@@ -17,6 +18,10 @@ import AdminAnalytics from './components/Admin/AdminAnalytics';
 import ManagePrograms from './components/Admin/ManagePrograms';
 import AllApplications from './components/Admin/AllApplications';
 import StudentManagement from './components/Admin/StudentManagement';
+import Settings from './components/Settings/Settings';
+import PrivacyPolicy from './components/Legal/PrivacyPolicy';
+import TermsOfService from './components/Legal/TermsOfService';
+import ContactPage from './components/Legal/ContactPage';
 
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   const { user, loading } = useAuth();
@@ -61,6 +66,15 @@ const PublicRoute = ({ children }) => {
 function AppRoutes() {
   return (
     <Routes>
+      {/* Public Landing Page */}
+      <Route path="/" element={<LandingPage />} />
+      
+      {/* Legal Pages */}
+      <Route path="/privacy" element={<PrivacyPolicy />} />
+      <Route path="/terms" element={<TermsOfService />} />
+      <Route path="/contact" element={<ContactPage />} />
+      
+      {/* Auth Routes */}
       <Route path="/login" element={
         <PublicRoute>
           <Login />
@@ -72,21 +86,23 @@ function AppRoutes() {
         </PublicRoute>
       } />
       
-      <Route path="/" element={
+      {/* Student Dashboard Routes */}
+      <Route path="/dashboard" element={
         <ProtectedRoute>
           <Layout />
         </ProtectedRoute>
       }>
-        <Route index element={<Navigate to="/dashboard" replace />} />
-        <Route path="dashboard" element={<StudentDashboard />} />
+        <Route index element={<StudentDashboard />} />
         <Route path="applications" element={<Applications />} />
         <Route path="applications/new" element={<NewApplication />} />
         <Route path="applications/track/:id" element={<ApplicationTracking />} />
         <Route path="recommendations" element={<ProgramRecommendations />} />
         <Route path="documents" element={<DocumentUpload />} />
         <Route path="merit-list" element={<MeritList />} />
+        <Route path="settings" element={<Settings />} />
       </Route>
 
+      {/* Admin Routes */}
       <Route path="/admin" element={
         <ProtectedRoute allowedRoles={['admin']}>
           <Layout />
@@ -98,6 +114,7 @@ function AppRoutes() {
         <Route path="applications" element={<AllApplications />} />
         <Route path="students" element={<StudentManagement />} />
         <Route path="merit-list" element={<MeritList admin />} />
+        <Route path="settings" element={<Settings />} />
       </Route>
     </Routes>
   );

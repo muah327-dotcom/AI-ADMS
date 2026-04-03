@@ -88,12 +88,12 @@ const Applications = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">My Applications</h1>
-          <p className="text-gray-500 mt-1">Track and manage your admission applications</p>
+          <h1 className="text-2xl lg:text-3xl font-bold text-white">My Applications</h1>
+          <p className="text-gray-400 mt-1">Track and manage your admission applications</p>
         </div>
         <Link
-          to="/applications/new"
-          className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+          to="/dashboard/applications/new"
+          className="inline-flex items-center px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
         >
           <Plus className="h-5 w-5 mr-2" />
           New Application
@@ -101,22 +101,22 @@ const Applications = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm p-4">
+      <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-4">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
             <input
               type="text"
               placeholder="Search by program or department..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+              className="w-full pl-10 pr-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white placeholder-gray-500"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           <div className="flex items-center gap-2">
-            <Filter className="h-5 w-5 text-gray-400" />
+            <Filter className="h-5 w-5 text-gray-500" />
             <select
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+              className="px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none text-white"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
@@ -132,20 +132,20 @@ const Applications = () => {
       </div>
 
       {/* Applications List */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 overflow-hidden">
         {filteredApplications.length === 0 ? (
           <div className="p-12 text-center">
-            <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No applications found</h3>
-            <p className="text-gray-500 mb-4">
+            <FileText className="h-16 w-16 text-gray-600 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-white mb-2">No applications found</h3>
+            <p className="text-gray-400 mb-4">
               {applications.length === 0 
                 ? "You haven't submitted any applications yet." 
                 : "No applications match your search criteria."}
             </p>
             {applications.length === 0 && (
               <Link
-                to="/applications/new"
-                className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                to="/dashboard/applications/new"
+                className="inline-flex items-center px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
               >
                 <Plus className="h-5 w-5 mr-2" />
                 Submit First Application
@@ -153,22 +153,22 @@ const Applications = () => {
             )}
           </div>
         ) : (
-          <div className="divide-y divide-gray-200">
+          <div className="divide-y divide-gray-800">
             {filteredApplications.map((app) => (
-              <div key={app.id} className="p-6 hover:bg-gray-50 transition-colors">
+              <div key={app.id} className="p-6 hover:bg-gray-800/50 transition-colors">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                   <div className="flex items-start space-x-4">
-                    <div className="p-3 bg-primary-50 rounded-lg">
-                      <FileText className="h-6 w-6 text-primary-600" />
+                    <div className="p-3 bg-cyan-500/10 rounded-lg">
+                      <FileText className="h-6 w-6 text-cyan-500" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-medium text-gray-900">{app.programs?.name}</h3>
-                      <p className="text-sm text-gray-500">{app.programs?.department}</p>
-                      <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                      <h3 className="text-lg font-medium text-white">{app.programs?.name}</h3>
+                      <p className="text-sm text-gray-400">{app.programs?.department}</p>
+                      <div className="flex items-center gap-4 mt-2 text-sm text-gray-400">
                         <span>Applied: {new Date(app.application_date).toLocaleDateString()}</span>
                         <span>Priority: {app.priority}</span>
                         {app.merit_rank && (
-                          <span className="text-primary-600 font-medium">Merit Rank: #{app.merit_rank}</span>
+                          <span className="text-cyan-400 font-medium">Merit Rank: #{app.merit_rank}</span>
                         )}
                       </div>
                     </div>
@@ -179,13 +179,13 @@ const Applications = () => {
                       <span className="ml-2 capitalize">{app.status.replace('_', ' ')}</span>
                     </span>
                     {app.admission_category && (
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 text-primary-800">
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-cyan-500/20 text-cyan-400">
                         {app.admission_category}
                       </span>
                     )}
                     <Link
-                      to={`/applications/track/${app.id}`}
-                      className="p-2 text-gray-400 hover:text-primary-600 transition-colors"
+                      to={`/dashboard/applications/track/${app.id}`}
+                      className="p-2 text-gray-400 hover:text-cyan-400 transition-colors"
                       title="Track Application"
                     >
                       <Eye className="h-5 w-5" />

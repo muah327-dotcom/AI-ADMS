@@ -5,6 +5,23 @@ import { body, validationResult } from 'express-validator';
 import { supabase } from '../config/supabase.js';
 import dotenv from 'dotenv';
 
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ error: 'Access token required' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    return res.status(403).json({ error: 'Invalid token' });
+  }
+};
+
 dotenv.config();
 
 const router = express.Router();
@@ -143,7 +160,8 @@ router.post('/login', [
         role: user.role,
         cnic: user.cnic,
         phone: user.phone,
-        address: user.address
+        address: user.address,
+        avatar_url: user.avatar_url
       },
       token
     });
@@ -166,7 +184,7 @@ router.get('/me', async (req, res) => {
     
     const { data: user, error } = await supabase
       .from('users')
-      .select('id, email, full_name, role, cnic, phone, address, created_at')
+      .select('id, email, full_name, role, cnic, phone, address, avatar_url, created_at')
       .eq('id', decoded.id)
       .single();
 
@@ -178,6 +196,199 @@ router.get('/me', async (req, res) => {
   } catch (error) {
     console.error('Auth check error:', error);
     res.status(401).json({ error: 'Invalid token' });
+  }
+});
+
+router.put('/profile', authenticateToken, [
+  body('full_name').optional().trim().notEmpty(),
+  body('phone').optional().trim(),
+  body('address').optional().trim()
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { full_name, phone, address, avatar_url } = req.body;
+    const updates = {};
+    
+    if (full_name) updates.full_name = full_name;
+    if (phone !== undefined) updates.phone = phone;
+    if (address !== undefined) updates.address = address;
+    if (avatar_url !== undefined) updates.avatar_url = avatar_url;
+    updates.updated_at = new Date().toISOString();
+
+    const { data: user, error } = await supabase
+      .from('users')
+      .update(updates)
+      .eq('id', req.user.id)
+      .select('id, email, full_name, role, cnic, phone, address, avatar_url, created_at')
+      .single();
+
+    if (error) throw error;
+
+    res.json({
+      message: 'Profile updated successfully',
+      user
+    });
+  } catch (error) {
+    console.error('Profile update error:', error);
+    res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
+router.put('/change-password', authenticateToken, [
+  body('currentPassword').notEmpty(),
+  body('newPassword').isLength({ min: 6 })
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { currentPassword, newPassword } = req.body;
+
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('password_hash')
+      .eq('id', req.user.id)
+      .single();
+
+    if (error || !user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const isValidPassword = await bcrypt.compare(currentPassword, user.password_hash);
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ 
+        password_hash: hashedNewPassword,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', req.user.id);
+
+    if (updateError) throw updateError;
+
+    res.json({ message: 'Password changed successfully' });
+  } catch (error) {
+    console.error('Password change error:', error);
+    res.status(500).json({ error: 'Failed to change password' });
+  }
+});
+
+router.post('/upload-avatar', authenticateToken, async (req, res) => {
+  try {
+    const { avatar_base64, file_name } = req.body;
+    
+    if (!avatar_base64) {
+      return res.status(400).json({ error: 'Avatar data is required' });
+    }
+
+    // Convert base64 to buffer
+    const base64Data = avatar_base64.replace(/^data:image\/\w+;base64,/, '');
+    const buffer = Buffer.from(base64Data, 'base64');
+    
+    // Generate unique filename
+    const fileExt = file_name ? file_name.split('.').pop() : 'png';
+    const fileName = `${req.user.id}-${Date.now()}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    // Upload to Supabase Storage
+    const { data: uploadData, error: uploadError } = await supabase
+      .storage
+      .from('avatars')
+      .upload(filePath, buffer, {
+        contentType: `image/${fileExt}`,
+        upsert: true
+      });
+
+    if (uploadError) throw uploadError;
+
+    // Get public URL
+    const { data: urlData } = supabase
+      .storage
+      .from('avatars')
+      .getPublicUrl(filePath);
+
+    // Update user record with avatar URL
+    const { data: user, error } = await supabase
+      .from('users')
+      .update({ 
+        avatar_url: urlData.publicUrl,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', req.user.id)
+      .select('id, email, full_name, avatar_url')
+      .single();
+
+    if (error) throw error;
+
+    res.json({
+      message: 'Avatar uploaded successfully',
+      avatar_url: user.avatar_url
+    });
+  } catch (error) {
+    console.error('Avatar upload error:', error);
+    res.status(500).json({ error: 'Failed to upload avatar' });
+  }
+});
+
+router.delete('/remove-avatar', authenticateToken, async (req, res) => {
+  try {
+    // Get current user to check if they have an avatar
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('avatar_url')
+      .eq('id', req.user.id)
+      .single();
+
+    if (userError) throw userError;
+
+    if (userData.avatar_url) {
+      // Extract filename from URL
+      const urlParts = userData.avatar_url.split('/');
+      const fileName = urlParts[urlParts.length - 1];
+
+      // Remove from Supabase Storage
+      const { error: deleteError } = await supabase
+        .storage
+        .from('avatars')
+        .remove([fileName]);
+
+      if (deleteError) {
+        console.error('Storage delete error:', deleteError);
+        // Continue to update database even if storage delete fails
+      }
+    }
+
+    // Update user record to remove avatar_url
+    const { data: user, error } = await supabase
+      .from('users')
+      .update({ 
+        avatar_url: null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', req.user.id)
+      .select('id, email, full_name, avatar_url')
+      .single();
+
+    if (error) throw error;
+
+    res.json({
+      message: 'Avatar removed successfully',
+      avatar_url: null
+    });
+  } catch (error) {
+    console.error('Avatar removal error:', error);
+    res.status(500).json({ error: 'Failed to remove avatar' });
   }
 });
 

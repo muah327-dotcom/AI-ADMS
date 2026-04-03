@@ -132,13 +132,19 @@ const Login = () => {
           </button>
         </form>
 
-        <div className="text-center mt-4">
+        <div className="text-center mt-4 space-y-2">
           <p className="text-sm text-gray-600">
             Don't have an account?{' '}
             <Link to="/register" className="font-medium text-primary-600 hover:text-primary-500">
               Sign up
             </Link>
           </p>
+          <Link 
+            to="/" 
+            className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            ← Back to Home
+          </Link>
         </div>
       </div>
     </div>

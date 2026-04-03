@@ -181,12 +181,12 @@ const ManagePrograms = () => {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Manage Programs</h1>
-          <p className="text-gray-500 mt-1">Create and manage academic programs</p>
+          <h1 className="text-2xl lg:text-3xl font-bold text-white">Manage Programs</h1>
+          <p className="text-gray-400 mt-1">Create and manage academic programs</p>
         </div>
         <button
           onClick={() => { setEditingProgram(null); resetForm(); setShowModal(true); }}
-          className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+          className="inline-flex items-center px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
         >
           <Plus className="h-5 w-5 mr-2" />
           Add Program
@@ -194,13 +194,13 @@ const ManagePrograms = () => {
       </div>
 
       {/* Search */}
-      <div className="bg-white rounded-xl shadow-sm p-4">
+      <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-4">
         <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
           <input
             type="text"
             placeholder="Search programs..."
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+            className="w-full pl-10 pr-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white placeholder-gray-500"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -210,42 +210,42 @@ const ManagePrograms = () => {
       {/* Programs Grid */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredPrograms.map((program) => (
-          <div key={program.id} className="bg-white rounded-xl shadow-sm overflow-hidden card-hover">
+          <div key={program.id} className="bg-[#1a1a1a] rounded-xl border border-gray-800 overflow-hidden hover:border-gray-700 transition-colors">
             <div className="p-6">
               <div className="flex items-start justify-between mb-4">
-                <div className="p-3 bg-primary-50 rounded-lg">
-                  <GraduationCap className="h-6 w-6 text-primary-600" />
+                <div className="p-3 bg-cyan-500/10 rounded-lg border border-cyan-500/20">
+                  <GraduationCap className="h-6 w-6 text-cyan-400" />
                 </div>
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleEdit(program)}
-                    className="p-2 text-gray-400 hover:text-primary-600 transition-colors"
+                    className="p-2 text-gray-400 hover:text-cyan-400 transition-colors"
                   >
                     <Edit2 className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => handleDelete(program.id)}
-                    className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                    className="p-2 text-gray-400 hover:text-red-400 transition-colors"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
               </div>
 
-              <h3 className="text-lg font-semibold text-gray-900">{program.name}</h3>
-              <p className="text-gray-500 text-sm">{program.department}</p>
+              <h3 className="text-lg font-semibold text-white">{program.name}</h3>
+              <p className="text-gray-400 text-sm">{program.department}</p>
 
               <div className="grid grid-cols-3 gap-3 mt-4">
-                <div className="text-center p-2 bg-gray-50 rounded">
-                  <p className="text-lg font-semibold text-gray-900">{program.total_seats}</p>
+                <div className="text-center p-2 bg-[#0f0f0f] rounded border border-gray-800">
+                  <p className="text-lg font-semibold text-white">{program.total_seats}</p>
                   <p className="text-xs text-gray-500">Seats</p>
                 </div>
-                <div className="text-center p-2 bg-gray-50 rounded">
-                  <p className="text-lg font-semibold text-primary-600">{program.min_percentage}%</p>
+                <div className="text-center p-2 bg-[#0f0f0f] rounded border border-gray-800">
+                  <p className="text-lg font-semibold text-cyan-400">{program.min_percentage}%</p>
                   <p className="text-xs text-gray-500">Min %</p>
                 </div>
-                <div className="text-center p-2 bg-gray-50 rounded">
-                  <p className="text-lg font-semibold text-gray-900">{program.duration_years || '-'}</p>
+                <div className="text-center p-2 bg-[#0f0f0f] rounded border border-gray-800">
+                  <p className="text-lg font-semibold text-white">{program.duration_years || '-'}</p>
                   <p className="text-xs text-gray-500">Years</p>
                 </div>
               </div>
@@ -254,16 +254,16 @@ const ManagePrograms = () => {
                 <p className="text-xs text-gray-500 mb-1">Required Subjects:</p>
                 <div className="flex flex-wrap gap-1">
                   {program.required_subjects?.map((subject, idx) => (
-                    <span key={idx} className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded">
+                    <span key={idx} className="px-2 py-1 bg-cyan-500/10 text-cyan-400 text-xs rounded border border-cyan-500/20">
                       {subject}
                     </span>
-                  )) || <span className="text-xs text-gray-400">None specified</span>}
+                  )) || <span className="text-xs text-gray-500">None specified</span>}
                 </div>
               </div>
 
-              <div className="mt-4 pt-4 border-t border-gray-100">
+              <div className="mt-4 pt-4 border-t border-gray-800">
                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                  program.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                  program.is_active ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'
                 }`}>
                   {program.is_active ? (
                     <><CheckCircle className="h-3 w-3 mr-1" /> Active</>
@@ -279,16 +279,16 @@ const ManagePrograms = () => {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-scale-in">
-            <div className="p-6 border-b border-gray-200 sticky top-0 bg-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-70">
+          <div className="bg-[#1a1a1a] rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-scale-in border border-gray-800">
+            <div className="p-6 border-b border-gray-800 sticky top-0 bg-[#1a1a1a]">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900">
+                <h2 className="text-xl font-semibold text-white">
                   {editingProgram ? 'Edit Program' : 'Add New Program'}
                 </h2>
                 <button
                   onClick={() => setShowModal(false)}
-                  className="p-2 text-gray-400 hover:text-gray-600"
+                  className="p-2 text-gray-400 hover:text-white"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -298,103 +298,103 @@ const ManagePrograms = () => {
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2">
-                  <label className="form-label">Program Name *</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Program Name *</label>
                   <input
                     type="text"
                     required
-                    className="form-input"
+                    className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="form-label">Department *</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Department *</label>
                   <input
                     type="text"
                     required
-                    className="form-input"
+                    className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white"
                     value={formData.department}
                     onChange={(e) => setFormData({ ...formData, department: e.target.value })}
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="form-label">Description</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Description</label>
                   <textarea
-                    className="form-input h-20 resize-none"
+                    className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white h-20 resize-none"
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   />
                 </div>
                 <div>
-                  <label className="form-label">Total Seats *</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Total Seats *</label>
                   <input
                     type="number"
                     required
                     min="1"
-                    className="form-input"
+                    className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white"
                     value={formData.total_seats}
                     onChange={(e) => setFormData({ ...formData, total_seats: e.target.value })}
                   />
                 </div>
                 <div>
-                  <label className="form-label">Min Percentage Required *</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Min Percentage Required *</label>
                   <input
                     type="number"
                     required
                     min="0"
                     max="100"
                     step="0.01"
-                    className="form-input"
+                    className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white"
                     value={formData.min_percentage}
                     onChange={(e) => setFormData({ ...formData, min_percentage: e.target.value })}
                   />
                 </div>
                 <div>
-                  <label className="form-label">Merit Seats</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Merit Seats</label>
                   <input
                     type="number"
                     min="0"
-                    className="form-input"
+                    className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white"
                     value={formData.merit_seats}
                     onChange={(e) => setFormData({ ...formData, merit_seats: e.target.value })}
                   />
                 </div>
                 <div>
-                  <label className="form-label">Quota Seats</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Quota Seats</label>
                   <input
                     type="number"
                     min="0"
-                    className="form-input"
+                    className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white"
                     value={formData.quota_seats}
                     onChange={(e) => setFormData({ ...formData, quota_seats: e.target.value })}
                   />
                 </div>
                 <div>
-                  <label className="form-label">Self Finance Seats</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Self Finance Seats</label>
                   <input
                     type="number"
                     min="0"
-                    className="form-input"
+                    className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white"
                     value={formData.self_finance_seats}
                     onChange={(e) => setFormData({ ...formData, self_finance_seats: e.target.value })}
                   />
                 </div>
                 <div>
-                  <label className="form-label">Duration (Years)</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Duration (Years)</label>
                   <input
                     type="number"
                     min="1"
                     max="10"
-                    className="form-input"
+                    className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white"
                     value={formData.duration_years}
                     onChange={(e) => setFormData({ ...formData, duration_years: e.target.value })}
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="form-label">Required Subjects (comma-separated)</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Required Subjects (comma-separated)</label>
                   <input
                     type="text"
-                    className="form-input"
+                    className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white"
                     placeholder="e.g., Mathematics, Physics, Chemistry"
                     value={formData.required_subjects}
                     onChange={(e) => setFormData({ ...formData, required_subjects: e.target.value })}
@@ -406,25 +406,25 @@ const ManagePrograms = () => {
                       type="checkbox"
                       checked={formData.is_active}
                       onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                      className="h-4 w-4 text-primary-600 rounded"
+                      className="h-4 w-4 text-cyan-500 rounded border-gray-700 bg-[#0f0f0f]"
                     />
-                    <span className="text-sm text-gray-700">Active Program</span>
+                    <span className="text-sm text-gray-300">Active Program</span>
                   </label>
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-800">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium"
+                  className="px-4 py-2 text-gray-400 hover:text-white font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="btn-primary flex items-center"
+                  className="flex items-center px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors disabled:opacity-50 font-medium"
                 >
                   {saving ? (
                     <>

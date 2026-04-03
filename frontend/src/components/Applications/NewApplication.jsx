@@ -153,28 +153,28 @@ const NewApplication = () => {
       {/* Header */}
       <div className="flex items-center gap-4">
         <button
-          onClick={() => step === 1 ? navigate('/applications') : setStep(1)}
-          className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+          onClick={() => step === 1 ? navigate('/dashboard/applications') : setStep(1)}
+          className="p-2 text-gray-400 hover:text-white transition-colors"
         >
           <ArrowLeft className="h-6 w-6" />
         </button>
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">New Application</h1>
-          <p className="text-gray-500">Apply for your desired program</p>
+          <h1 className="text-2xl lg:text-3xl font-bold text-white">New Application</h1>
+          <p className="text-gray-400 mt-1">Apply for your desired program</p>
         </div>
       </div>
 
       {/* Progress Steps */}
       <div className="flex items-center gap-4">
-        <div className={`flex items-center gap-2 ${step >= 1 ? 'text-primary-600' : 'text-gray-400'}`}>
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 1 ? 'bg-primary-600 text-white' : 'bg-gray-200'}`}>
+        <div className={`flex items-center gap-2 ${step >= 1 ? 'text-cyan-500' : 'text-gray-500'}`}>
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 1 ? 'bg-cyan-500 text-white' : 'bg-gray-700 text-gray-400'}`}>
             1
           </div>
           <span className="text-sm font-medium">Select Program</span>
         </div>
-        <div className="flex-1 h-0.5 bg-gray-200" />
-        <div className={`flex items-center gap-2 ${step >= 2 ? 'text-primary-600' : 'text-gray-400'}`}>
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 2 ? 'bg-primary-600 text-white' : 'bg-gray-200'}`}>
+        <div className="flex-1 h-0.5 bg-gray-700" />
+        <div className={`flex items-center gap-2 ${step >= 2 ? 'text-cyan-500' : 'text-gray-500'}`}>
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 2 ? 'bg-cyan-500 text-white' : 'bg-gray-700 text-gray-400'}`}>
             2
           </div>
           <span className="text-sm font-medium">Complete Details</span>
@@ -185,19 +185,19 @@ const NewApplication = () => {
         <div className="space-y-6">
           {/* AI Recommendations */}
           {recommendations.length > 0 && (
-            <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-100">
+            <div className="bg-gradient-to-r from-purple-900/50 to-pink-900/50 rounded-xl p-6 border border-purple-700/50">
               <button
                 onClick={() => setShowRecommendations(!showRecommendations)}
                 className="flex items-center justify-between w-full"
               >
                 <div className="flex items-center gap-3">
-                  <Sparkles className="h-6 w-6 text-purple-600" />
+                  <Sparkles className="h-6 w-6 text-purple-400" />
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">AI Recommended Programs</h3>
-                    <p className="text-sm text-gray-600">Based on your academic profile</p>
+                    <h3 className="text-lg font-semibold text-white">AI Recommended Programs</h3>
+                    <p className="text-sm text-gray-400">Based on your academic profile</p>
                   </div>
                 </div>
-                {showRecommendations ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                {showRecommendations ? <ChevronUp className="h-5 w-5 text-gray-400" /> : <ChevronDown className="h-5 w-5 text-gray-400" />}
               </button>
               
               {showRecommendations && (
@@ -206,19 +206,19 @@ const NewApplication = () => {
                     <button
                       key={index}
                       onClick={() => handleProgramSelect(rec.program)}
-                      className="text-left p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-all border-2 border-transparent hover:border-purple-300"
+                      className="text-left p-4 bg-[#1a1a1a] rounded-lg border border-gray-700 hover:border-purple-500 hover:bg-gray-800/50 transition-all"
                     >
                       <div className="flex items-center justify-between mb-2">
                         <span className={`text-xs font-medium px-2 py-1 rounded ${
-                          rec.match_level === 'high' ? 'bg-green-100 text-green-800' :
-                          rec.match_level === 'medium' ? 'bg-blue-100 text-blue-800' :
-                          'bg-yellow-100 text-yellow-800'
+                          rec.match_level === 'high' ? 'bg-green-500/20 text-green-400' :
+                          rec.match_level === 'medium' ? 'bg-cyan-500/20 text-cyan-400' :
+                          'bg-yellow-500/20 text-yellow-400'
                         }`}>
                           {rec.eligibility_score}% Match
                         </span>
                       </div>
-                      <h4 className="font-medium text-gray-900">{rec.program.name}</h4>
-                      <p className="text-sm text-gray-500">{rec.program.department}</p>
+                      <h4 className="font-medium text-white">{rec.program.name}</h4>
+                      <p className="text-sm text-gray-400">{rec.program.department}</p>
                     </button>
                   ))}
                 </div>
@@ -227,17 +227,17 @@ const NewApplication = () => {
           )}
 
           {/* All Programs */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">All Available Programs</h3>
+          <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-6">
+            <h3 className="text-lg font-semibold text-white mb-4">All Available Programs</h3>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {programs.map((program) => (
                 <button
                   key={program.id}
                   onClick={() => handleProgramSelect(program)}
-                  className="text-left p-4 border-2 border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-all"
+                  className="text-left p-4 border border-gray-700 rounded-lg hover:border-cyan-500 hover:bg-gray-800/50 transition-all"
                 >
-                  <h4 className="font-medium text-gray-900">{program.name}</h4>
-                  <p className="text-sm text-gray-500">{program.department}</p>
+                  <h4 className="font-medium text-white">{program.name}</h4>
+                  <p className="text-sm text-gray-400">{program.department}</p>
                   <div className="mt-3 flex items-center gap-2 text-xs text-gray-500">
                     <Info className="h-3 w-3" />
                     <span>Min {program.min_percentage}% required</span>
@@ -250,37 +250,37 @@ const NewApplication = () => {
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Selected Program Info */}
-          <div className="bg-primary-50 rounded-xl p-6">
+          <div className="bg-cyan-500/10 rounded-xl p-6 border border-cyan-500/20">
             <div className="flex items-start justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">{selectedProgram?.name}</h3>
-                <p className="text-gray-600">{selectedProgram?.department}</p>
+                <h3 className="text-lg font-semibold text-white">{selectedProgram?.name}</h3>
+                <p className="text-gray-400">{selectedProgram?.department}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setStep(1)}
-                className="text-sm text-primary-600 hover:text-primary-700"
+                className="text-sm text-cyan-400 hover:text-cyan-300"
               >
                 Change
               </button>
             </div>
             
             {eligibility && (
-              <div className="mt-4 p-4 bg-white rounded-lg">
+              <div className="mt-4 p-4 bg-[#1a1a1a] rounded-lg border border-gray-700">
                 <div className="flex items-center gap-2 mb-2">
                   {eligibility.eligible ? (
                     <>
                       <CheckCircle className="h-5 w-5 text-green-500" />
-                      <span className="font-medium text-green-700">You are eligible</span>
+                      <span className="font-medium text-green-400">You are eligible</span>
                     </>
                   ) : (
                     <>
                       <AlertCircle className="h-5 w-5 text-red-500" />
-                      <span className="font-medium text-red-700">You may not meet all requirements</span>
+                      <span className="font-medium text-red-400">You may not meet all requirements</span>
                     </>
                   )}
                 </div>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-400">
                   Required: {eligibility.percentage.required}% | Your percentage: {eligibility.percentage.obtained}%
                 </p>
               </div>
@@ -288,16 +288,16 @@ const NewApplication = () => {
           </div>
 
           {/* Academic Records */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Academic Records</h3>
+          <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-6">
+            <h3 className="text-lg font-semibold text-white mb-4">Academic Records</h3>
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
-                <label className="form-label">Overall Percentage</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Overall Percentage</label>
                 <input
                   type="number"
                   min="0"
                   max="100"
-                  className="form-input"
+                  className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white placeholder-gray-500"
                   placeholder="e.g., 85"
                   value={formData.academic_records.percentage}
                   onChange={(e) => setFormData({
@@ -308,12 +308,12 @@ const NewApplication = () => {
                 />
               </div>
               <div>
-                <label className="form-label">Passing Year</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Passing Year</label>
                 <input
                   type="number"
                   min="2000"
                   max="2030"
-                  className="form-input"
+                  className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white placeholder-gray-500"
                   placeholder="e.g., 2024"
                   value={formData.academic_records.passing_year}
                   onChange={(e) => setFormData({
@@ -324,10 +324,10 @@ const NewApplication = () => {
                 />
               </div>
               <div>
-                <label className="form-label">Board/University</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Board/University</label>
                 <input
                   type="text"
-                  className="form-input"
+                  className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white placeholder-gray-500"
                   placeholder="e.g., BISE Lahore"
                   value={formData.academic_records.board}
                   onChange={(e) => setFormData({
@@ -338,9 +338,9 @@ const NewApplication = () => {
                 />
               </div>
               <div>
-                <label className="form-label">Priority (1-5)</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Priority (1-5)</label>
                 <select
-                  className="form-input"
+                  className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white"
                   value={formData.priority}
                   onChange={(e) => setFormData({ ...formData, priority: parseInt(e.target.value) })}
                   required
@@ -354,17 +354,17 @@ const NewApplication = () => {
           </div>
 
           {/* Document Upload */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Supporting Documents</h3>
+          <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-6">
+            <h3 className="text-lg font-semibold text-white mb-4">Supporting Documents</h3>
             <div
               {...getRootProps()}
               className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-                isDragActive ? 'border-primary-500 bg-primary-50' : 'border-gray-300 hover:border-gray-400'
+                isDragActive ? 'border-cyan-500 bg-cyan-500/10' : 'border-gray-700 hover:border-gray-600 bg-[#0f0f0f]'
               }`}
             >
               <input {...getInputProps()} />
-              <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">
+              <Upload className="h-12 w-12 text-gray-500 mx-auto mb-4" />
+              <p className="text-gray-300">
                 {isDragActive ? 'Drop files here...' : 'Drag & drop files here, or click to select'}
               </p>
               <p className="text-sm text-gray-500 mt-2">PDF, PNG, JPG up to 10MB</p>
@@ -372,10 +372,10 @@ const NewApplication = () => {
             {formData.documents.length > 0 && (
               <div className="mt-4 space-y-2">
                 {formData.documents.map((doc, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div key={index} className="flex items-center justify-between p-3 bg-[#0f0f0f] rounded-lg border border-gray-700">
                     <div className="flex items-center gap-3">
                       <FileText className="h-5 w-5 text-gray-400" />
-                      <span className="text-sm text-gray-700">{doc.name}</span>
+                      <span className="text-sm text-gray-300">{doc.name}</span>
                     </div>
                     <button
                       type="button"
@@ -383,7 +383,7 @@ const NewApplication = () => {
                         ...formData,
                         documents: formData.documents.filter((_, i) => i !== index)
                       })}
-                      className="text-red-500 hover:text-red-700"
+                      className="text-red-400 hover:text-red-300 text-sm"
                     >
                       Remove
                     </button>
@@ -394,22 +394,22 @@ const NewApplication = () => {
           </div>
 
           {/* Additional Information */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Additional Information</h3>
+          <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-6">
+            <h3 className="text-lg font-semibold text-white mb-4">Additional Information</h3>
             <div className="space-y-4">
               <div>
-                <label className="form-label">Extracurricular Activities</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Extracurricular Activities</label>
                 <textarea
-                  className="form-input h-24 resize-none"
+                  className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white placeholder-gray-500 h-24 resize-none"
                   placeholder="Describe your extracurricular activities, achievements, etc."
                   value={formData.extracurriculars}
                   onChange={(e) => setFormData({ ...formData, extracurriculars: e.target.value })}
                 />
               </div>
               <div>
-                <label className="form-label">Personal Statement</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Personal Statement</label>
                 <textarea
-                  className="form-input h-32 resize-none"
+                  className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white placeholder-gray-500 h-32 resize-none"
                   placeholder="Why do you want to join this program?"
                   value={formData.personal_statement}
                   onChange={(e) => setFormData({ ...formData, personal_statement: e.target.value })}
@@ -423,14 +423,14 @@ const NewApplication = () => {
             <button
               type="button"
               onClick={() => setStep(1)}
-              className="px-6 py-2 text-gray-700 hover:text-gray-900 font-medium"
+              className="px-6 py-2 text-gray-400 hover:text-white font-medium"
             >
               Back
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="btn-primary px-8 flex items-center"
+              className="px-8 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors disabled:opacity-50 font-medium"
             >
               {submitting ? (
                 <>

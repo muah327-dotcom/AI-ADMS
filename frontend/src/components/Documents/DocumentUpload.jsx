@@ -86,13 +86,13 @@ const DocumentUpload = () => {
     <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
       {/* Header */}
       <div>
-        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Document Upload</h1>
-        <p className="text-gray-500 mt-1">Upload your documents for automatic data extraction using OCR</p>
+        <h1 className="text-2xl lg:text-3xl font-bold text-white">Document Upload</h1>
+        <p className="text-gray-400 mt-1">Upload your documents for automatic data extraction using OCR</p>
       </div>
 
       {/* Document Type Selection */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Select Document Type</h3>
+      <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-6">
+        <h3 className="text-lg font-semibold text-white mb-4">Select Document Type</h3>
         <div className="grid sm:grid-cols-3 gap-4">
           {[
             { id: 'cnic', name: 'CNIC / ID Card', icon: CreditCard, desc: 'Identity document' },
@@ -106,12 +106,12 @@ const DocumentUpload = () => {
                 onClick={() => setDocumentType(type.id)}
                 className={`p-4 rounded-xl border-2 text-left transition-all ${
                   documentType === type.id
-                    ? 'border-primary-500 bg-primary-50'
-                    : 'border-gray-200 hover:border-gray-300'
+                    ? 'border-cyan-500 bg-cyan-500/10'
+                    : 'border-gray-700 hover:border-gray-600'
                 }`}
               >
-                <Icon className={`h-8 w-8 mb-2 ${documentType === type.id ? 'text-primary-600' : 'text-gray-400'}`} />
-                <h4 className={`font-medium ${documentType === type.id ? 'text-primary-900' : 'text-gray-900'}`}>
+                <Icon className={`h-8 w-8 mb-2 ${documentType === type.id ? 'text-cyan-400' : 'text-gray-500'}`} />
+                <h4 className={`font-medium ${documentType === type.id ? 'text-white' : 'text-gray-300'}`}>
                   {type.name}
                 </h4>
                 <p className="text-sm text-gray-500">{type.desc}</p>
@@ -122,33 +122,33 @@ const DocumentUpload = () => {
       </div>
 
       {/* Upload Area */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Upload Document</h3>
+      <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-6">
+        <h3 className="text-lg font-semibold text-white mb-4">Upload Document</h3>
         <div
           {...getRootProps()}
           className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
             isDragActive
-              ? 'border-primary-500 bg-primary-50'
-              : 'border-gray-300 hover:border-gray-400 bg-gray-50'
+              ? 'border-cyan-500 bg-cyan-500/10'
+              : 'border-gray-700 hover:border-gray-600 bg-[#0f0f0f]'
           } ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           <input {...getInputProps()} />
-          <div className="mx-auto w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mb-4">
+          <div className="mx-auto w-16 h-16 bg-cyan-500/10 rounded-full flex items-center justify-center mb-4">
             {uploading ? (
-              <Loader2 className="h-8 w-8 text-primary-600 animate-spin" />
+              <Loader2 className="h-8 w-8 text-cyan-400 animate-spin" />
             ) : (
-              <Scan className="h-8 w-8 text-primary-600" />
+              <Scan className="h-8 w-8 text-cyan-400" />
             )}
           </div>
-          <p className="text-lg font-medium text-gray-900">
+          <p className="text-lg font-medium text-white">
             {uploading ? 'Processing document...' : 'Drop your document here'}
           </p>
-          <p className="text-gray-500 mt-2">or click to browse</p>
-          <p className="text-sm text-gray-400 mt-4">
+          <p className="text-gray-400 mt-2">or click to browse</p>
+          <p className="text-sm text-gray-500 mt-4">
             Supported formats: PDF, PNG, JPG (max 10MB)
           </p>
           {processingFile && (
-            <p className="text-sm text-primary-600 mt-2">
+            <p className="text-sm text-cyan-400 mt-2">
               Processing: {processingFile.name}
             </p>
           )}
@@ -157,42 +157,42 @@ const DocumentUpload = () => {
 
       {/* Extracted Data Preview */}
       {extractedData && (
-        <div className="bg-white rounded-xl shadow-sm p-6 animate-scale-in">
+        <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-6 animate-scale-in">
           <div className="flex items-center gap-3 mb-4">
-            <Sparkles className="h-6 w-6 text-purple-500" />
-            <h3 className="text-lg font-semibold text-gray-900">AI Extracted Data</h3>
+            <Sparkles className="h-6 w-6 text-purple-400" />
+            <h3 className="text-lg font-semibold text-white">AI Extracted Data</h3>
           </div>
-          <div className="bg-gray-50 rounded-lg p-4">
+          <div className="bg-[#0f0f0f] rounded-lg p-4 border border-gray-800">
             {documentType === 'cnic' ? (
               <div className="grid sm:grid-cols-2 gap-4">
                 {extractedData.cnic && (
                   <div>
                     <label className="text-xs font-medium text-gray-500 uppercase">CNIC Number</label>
-                    <p className="text-gray-900 font-medium">{extractedData.cnic}</p>
+                    <p className="text-white font-medium">{extractedData.cnic}</p>
                   </div>
                 )}
                 {extractedData.name && (
                   <div>
                     <label className="text-xs font-medium text-gray-500 uppercase">Name</label>
-                    <p className="text-gray-900 font-medium">{extractedData.name}</p>
+                    <p className="text-white font-medium">{extractedData.name}</p>
                   </div>
                 )}
                 {extractedData.father_name && (
                   <div>
                     <label className="text-xs font-medium text-gray-500 uppercase">Father&apos;s Name</label>
-                    <p className="text-gray-900 font-medium">{extractedData.father_name}</p>
+                    <p className="text-white font-medium">{extractedData.father_name}</p>
                   </div>
                 )}
                 {extractedData.date_of_birth && (
                   <div>
                     <label className="text-xs font-medium text-gray-500 uppercase">Date of Birth</label>
-                    <p className="text-gray-900 font-medium">{extractedData.date_of_birth}</p>
+                    <p className="text-white font-medium">{extractedData.date_of_birth}</p>
                   </div>
                 )}
                 {extractedData.address && (
                   <div className="sm:col-span-2">
                     <label className="text-xs font-medium text-gray-500 uppercase">Address</label>
-                    <p className="text-gray-900">{extractedData.address}</p>
+                    <p className="text-white">{extractedData.address}</p>
                   </div>
                 )}
               </div>
@@ -201,25 +201,25 @@ const DocumentUpload = () => {
                 {extractedData.percentage && (
                   <div>
                     <label className="text-xs font-medium text-gray-500 uppercase">Percentage</label>
-                    <p className="text-gray-900 font-medium">{extractedData.percentage}%</p>
+                    <p className="text-white font-medium">{extractedData.percentage}%</p>
                   </div>
                 )}
                 {extractedData.grade && (
                   <div>
                     <label className="text-xs font-medium text-gray-500 uppercase">Grade</label>
-                    <p className="text-gray-900 font-medium">{extractedData.grade}</p>
+                    <p className="text-white font-medium">{extractedData.grade}</p>
                   </div>
                 )}
                 {extractedData.passing_year && (
                   <div>
                     <label className="text-xs font-medium text-gray-500 uppercase">Passing Year</label>
-                    <p className="text-gray-900 font-medium">{extractedData.passing_year}</p>
+                    <p className="text-white font-medium">{extractedData.passing_year}</p>
                   </div>
                 )}
                 {extractedData.board && (
                   <div>
                     <label className="text-xs font-medium text-gray-500 uppercase">Board/University</label>
-                    <p className="text-gray-900 font-medium">{extractedData.board}</p>
+                    <p className="text-white font-medium">{extractedData.board}</p>
                   </div>
                 )}
                 {extractedData.subject_scores && Object.keys(extractedData.subject_scores).length > 0 && (
@@ -227,9 +227,9 @@ const DocumentUpload = () => {
                     <label className="text-xs font-medium text-gray-500 uppercase">Subject Scores</label>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
                       {Object.entries(extractedData.subject_scores).map(([subject, score]) => (
-                        <div key={subject} className="bg-white rounded px-3 py-2">
-                          <span className="text-sm text-gray-600">{subject}:</span>
-                          <span className="text-sm font-medium text-gray-900 ml-2">{score}</span>
+                        <div key={subject} className="bg-[#1a1a1a] rounded px-3 py-2 border border-gray-800">
+                          <span className="text-sm text-gray-400">{subject}:</span>
+                          <span className="text-sm font-medium text-white ml-2">{score}</span>
                         </div>
                       ))}
                     </div>
@@ -237,15 +237,15 @@ const DocumentUpload = () => {
                 )}
               </div>
             ) : (
-              <div className="text-gray-600">
+              <div className="text-gray-400">
                 <p>Document processed. Raw text extracted:</p>
-                <pre className="mt-2 p-3 bg-white rounded text-sm overflow-auto max-h-48">
+                <pre className="mt-2 p-3 bg-[#1a1a1a] rounded text-sm overflow-auto max-h-48 text-gray-300 border border-gray-800">
                   {extractedData.raw_text}
                 </pre>
               </div>
             )}
           </div>
-          <div className="mt-4 flex items-center gap-2 text-sm text-green-600">
+          <div className="mt-4 flex items-center gap-2 text-sm text-green-400">
             <CheckCircle className="h-4 w-4" />
             <span>Data extracted successfully</span>
           </div>
@@ -254,23 +254,23 @@ const DocumentUpload = () => {
 
       {/* Uploaded Files List */}
       {uploadedFiles.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Uploaded Documents</h3>
+        <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-6">
+          <h3 className="text-lg font-semibold text-white mb-4">Uploaded Documents</h3>
           <div className="space-y-3">
             {uploadedFiles.map((file, index) => (
-              <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div key={index} className="flex items-center justify-between p-4 bg-[#0f0f0f] rounded-lg border border-gray-800">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-primary-100 rounded">
-                    <FileText className="h-5 w-5 text-primary-600" />
+                  <div className="p-2 bg-cyan-500/10 rounded">
+                    <FileText className="h-5 w-5 text-cyan-400" />
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900">{file.name}</p>
+                    <p className="font-medium text-white">{file.name}</p>
                     <p className="text-sm text-gray-500 capitalize">{file.type} • Confidence: {file.confidence?.toFixed(1)}%</p>
                   </div>
                 </div>
                 <button
                   onClick={() => removeFile(index)}
-                  className="p-2 text-red-500 hover:text-red-700 transition-colors"
+                  className="p-2 text-red-400 hover:text-red-300 transition-colors"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -281,12 +281,12 @@ const DocumentUpload = () => {
       )}
 
       {/* Tips Section */}
-      <div className="bg-blue-50 rounded-xl p-6 border border-blue-100">
+      <div className="bg-cyan-500/10 rounded-xl p-6 border border-cyan-500/20">
         <div className="flex items-start gap-3">
-          <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
+          <AlertCircle className="h-5 w-5 text-cyan-400 mt-0.5" />
           <div>
-            <h4 className="font-medium text-blue-800">Tips for Best Results</h4>
-            <ul className="text-sm text-blue-700 mt-2 space-y-1 list-disc list-inside">
+            <h4 className="font-medium text-cyan-400">Tips for Best Results</h4>
+            <ul className="text-sm text-cyan-300/80 mt-2 space-y-1 list-disc list-inside">
               <li>Ensure documents are clear and well-lit</li>
               <li>Make sure all text is readable and not blurry</li>
               <li>Upload the complete document without cropping</li>

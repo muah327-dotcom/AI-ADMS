@@ -269,13 +269,19 @@ const AdminDashboard = () => {
                 <div key={app.id} className="p-3 hover:bg-gray-800/50 transition-colors">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                      <div className="h-8 w-8 rounded-full bg-blue-600/20 flex items-center justify-center">
-                        <span className="text-blue-400 font-semibold text-sm">
-                          {app.student?.full_name?.charAt(0)}
-                        </span>
-                      </div>
+                      {app.student?.full_name ? (
+                        <div className="h-8 w-8 rounded-full bg-blue-600/20 flex items-center justify-center">
+                          <span className="text-blue-400 font-semibold text-sm">
+                            {app.student.full_name.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="h-8 w-8 rounded-full bg-gray-700 flex items-center justify-center">
+                          <Users className="h-4 w-4 text-gray-500" />
+                        </div>
+                      )}
                       <div>
-                        <p className="text-sm font-medium text-white">{app.student?.full_name}</p>
+                        <p className="text-sm font-medium text-white">{app.student?.full_name || 'Unknown Student'}</p>
                         <p className="text-xs text-gray-500">{app.program?.name}</p>
                       </div>
                     </div>

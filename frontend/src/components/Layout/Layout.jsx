@@ -34,10 +34,10 @@ const Layout = () => {
 
   const studentNavItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
-    { name: 'My Applications', icon: FileText, path: '/applications' },
-    { name: 'Program Recommendations', icon: Sparkles, path: '/recommendations' },
-    { name: 'Document Upload', icon: Upload, path: '/documents' },
-    { name: 'Merit List', icon: Award, path: '/merit-list' },
+    { name: 'My Applications', icon: FileText, path: '/dashboard/applications' },
+    { name: 'Program Recommendations', icon: Sparkles, path: '/dashboard/recommendations' },
+    { name: 'Document Upload', icon: Upload, path: '/dashboard/documents' },
+    { name: 'Merit List', icon: Award, path: '/dashboard/merit-list' },
   ];
 
   const adminNavItems = [
@@ -122,10 +122,18 @@ const Layout = () => {
                 onClick={() => setProfileOpen(!profileOpen)}
                 className="flex items-center w-full px-4 py-3 text-sm font-medium text-gray-300 rounded-lg hover:bg-gray-800 transition-colors"
               >
-                <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center mr-3">
-                  <span className="text-white font-semibold text-sm">
-                    {user?.full_name?.charAt(0).toUpperCase()}
-                  </span>
+                <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center mr-3 overflow-hidden">
+                  {user?.avatar_url ? (
+                    <img 
+                      src={user.avatar_url} 
+                      alt={user.full_name} 
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-white font-semibold text-sm">
+                      {user?.full_name?.charAt(0).toUpperCase()}
+                    </span>
+                  )}
                 </div>
                 <div className="flex-1 text-left">
                   <p className="text-sm font-medium text-white truncate">{user?.full_name}</p>
@@ -137,7 +145,7 @@ const Layout = () => {
               {profileOpen && (
                 <div className="absolute bottom-full left-0 right-0 mb-2 bg-[#1a1a1a] rounded-lg shadow-lg border border-gray-700 py-1">
                   <Link
-                    to="/settings"
+                    to={isAdmin ? '/admin/settings' : '/dashboard/settings'}
                     className="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gray-800"
                   >
                     <Settings className="h-4 w-4 mr-2" />
@@ -168,10 +176,7 @@ const Layout = () => {
           </button>
 
           <div className="flex items-center space-x-4">
-            <button className="relative p-2 text-gray-400 hover:text-white">
-              <Bell className="h-6 w-6" />
-              <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
-            </button>
+            {/* Notification bell removed */}
           </div>
         </header>
 
