@@ -126,12 +126,11 @@ router.get('/programs', async (req, res) => {
     const { data: programs, error } = await supabase
       .from('programs')
       .select('*')
-      .eq('is_active', true)
       .order('name');
 
     if (error) throw error;
 
-    res.json({ programs });
+    res.json({ programs: programs || [] });
   } catch (error) {
     console.error('Fetch programs error:', error);
     res.status(500).json({ error: 'Failed to fetch programs' });

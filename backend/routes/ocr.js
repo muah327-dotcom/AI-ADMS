@@ -87,16 +87,24 @@ router.post('/extract', upload.single('document'), async (req, res) => {
     const { document_type } = req.body;
     const imageBuffer = req.file.buffer;
 
-    const result = await Tesseract.recognize(
-      imageBuffer,
-      'eng',
-      {
-        logger: m => console.log(m)
-      }
-    );
-
-    const extractedText = result.data.text;
+    let extractedText = '';
+    let confidence = 0;
     
+    try {
+      const result = await Tesseract.recognize(
+        imageBuffer,
+        'eng',
+        {
+          logger: m => console.log(m)
+        }
+      );
+      extractedText = result?.data?.text || '';
+      confidence = result?.data?.confidence || 0;
+    } catch (tesseractError) {
+      console.error('Tesseract error:', tesseractError);
+      return res.status(500).json({ error: 'OCR processing failed' });
+    }
+
     let extractedData;
     if (document_type === 'cnic') {
       extractedData = extractCNICData(extractedText);
@@ -110,25 +118,35 @@ router.post('/extract', upload.single('document'), async (req, res) => {
       };
     }
 
-    const { data: savedDoc, error } = await supabase
-      .from('extracted_documents')
-      .insert([{
-        user_id: req.user.id,
-        document_type,
-        extracted_data: extractedData,
-        raw_text: extractedText,
-        created_at: new Date().toISOString()
-      }])
-      .select()
-      .single();
+    // Save to database (but don't fail if it doesn't work)
+    let savedDocId = null;
+    try {
+      const { data: savedDoc, error } = await supabase
+        .from('extracted_documents')
+        .insert([{
+          user_id: req.user.id,
+          document_type,
+          extracted_data: extractedData,
+          raw_text: extractedText,
+          created_at: new Date().toISOString()
+        }])
+        .select()
+        .single();
 
-    if (error) console.error('Save document error:', error);
+      if (error) {
+        console.error('Save document error:', error);
+      } else {
+        savedDocId = savedDoc?.id;
+      }
+    } catch (dbError) {
+      console.error('Database error:', dbError);
+    }
 
     res.json({
       message: 'Document processed successfully',
       extracted_data: extractedData,
-      confidence: result.data.confidence,
-      document_id: savedDoc?.id
+      confidence: confidence,
+      document_id: savedDocId
     });
   } catch (error) {
     console.error('OCR extraction error:', error);

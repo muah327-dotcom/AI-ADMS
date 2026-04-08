@@ -144,14 +144,29 @@ router.post('/login', [
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    await supabase
-      .from('users')
-      .update({ last_login: new Date().toISOString() })
-      .eq('id', user.id);
+    console.log('Updating last login...');
+    try {
+      await supabase
+        .from('users')
+        .update({ last_login: new Date().toISOString() })
+        .eq('id', user.id);
+      console.log('Last login updated');
+    } catch (updateError) {
+      console.error('Failed to update last_login:', updateError);
+    }
 
-    const token = generateToken(user);
+    console.log('Generating token...');
+    let token;
+    try {
+      token = generateToken(user);
+      console.log('Token generated successfully');
+    } catch (tokenError) {
+      console.error('Token generation error:', tokenError);
+      return res.status(500).json({ error: 'Failed to generate authentication token' });
+    }
 
-    res.json({
+    console.log('Sending response...');
+    return res.json({
       message: 'Login successful',
       user: {
         id: user.id,
@@ -167,7 +182,7 @@ router.post('/login', [
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Failed to login' });
+    return res.status(500).json({ error: 'Failed to login' });
   }
 });
 
