@@ -10,7 +10,6 @@ import {
   ChevronRight,
   Menu,
   X,
-  GraduationCap,
   FileText,
   Users,
   ArrowRight,
@@ -136,8 +135,8 @@ const Navigation = ({ onNavClick }) => {
             className="flex items-center gap-2"
             whileHover={{ scale: 1.05 }}
           >
-            <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center">
-              <GraduationCap className="w-6 h-6 text-white" />
+            <div className="w-10 h-10 flex items-center justify-center">
+              <img src="/logo.png" alt="GGC Township Logo" className="w-10 h-10 object-contain" />
             </div>
             <div>
               <span className={`font-bold text-lg ${isScrolled ? 'text-gray-900' : 'text-gray-900'}`}>
@@ -980,8 +979,8 @@ const Footer = ({ onNavClick }) => {
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center">
-                <GraduationCap className="w-6 h-6 text-white" />
+              <div className="w-10 h-10 flex items-center justify-center">
+                <img src="/logo.png" alt="GGC Township Logo" className="w-10 h-10 object-contain" />
               </div>
               <span className="font-bold text-lg">GGC Township</span>
             </div>

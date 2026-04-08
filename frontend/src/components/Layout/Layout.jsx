@@ -75,14 +75,14 @@ const Layout = () => {
         }`}
       >
         {/* Logo */}
-        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-800 flex-shrink-0">
+        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
             <Link to={isAdmin ? '/admin' : '/dashboard'} className="flex items-center space-x-2">
-              <div className="bg-blue-600 p-2 rounded-lg">
-                <GraduationCap className="h-6 w-6 text-white" />
+              <div className="w-10 h-10 flex items-center justify-center">
+                <img src="/logo.png" alt="GGC Township Logo" className="w-10 h-10 object-contain" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-white leading-tight">AI Admission</h1>
-                <p className="text-xs text-gray-400">Management System</p>
+                <h1 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">GGC Township</h1>
+                <p className="text-xs text-gray-500 dark:text-gray-400">AI-Enhanced Admissions</p>
               </div>
             </Link>
             <button
