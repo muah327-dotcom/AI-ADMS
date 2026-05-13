@@ -1,6 +1,7 @@
 import express from 'express';
-import { supabase } from '../config/supabase.js';
 import { authenticateToken, requireRole } from '../middleware/auth.js';
+import Application from '../models/Application.js';
+import Program from '../models/Program.js';
 
 const router = express.Router();
 
@@ -11,24 +12,16 @@ router.post('/generate/:programId', requireRole(['admin']), async (req, res) => 
     const { programId } = req.params;
     const { quota_percentages = { merit: 80, quota: 10, self_finance: 10 } } = req.body;
 
-    const { data: program } = await supabase
-      .from('programs')
-      .select('*')
-      .eq('id', programId)
-      .single();
+    const program = await Program.findById(programId);
 
     if (!program) {
       return res.status(404).json({ error: 'Program not found' });
     }
 
-    const { data: applications } = await supabase
-      .from('applications')
-      .select(`
-        *,
-        student:student_id (full_name, email, cnic, academic_records)
-      `)
-      .eq('program_id', programId)
-      .eq('status', 'pending');
+    const applications = await Application.find({
+      program_id: programId,
+      status: 'pending'
+    }).populate('user_id', 'full_name email cnic phone');
 
     if (!applications || applications.length === 0) {
       return res.status(400).json({ error: 'No pending applications found for this program' });
@@ -84,34 +77,25 @@ router.post('/generate/:programId', requireRole(['admin']), async (req, res) => 
       });
     }
 
-    await supabase.from('merit_list').delete().eq('program_id', programId);
-
-    const { data: insertedMeritList, error } = await supabase
-      .from('merit_list')
-      .insert(meritList)
-      .select();
-
-    if (error) throw error;
-
+    // Update applications directly based on merit list
     for (const entry of meritList.filter(e => e.status === 'selected')) {
-      await supabase
-        .from('applications')
-        .update({ 
-          status: 'approved', 
-          admission_category: entry.category,
-          merit_rank: entry.rank 
-        })
-        .eq('id', entry.application_id);
+      await Application.findByIdAndUpdate(
+        entry.application_id,
+        { 
+          status: 'approved',
+          remarks: `Selected via ${entry.category} category, Rank: ${entry.rank}`
+        }
+      );
     }
 
     for (const entry of meritList.filter(e => e.status === 'waitlisted')) {
-      await supabase
-        .from('applications')
-        .update({ 
-          status: 'waitlisted', 
-          merit_rank: entry.rank 
-        })
-        .eq('id', entry.application_id);
+      await Application.findByIdAndUpdate(
+        entry.application_id,
+        { 
+          status: 'waitlisted',
+          remarks: `Waitlisted, Rank: ${entry.rank}`
+        }
+      );
     }
 
     res.json({
@@ -120,7 +104,7 @@ router.post('/generate/:programId', requireRole(['admin']), async (req, res) => 
       totalApplications: applications.length,
       selected: meritList.filter(e => e.status === 'selected').length,
       waitlisted: meritList.filter(e => e.status === 'waitlisted').length,
-      meritList: insertedMeritList
+      meritList
     });
   } catch (error) {
     console.error('Generate merit list error:', error);
@@ -131,25 +115,22 @@ router.post('/generate/:programId', requireRole(['admin']), async (req, res) => 
 router.get('/program/:programId', async (req, res) => {
   try {
     const { programId } = req.params;
-    const { category } = req.query;
 
-    let query = supabase
-      .from('merit_list')
-      .select(`
-        *,
-        student:student_id (full_name, email, cnic),
-        program:program_id (name, department)
-      `)
-      .eq('program_id', programId)
-      .order('rank', { ascending: true });
+    // Get approved applications for this program as merit list
+    const applications = await Application.find({
+      program_id: programId,
+      status: { $in: ['approved', 'waitlisted'] }
+    }).populate('user_id', 'full_name email cnic')
+      .sort({ created_at: -1 });
 
-    if (category) {
-      query = query.eq('category', category);
-    }
-
-    const { data: meritList, error } = await query;
-
-    if (error) throw error;
+    const meritList = applications.map((app, index) => ({
+      id: app._id,
+      rank: index + 1,
+      student_id: app.user_id,
+      program_id: app.program_id,
+      status: app.status,
+      score: (app.matric_percentage + app.fsc_percentage) / 2
+    }));
 
     res.json({ meritList });
   } catch (error) {
@@ -162,16 +143,20 @@ router.get('/student/my-position', async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const { data: meritEntries, error } = await supabase
-      .from('merit_list')
-      .select(`
-        *,
-        program:program_id (name, department, total_seats)
-      `)
-      .eq('student_id', userId)
-      .order('generated_at', { ascending: false });
+    const applications = await Application.find({
+      user_id: userId,
+      status: { $in: ['approved', 'waitlisted'] }
+    }).populate('program_id', 'name department total_seats')
+      .sort({ created_at: -1 });
 
-    if (error) throw error;
+    const meritEntries = applications.map((app, index) => ({
+      id: app._id,
+      rank: index + 1,
+      student_id: app.user_id,
+      program_id: app.program_id,
+      status: app.status,
+      score: (app.matric_percentage + app.fsc_percentage) / 2
+    }));
 
     res.json({ meritEntries });
   } catch (error) {
@@ -182,16 +167,21 @@ router.get('/student/my-position', async (req, res) => {
 
 router.get('/all', requireRole(['admin']), async (req, res) => {
   try {
-    const { data: meritLists, error } = await supabase
-      .from('merit_list')
-      .select(`
-        *,
-        student:student_id (full_name, email, cnic),
-        program:program_id (name, department)
-      `)
-      .order('generated_at', { ascending: false });
+    const applications = await Application.find({
+      status: { $in: ['approved', 'waitlisted'] }
+    }).populate('user_id', 'full_name email cnic')
+      .populate('program_id', 'name department')
+      .sort({ created_at: -1 });
 
-    if (error) throw error;
+    const meritLists = applications.map((app, index) => ({
+      id: app._id,
+      student_id: app.user_id,
+      program_id: app.program_id,
+      status: app.status,
+      rank: index + 1,
+      score: (app.matric_percentage + app.fsc_percentage) / 2,
+      generated_at: app.created_at
+    }));
 
     res.json({ meritLists });
   } catch (error) {
