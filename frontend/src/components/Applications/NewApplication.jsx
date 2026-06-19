@@ -26,9 +26,10 @@ const NewApplication = () => {
   const [showRecommendations, setShowRecommendations] = useState(false);
   const [step, setStep] = useState(1);
   
+  const [usedPriorities, setUsedPriorities] = useState([]);
   const [formData, setFormData] = useState({
     program_id: '',
-    priority: 1,
+    priority: '',
     academic_records: {
       percentage: '',
       passing_year: '',
@@ -61,6 +62,16 @@ const NewApplication = () => {
         const data = await recsRes.json();
         setRecommendations(data.recommendations?.slice(0, 5) || []);
       }
+
+      // Fetch existing applications to find already-used priorities
+      const appsRes = await fetch('/api/applications/my-applications', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (appsRes.ok) {
+        const appsData = await appsRes.json();
+        const used = (appsData.applications || []).map(a => a.priority).filter(Boolean);
+        setUsedPriorities(used);
+      }
     } catch (error) {
       console.error('Fetch error:', error);
     } finally {
@@ -86,13 +97,23 @@ const NewApplication = () => {
 
   const handleProgramSelect = (program) => {
     setSelectedProgram(program);
-    setFormData({ ...formData, program_id: program.id });
-    checkEligibility(program.id);
+    const programId = program._id || program.id;
+    setFormData({ ...formData, program_id: programId });
+    checkEligibility(programId);
     setStep(2);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Frontend eligibility guard
+    const enteredPct = parseFloat(formData.academic_records.percentage);
+    const minPct = selectedProgram?.min_percentage ?? 0;
+    if (!isNaN(enteredPct) && enteredPct < minPct) {
+      toast.error(`Your percentage (${enteredPct}%) is below the minimum required (${minPct}%) for ${selectedProgram?.name}. Application rejected.`);
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -110,7 +131,7 @@ const NewApplication = () => {
 
       if (response.ok) {
         toast.success('Application submitted successfully!');
-        navigate('/applications');
+        navigate('/dashboard/applications');
       } else {
         toast.error(data.error || 'Failed to submit application');
       }
@@ -232,7 +253,7 @@ const NewApplication = () => {
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {programs.map((program) => (
                 <button
-                  key={program.id}
+                  key={program._id || program.id}
                   onClick={() => handleProgramSelect(program)}
                   className="text-left p-4 border border-gray-700 rounded-lg hover:border-cyan-500 hover:bg-gray-800/50 transition-all"
                 >
@@ -297,7 +318,12 @@ const NewApplication = () => {
                   type="number"
                   min="0"
                   max="100"
-                  className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white placeholder-gray-500"
+                  className={`w-full px-4 py-2 bg-[#0f0f0f] border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white placeholder-gray-500 ${
+                    formData.academic_records.percentage !== '' &&
+                    parseFloat(formData.academic_records.percentage) < (selectedProgram?.min_percentage ?? 0)
+                      ? 'border-red-500'
+                      : 'border-gray-700'
+                  }`}
                   placeholder="e.g., 85"
                   value={formData.academic_records.percentage}
                   onChange={(e) => setFormData({
@@ -306,6 +332,13 @@ const NewApplication = () => {
                   })}
                   required
                 />
+                {formData.academic_records.percentage !== '' &&
+                  parseFloat(formData.academic_records.percentage) < (selectedProgram?.min_percentage ?? 0) && (
+                  <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    Below minimum required percentage ({selectedProgram?.min_percentage}%). Application will be rejected.
+                  </p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Passing Year</label>
@@ -345,10 +378,21 @@ const NewApplication = () => {
                   onChange={(e) => setFormData({ ...formData, priority: parseInt(e.target.value) })}
                   required
                 >
-                  {[1, 2, 3, 4, 5].map(n => (
-                    <option key={n} value={n}>{n} {n === 1 ? '(Highest)' : n === 5 ? '(Lowest)' : ''}</option>
-                  ))}
+                  <option value="" disabled>Select priority</option>
+                  {[1, 2, 3, 4, 5].map(n => {
+                    const isUsed = usedPriorities.includes(n);
+                    return (
+                      <option key={n} value={n} disabled={isUsed}>
+                        {n} {n === 1 ? '(Highest)' : n === 5 ? '(Lowest)' : ''}{isUsed ? ' — Already used' : ''}
+                      </option>
+                    );
+                  })}
                 </select>
+                {usedPriorities.length > 0 && (
+                  <p className="mt-1 text-xs text-yellow-400">
+                    Priority {usedPriorities.sort().join(', ')} already used in your other applications.
+                  </p>
+                )}
               </div>
             </div>
           </div>

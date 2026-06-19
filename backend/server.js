@@ -1,6 +1,11 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import mongoose from 'mongoose';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import connectDB from './config/db.js';
+import { initGridFS } from './utils/gridfs.js';
 import authRoutes from './routes/auth.js';
 import applicationRoutes from './routes/applications.js';
 import adminRoutes from './routes/admin.js';
@@ -9,7 +14,16 @@ import analyticsRoutes from './routes/analytics.js';
 import ocrRoutes from './routes/ocr.js';
 import recommendationRoutes from './routes/recommendations.js';
 
-dotenv.config();
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, '.env') });
+
+// Connect to MongoDB
+connectDB();
+
+// Initialize GridFS after connection
+mongoose.connection.once('open', () => {
+  initGridFS();
+});
 
 const app = express();
 const PORT = process.env.PORT || 3001;

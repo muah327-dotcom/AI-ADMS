@@ -66,7 +66,7 @@ const ManagePrograms = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const url = editingProgram ? `/api/admin/programs/${editingProgram.id}` : '/api/admin/programs';
+      const url = editingProgram ? `/api/admin/programs/${editingProgram._id}` : '/api/admin/programs';
       const method = editingProgram ? 'PATCH' : 'POST';
 
       const payload = {
@@ -210,7 +210,7 @@ const ManagePrograms = () => {
       {/* Programs Grid */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredPrograms.map((program) => (
-          <div key={program.id} className="bg-[#1a1a1a] rounded-xl border border-gray-800 overflow-hidden hover:border-gray-700 transition-colors">
+          <div key={program._id} className="bg-[#1a1a1a] rounded-xl border border-gray-800 overflow-hidden hover:border-gray-700 transition-colors">
             <div className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="p-3 bg-cyan-500/10 rounded-lg border border-cyan-500/20">
@@ -224,7 +224,7 @@ const ManagePrograms = () => {
                     <Edit2 className="h-4 w-4" />
                   </button>
                   <button
-                    onClick={() => handleDelete(program.id)}
+                    onClick={() => handleDelete(program._id)}
                     className="p-2 text-gray-400 hover:text-red-400 transition-colors"
                   >
                     <Trash2 className="h-4 w-4" />
