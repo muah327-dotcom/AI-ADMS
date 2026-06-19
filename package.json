@@ -15,8 +15,12 @@
     "start": "cd backend && npm.cmd start"
   },
   "devDependencies": {
+<<<<<<< HEAD
     "concurrently": "^8.2.2",
     "mongodb-memory-server": "^11.2.0"
+=======
+    "concurrently": "^8.2.2"
+>>>>>>> 22444604304d004f5dc6a010540d770e3147b64a
   },
   "dependencies": {
     "mongodb": "^7.2.0"

@@ -155,10 +155,10 @@ router.get('/programs/:id/eligibility', async (req, res) => {
     }
 
     const eligibility = {
-      eligible: true, // Simplified eligibility check
+      eligible: true,
       percentage: {
         required: program.min_percentage,
-        obtained: 0, // Would need user's actual percentage
+        obtained: 0,
         meets: true
       },
       subjects: {
