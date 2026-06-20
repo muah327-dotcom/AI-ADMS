@@ -15,14 +15,6 @@
     "start": "cd backend && npm.cmd start"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2",
-    "mongodb-memory-server": "^11.2.0"
-  },
-  "dependencies": {
-    "mongodb": "^7.2.0"
-  },
-  "main": "index.js",
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+    "concurrently": "^8.2.2"
+  }
 }

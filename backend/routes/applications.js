@@ -40,7 +40,20 @@ router.post('/', [
     if (existingPriorityApp) {
       return res.status(400).json({ error: `You have already selected priority ${priority} for another program.` });
     }
+    // Fetch program and enforce eligibility
+    const program = await Program.findById(program_id);
+    if (!program) {
+      return res.status(404).json({ error: 'Program not found' });
+    }
 
+    const submittedPercentage = parseFloat(academic_records.percentage || academic_records.fsc_percentage || academic_records.matric_percentage || 0);
+    const isEligible = submittedPercentage >= program.min_percentage;
+
+    if (!isEligible) {
+      return res.status(400).json({
+        error: `Your percentage (${submittedPercentage}%) is below the minimum required percentage (${program.min_percentage}%) for ${program.name}. Application cannot be submitted.`
+      });
+    }
     const sanitizedDocuments = (documents || []).map(doc => {
       const allowedTypes = ['cnic', 'matric', 'fsc', 'entry_test', 'other'];
       let docType = doc.type;
@@ -158,6 +171,30 @@ router.get('/programs/:id/eligibility', async (req, res) => {
   } catch (error) {
     console.error('Eligibility check error:', error);
     res.status(500).json({ error: 'Failed to check eligibility' });
+  }
+});
+
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    const application = await Application.findById(id);
+
+    if (!application) {
+      return res.status(404).json({ error: 'Application not found' });
+    }
+
+    if (application.user_id.toString() !== userId.toString()) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    await Application.findByIdAndDelete(id);
+
+    res.json({ message: 'Application deleted successfully' });
+  } catch (error) {
+    console.error('Delete application error:', error);
+    res.status(500).json({ error: 'Failed to delete application' });
   }
 });
 

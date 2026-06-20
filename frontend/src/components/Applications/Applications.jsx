@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import {
   FileText,
   Plus,
@@ -7,6 +8,7 @@ import {
   CheckCircle,
   AlertCircle,
   Eye,
+  Trash2,
   Loader2,
   Search,
   Filter
@@ -17,6 +19,8 @@ const Applications = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // holds app to delete
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchApplications();
@@ -68,6 +72,29 @@ const Applications = () => {
     }
   };
 
+  const handleDelete = async (app) => {
+    setDeleting(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/applications/${app.id || app._id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (response.ok) {
+        toast.success('Application deleted successfully');
+        setApplications(prev => prev.filter(a => (a.id || a._id) !== (app.id || app._id)));
+        setDeleteConfirm(null);
+      } else {
+        toast.error(data.error || 'Failed to delete application');
+      }
+    } catch (error) {
+      toast.error('An error occurred while deleting');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const filteredApplications = applications.filter(app => {
     const matchesSearch = app.programs?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          app.programs?.department?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -84,6 +111,7 @@ const Applications = () => {
   }
 
   return (
+    <>
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -162,11 +190,18 @@ const Applications = () => {
                       <FileText className="h-6 w-6 text-cyan-500" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-medium text-white">{app.programs?.name}</h3>
+                      <div className="flex items-center gap-2">
+                        {app.priority && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/40">
+                            P{app.priority}
+                          </span>
+                        )}
+                        <h3 className="text-lg font-medium text-white">{app.programs?.name}</h3>
+                      </div>
                       <p className="text-sm text-gray-400">{app.programs?.department}</p>
                       <div className="flex items-center gap-4 mt-2 text-sm text-gray-400">
                         <span>Applied: {new Date(app.application_date).toLocaleDateString()}</span>
-                        <span>Priority: {app.priority}</span>
+                        <span>Priority: {app.priority ?? '—'}</span>
                         {app.merit_rank && (
                           <span className="text-cyan-400 font-medium">Merit Rank: #{app.merit_rank}</span>
                         )}
@@ -190,6 +225,13 @@ const Applications = () => {
                     >
                       <Eye className="h-5 w-5" />
                     </Link>
+                    <button
+                      onClick={() => setDeleteConfirm(app)}
+                      className="p-2 text-gray-400 hover:text-red-400 transition-colors"
+                      title="Delete Application"
+                    >
+                      <Trash2 className="h-5 w-5" />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -198,6 +240,44 @@ const Applications = () => {
         )}
       </div>
     </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#1a1a1a] border border-gray-700 rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-red-500/10 rounded-lg">
+                <Trash2 className="h-6 w-6 text-red-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-white">Delete Application</h3>
+            </div>
+            <p className="text-gray-400 mb-2">
+              Are you sure you want to delete your application for:
+            </p>
+            <p className="text-white font-medium mb-1">{deleteConfirm.programs?.name}</p>
+            <p className="text-sm text-gray-500 mb-6">{deleteConfirm.programs?.department}</p>
+            <p className="text-xs text-red-400 mb-6">This action cannot be undone.</p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                disabled={deleting}
+                className="px-4 py-2 text-gray-400 hover:text-white font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDelete(deleteConfirm)}
+                disabled={deleting}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                {deleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
