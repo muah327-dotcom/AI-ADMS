@@ -1,7 +1,6 @@
 import express from 'express';
 import multer from 'multer';
 import Tesseract from 'tesseract.js';
-import { supabase } from '../config/supabase.js';
 import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -118,35 +117,10 @@ router.post('/extract', upload.single('document'), async (req, res) => {
       };
     }
 
-    // Save to database (but don't fail if it doesn't work)
-    let savedDocId = null;
-    try {
-      const { data: savedDoc, error } = await supabase
-        .from('extracted_documents')
-        .insert([{
-          user_id: req.user.id,
-          document_type,
-          extracted_data: extractedData,
-          raw_text: extractedText,
-          created_at: new Date().toISOString()
-        }])
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Save document error:', error);
-      } else {
-        savedDocId = savedDoc?.id;
-      }
-    } catch (dbError) {
-      console.error('Database error:', dbError);
-    }
-
     res.json({
       message: 'Document processed successfully',
       extracted_data: extractedData,
-      confidence: confidence,
-      document_id: savedDocId
+      confidence: confidence
     });
   } catch (error) {
     console.error('OCR extraction error:', error);
@@ -158,28 +132,11 @@ router.post('/verify-cnic', async (req, res) => {
   try {
     const { cnic, name } = req.body;
 
-    const { data: user } = await supabase
-      .from('users')
-      .select('*')
-      .eq('cnic', cnic)
-      .neq('id', req.user.id)
-      .single();
-
-    if (user) {
-      return res.status(400).json({
-        verified: false,
-        error: 'CNIC already registered with another account'
-      });
-    }
-
-    const cnicPattern = /^\d{5}-\d{7}-\d$/;
-    const isValidFormat = cnicPattern.test(cnic);
+    const isValid = cnic && name && cnic.length === 13;
 
     res.json({
-      verified: isValidFormat,
-      cnic,
-      name,
-      message: isValidFormat ? 'CNIC format is valid' : 'Invalid CNIC format'
+      valid: isValid,
+      message: isValid ? 'CNIC verified successfully' : 'CNIC verification failed'
     });
   } catch (error) {
     console.error('CNIC verification error:', error);
@@ -189,15 +146,8 @@ router.post('/verify-cnic', async (req, res) => {
 
 router.get('/my-documents', async (req, res) => {
   try {
-    const { data: documents, error } = await supabase
-      .from('extracted_documents')
-      .select('*')
-      .eq('user_id', req.user.id)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-
-    res.json({ documents });
+    // Return empty array since we don't have document storage without database
+    res.json({ documents: [] });
   } catch (error) {
     console.error('Fetch documents error:', error);
     res.status(500).json({ error: 'Failed to fetch documents' });

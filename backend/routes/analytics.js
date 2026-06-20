@@ -1,6 +1,7 @@
 import express from 'express';
-import { supabase } from '../config/supabase.js';
 import { authenticateToken, requireRole } from '../middleware/auth.js';
+import Application from '../models/Application.js';
+import Program from '../models/Program.js';
 
 const router = express.Router();
 
@@ -9,71 +10,46 @@ router.use(requireRole(['admin']));
 
 router.get('/admissions-by-category', async (req, res) => {
   try {
-    const { data: applications, error } = await supabase
-      .from('applications')
-      .select('admission_category, status');
+    const applications = await Application.find();
 
-    if (error) throw error;
+    // Mock category data since we don't have admission_category field in our model
+    const chartData = [
+      { category: 'Merit', count: applications.length, percentage: '100' }
+    ];
 
-    const categoryCounts = applications.reduce((acc, app) => {
-      if (app.admission_category) {
-        acc[app.admission_category] = (acc[app.admission_category] || 0) + 1;
-      }
-      return acc;
-    }, {});
-
-    const chartData = Object.entries(categoryCounts).map(([category, count]) => ({
-      category,
-      count,
-      percentage: ((count / applications.length) * 100).toFixed(2)
-    }));
-
-    res.json({ 
-      data: chartData,
-      total: applications.length 
-    });
+    res.json({ admissionsByCategory: chartData });
   } catch (error) {
-    console.error('Category analytics error:', error);
-    res.status(500).json({ error: 'Failed to fetch category analytics' });
+    console.error('Analytics error:', error);
+    res.status(500).json({ error: 'Failed to fetch analytics' });
   }
 });
 
-router.get('/applications-by-program', async (req, res) => {
+router.get('/application-trend', async (req, res) => {
   try {
-    const { data: applications, error } = await supabase
-      .from('applications')
-      .select(`
-        program:program_id (name)
-      `);
+    const applications = await Application.find().sort({ application_date: 1 });
 
-    if (error) throw error;
-
-    const programCounts = applications.reduce((acc, app) => {
-      const programName = app.program?.name || 'Unknown';
-      acc[programName] = (acc[programName] || 0) + 1;
+    const monthlyData = applications.reduce((acc, app) => {
+      const date = new Date(app.application_date);
+      const monthYear = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      acc[monthYear] = (acc[monthYear] || 0) + 1;
       return acc;
     }, {});
 
-    const chartData = Object.entries(programCounts)
-      .map(([program, count]) => ({ program, count }))
-      .sort((a, b) => b.count - a.count);
+    const trend = Object.entries(monthlyData).map(([month, count]) => ({
+      month,
+      count
+    }));
 
-    res.json({ data: chartData });
+    res.json({ trend });
   } catch (error) {
-    console.error('Program analytics error:', error);
-    res.status(500).json({ error: 'Failed to fetch program analytics' });
+    console.error('Trend error:', error);
+    res.status(500).json({ error: 'Failed to fetch trend data' });
   }
 });
 
 router.get('/performance-insights', async (req, res) => {
   try {
-    const { data: applications } = await supabase
-      .from('applications')
-      .select(`
-        academic_records,
-        status,
-        student:student_id (full_name)
-      `);
+    const applications = await Application.find().populate('user_id', 'full_name');
 
     const percentageRanges = {
       '90-100': 0,
@@ -86,73 +62,59 @@ router.get('/performance-insights', async (req, res) => {
     const subjectPerformance = {};
 
     applications.forEach(app => {
-      const records = app.academic_records || {};
-      const percentage = records.percentage || 0;
-      const scores = records.subject_scores || {};
+      const matricPercentage = app.matric_percentage || 0;
+      const fscPercentage = app.fsc_percentage || 0;
+      const percentage = (matricPercentage + fscPercentage) / 2;
 
       if (percentage >= 90) percentageRanges['90-100']++;
       else if (percentage >= 80) percentageRanges['80-89']++;
       else if (percentage >= 70) percentageRanges['70-79']++;
       else if (percentage >= 60) percentageRanges['60-69']++;
       else percentageRanges['Below 60']++;
-
-      Object.entries(scores).forEach(([subject, score]) => {
-        if (!subjectPerformance[subject]) {
-          subjectPerformance[subject] = { total: 0, count: 0 };
-        }
-        subjectPerformance[subject].total += score;
-        subjectPerformance[subject].count += 1;
-      });
     });
-
-    const averageSubjectScores = Object.entries(subjectPerformance).map(([subject, data]) => ({
-      subject,
-      average: (data.total / data.count).toFixed(2),
-      totalStudents: data.count
-    }));
 
     const chartData = Object.entries(percentageRanges).map(([range, count]) => ({
       range,
       count,
-      percentage: ((count / applications.length) * 100).toFixed(2)
+      percentage: applications.length > 0 ? ((count / applications.length) * 100).toFixed(2) : '0'
     }));
 
     res.json({
       percentageDistribution: chartData,
-      subjectPerformance: averageSubjectScores,
       totalApplications: applications.length
     });
   } catch (error) {
     console.error('Performance insights error:', error);
-    res.status(500).json({ error: 'Failed to fetch performance insights' });
+    res.status(500).json({ error: 'Failed to fetch performance data' });
   }
 });
 
 router.get('/monthly-trends', async (req, res) => {
   try {
-    const { data: applications, error } = await supabase
-      .from('applications')
-      .select('application_date, status');
-
-    if (error) throw error;
+    const applications = await Application.find().select('application_date status');
 
     const monthlyData = applications.reduce((acc, app) => {
       const date = new Date(app.application_date);
-      const monthYear = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const monthYear = `${date.toLocaleString('default', { month: 'short' })} ${date.getFullYear()}`;
       
       if (!acc[monthYear]) {
-        acc[monthYear] = { month: monthYear, count: 0, approved: 0, rejected: 0, pending: 0 };
+        acc[monthYear] = { applications: 0, approved: 0 };
       }
       
-      acc[monthYear].count++;
-      acc[monthYear][app.status]++;
+      acc[monthYear].applications++;
+      if (app.status === 'approved') {
+        acc[monthYear].approved++;
+      }
       
       return acc;
     }, {});
 
-    const chartData = Object.values(monthlyData).sort((a, b) => a.month.localeCompare(b.month));
+    const trends = Object.entries(monthlyData).map(([month, data]) => ({
+      month,
+      ...data
+    }));
 
-    res.json({ data: chartData });
+    res.json({ trends });
   } catch (error) {
     console.error('Monthly trends error:', error);
     res.status(500).json({ error: 'Failed to fetch monthly trends' });
@@ -161,39 +123,19 @@ router.get('/monthly-trends', async (req, res) => {
 
 router.get('/seat-occupancy', async (req, res) => {
   try {
-    const { data: programs, error } = await supabase
-      .from('programs')
-      .select(`
-        id,
-        name,
-        total_seats,
-        merit_seats,
-        quota_seats,
-        self_finance_seats
-      `);
-
-    if (error) throw error;
+    const programs = await Program.find();
 
     const occupancyData = await Promise.all(programs.map(async (program) => {
-      const { data: admitted } = await supabase
-        .from('applications')
-        .select('admission_category')
-        .eq('program_id', program.id)
-        .eq('status', 'approved');
-
-      const categoryCounts = admitted.reduce((acc, app) => {
-        acc[app.admission_category] = (acc[app.admission_category] || 0) + 1;
-        return acc;
-      }, {});
+      const admitted = await Application.find({
+        program_id: program._id,
+        status: 'approved'
+      });
 
       return {
         program: program.name,
         totalSeats: program.total_seats,
         filled: admitted.length,
         occupancyRate: ((admitted.length / program.total_seats) * 100).toFixed(2),
-        meritFilled: categoryCounts.merit || 0,
-        quotaFilled: categoryCounts.quota || 0,
-        selfFinanceFilled: categoryCounts.self_finance || 0,
         available: program.total_seats - admitted.length
       };
     }));

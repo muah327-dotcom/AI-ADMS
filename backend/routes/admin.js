@@ -1,7 +1,9 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
-import { supabase } from '../config/supabase.js';
 import { authenticateToken, requireRole } from '../middleware/auth.js';
+import Application from '../models/Application.js';
+import User from '../models/User.js';
+import Program from '../models/Program.js';
 
 const router = express.Router();
 
@@ -10,47 +12,24 @@ router.use(requireRole(['admin']));
 
 router.get('/dashboard-stats', async (req, res) => {
   try {
-    const { data: totalApplications } = await supabase
-      .from('applications')
-      .select('*', { count: 'exact' });
-
-    const { data: pendingApplications } = await supabase
-      .from('applications')
-      .select('*', { count: 'exact' })
-      .eq('status', 'pending');
-
-    const { data: approvedApplications } = await supabase
-      .from('applications')
-      .select('*', { count: 'exact' })
-      .eq('status', 'approved');
-
-    const { data: rejectedApplications } = await supabase
-      .from('applications')
-      .select('*', { count: 'exact' })
-      .eq('status', 'rejected');
-
-    const { data: students } = await supabase
-      .from('users')
-      .select('*', { count: 'exact' })
-      .eq('role', 'student');
-
-    const { data: programs } = await supabase
-      .from('programs')
-      .select('*');
-
-    const { data: meritListCount } = await supabase
-      .from('merit_list')
-      .select('*', { count: 'exact' });
+    const total = await Application.countDocuments();
+    const pending = await Application.countDocuments({ status: 'pending' });
+    const approved = await Application.countDocuments({ status: 'approved' });
+    const rejected = await Application.countDocuments({ status: 'rejected' });
+    const activePrograms = await Program.countDocuments({ is_active: true });
+    const students = await User.countDocuments({ role: 'student' });
+    const programs = await Program.countDocuments();
+    const meritListCount = await Application.countDocuments({ status: 'approved' });
 
     res.json({
       stats: {
-        totalApplications: totalApplications?.length || 0,
-        pendingApplications: pendingApplications?.length || 0,
-        approvedApplications: approvedApplications?.length || 0,
-        rejectedApplications: rejectedApplications?.length || 0,
-        totalStudents: students?.length || 0,
-        totalPrograms: programs?.length || 0,
-        meritListEntries: meritListCount?.length || 0
+        totalApplications: total,
+        pendingApplications: pending,
+        approvedApplications: approved,
+        rejectedApplications: rejected,
+        totalStudents: students,
+        totalPrograms: programs,
+        meritListEntries: meritListCount
       }
     });
   } catch (error) {
@@ -63,30 +42,36 @@ router.get('/all-applications', async (req, res) => {
   try {
     const { status, program, page = 1, limit = 20 } = req.query;
     
-    let query = supabase
-      .from('applications')
-      .select(`
-        *,
-        student:student_id (id, full_name, email, cnic, phone),
-        program:program_id (name, department)
-      `, { count: 'exact' })
-      .order('application_date', { ascending: false })
-      .range((page - 1) * limit, page * limit - 1);
-
+    let query = Application.find();
+    
     if (status) {
-      query = query.eq('status', status);
+      query = query.where('status').equals(status);
     }
 
     if (program) {
-      query = query.eq('program_id', program);
+      query = query.where('program_id').equals(program);
     }
 
-    const { data: applications, error, count } = await query;
+    const applications = await query
+      .populate('user_id', 'full_name email cnic phone')
+      .populate('program_id', 'name department')
+      .sort({ application_date: -1 })
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
 
-    if (error) throw error;
+    const count = await Application.countDocuments(query.getFilter());
+
+    const mappedApplications = applications.map(app => {
+      const appObj = app.toObject();
+      appObj.student = appObj.user_id;
+      appObj.program = appObj.program_id;
+      appObj.programs = appObj.program_id;
+      appObj.id = appObj._id;
+      return appObj;
+    });
 
     res.json({ 
-      applications, 
+      applications: mappedApplications, 
       total: count,
       page: parseInt(page),
       totalPages: Math.ceil(count / limit)
@@ -110,27 +95,49 @@ router.patch('/applications/:id/status', [
     const { id } = req.params;
     const { status, notes } = req.body;
 
-    const { data: application, error } = await supabase
-      .from('applications')
-      .update({ status, updated_at: new Date().toISOString() })
-      .eq('id', id)
-      .select()
-      .single();
+    const application = await Application.findByIdAndUpdate(
+      id,
+      { status, updated_at: new Date() },
+      { new: true }
+    );
 
-    if (error) throw error;
+    if (!application) {
+      return res.status(404).json({ error: 'Application not found' });
+    }
 
-    await supabase.from('application_tracking').insert([{
-      application_id: id,
-      status,
-      notes: notes || `Status updated to ${status} by admin`,
-      timestamp: new Date().toISOString(),
-      updated_by: req.user.id
-    }]);
+    const appObj = application.toObject();
+    appObj.student = appObj.user_id;
+    appObj.program = appObj.program_id;
+    appObj.programs = appObj.program_id;
+    appObj.id = appObj._id;
 
-    res.json({ message: 'Application status updated', application });
+    res.json({ message: 'Application status updated', application: appObj });
   } catch (error) {
     console.error('Update status error:', error);
     res.status(500).json({ error: 'Failed to update application status' });
+  }
+});
+
+router.get('/all-users', async (req, res) => {
+  try {
+    const { page = 1, limit = 20 } = req.query;
+    
+    const students = await User.find({ role: 'student' })
+      .sort({ created_at: -1 })
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
+
+    const count = await User.countDocuments({ role: 'student' });
+
+    res.json({ 
+      students, 
+      total: count,
+      page: parseInt(page),
+      totalPages: Math.ceil(count / limit)
+    });
+  } catch (error) {
+    console.error('Fetch all users error:', error);
+    res.status(500).json({ error: 'Failed to fetch users' });
   }
 });
 
@@ -138,23 +145,22 @@ router.get('/students', async (req, res) => {
   try {
     const { category, program, page = 1, limit = 20 } = req.query;
     
-    let query = supabase
-      .from('users')
-      .select(`
-        *,
-        applications:applications (program:program_id (name), status, admission_category)
-      `, { count: 'exact' })
-      .eq('role', 'student')
-      .order('created_at', { ascending: false })
-      .range((page - 1) * limit, page * limit - 1);
+    let query = User.find({ role: 'student' })
+      .sort({ created_at: -1 })
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
 
     if (category) {
-      query = query.eq('admission_category', category);
+      query = query.where('admission_category').equals(category);
     }
 
-    const { data: students, error, count } = await query;
+    if (program) {
+      query = query.where('program_id').equals(program);
+    }
 
-    if (error) throw error;
+    const students = await query;
+
+    const count = await User.countDocuments({ role: 'student' });
 
     res.json({ 
       students, 
@@ -181,19 +187,7 @@ router.post('/programs', [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const programData = req.body;
-
-    const { data: program, error } = await supabase
-      .from('programs')
-      .insert([{
-        ...programData,
-        is_active: true,
-        created_at: new Date().toISOString()
-      }])
-      .select()
-      .single();
-
-    if (error) throw error;
+    const program = await Program.create(req.body);
 
     res.status(201).json({ message: 'Program created successfully', program });
   } catch (error) {
@@ -207,19 +201,37 @@ router.patch('/programs/:id', async (req, res) => {
     const { id } = req.params;
     const updates = req.body;
 
-    const { data: program, error } = await supabase
-      .from('programs')
-      .update({ ...updates, updated_at: new Date().toISOString() })
-      .eq('id', id)
-      .select()
-      .single();
+    const program = await Program.findByIdAndUpdate(
+      id,
+      { ...updates, updated_at: new Date() },
+      { new: true }
+    );
 
-    if (error) throw error;
+    if (!program) {
+      return res.status(404).json({ error: 'Program not found' });
+    }
 
     res.json({ message: 'Program updated successfully', program });
   } catch (error) {
     console.error('Update program error:', error);
     res.status(500).json({ error: 'Failed to update program' });
+  }
+});
+
+router.delete('/programs/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const program = await Program.findByIdAndDelete(id);
+
+    if (!program) {
+      return res.status(404).json({ error: 'Program not found' });
+    }
+
+    res.json({ message: 'Program deleted successfully' });
+  } catch (error) {
+    console.error('Delete program error:', error);
+    res.status(500).json({ error: 'Failed to delete program' });
   }
 });
 

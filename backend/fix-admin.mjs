@@ -1,32 +1,34 @@
 import bcrypt from 'bcryptjs';
-import { createClient } from '@supabase/supabase-js';
+import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
 async function fixAdminPassword() {
-  const password = 'admin123';
-  const hashedPassword = bcrypt.hashSync(password, 10);
-  
-  console.log('Generated hash:', hashedPassword);
-  
-  const { data, error } = await supabase
-    .from('users')
-    .update({ password_hash: hashedPassword })
-    .eq('email', 'admin@pucit.edu.pk')
-    .select();
-    
-  if (error) {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI);
+    console.log('Connected to MongoDB');
+
+    const password = 'admin123';
+    const hashedPassword = bcrypt.hashSync(password, 10);
+
+    console.log('Generated hash:', hashedPassword);
+
+    const result = await mongoose.connection.db.collection('users').updateOne(
+      { email: 'admin@pucit.edu.pk' },
+      { $set: { password_hash: hashedPassword } }
+    );
+
+    if (result.modifiedCount > 0) {
+      console.log('Admin password updated successfully!');
+    } else {
+      console.log('No admin user found with email admin@pucit.edu.pk');
+    }
+  } catch (error) {
     console.error('Error:', error);
     process.exit(1);
-  } else {
-    console.log('Admin password updated successfully!');
-    console.log('Data:', data);
+  } finally {
+    await mongoose.disconnect();
     process.exit(0);
   }
 }

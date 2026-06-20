@@ -249,14 +249,14 @@ const ProgramRecommendations = () => {
                   {/* Actions */}
                   <div className="flex items-center gap-3">
                     <button
-                      onClick={() => fetchExplanation(rec.program.id)}
+                      onClick={() => fetchExplanation(rec.program._id || rec.program.id)}
                       className="flex-1 flex items-center justify-center px-4 py-2 text-cyan-400 bg-cyan-500/10 rounded-lg hover:bg-cyan-500/20 transition-colors text-sm font-medium"
                     >
                       <Info className="h-4 w-4 mr-2" />
                       Why This Match?
                     </button>
                     <a
-                      href={`/dashboard/applications/new?program=${rec.program.id}`}
+                      href={`/dashboard/applications/new?program=${rec.program._id || rec.program.id}`}
                       className="flex-1 flex items-center justify-center px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors text-sm font-medium"
                     >
                       <Target className="h-4 w-4 mr-2" />

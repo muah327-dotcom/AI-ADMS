@@ -8,13 +8,21 @@
     "backend"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:frontend": "cd frontend && npm run dev",
-    "dev:backend": "cd backend && npm run dev",
-    "build": "cd frontend && npm run build",
-    "start": "cd backend && npm start"
+    "dev": "concurrently \"npm.cmd run dev:backend\" \"npm.cmd run dev:frontend\"",
+    "dev:frontend": "cd frontend && npm.cmd run dev",
+    "dev:backend": "cd backend && npm.cmd run dev",
+    "build": "cd frontend && npm.cmd run build",
+    "start": "cd backend && npm.cmd start"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
-  }
+    "concurrently": "^8.2.2",
+    "mongodb-memory-server": "^11.2.0"
+  },
+  "dependencies": {
+    "mongodb": "^7.2.0"
+  },
+  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }

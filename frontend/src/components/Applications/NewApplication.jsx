@@ -86,8 +86,9 @@ const NewApplication = () => {
 
   const handleProgramSelect = (program) => {
     setSelectedProgram(program);
-    setFormData({ ...formData, program_id: program.id });
-    checkEligibility(program.id);
+    const programId = program._id || program.id;
+    setFormData({ ...formData, program_id: programId });
+    checkEligibility(programId);
     setStep(2);
   };
 
@@ -110,7 +111,7 @@ const NewApplication = () => {
 
       if (response.ok) {
         toast.success('Application submitted successfully!');
-        navigate('/applications');
+        navigate('/dashboard/applications');
       } else {
         toast.error(data.error || 'Failed to submit application');
       }
@@ -232,7 +233,7 @@ const NewApplication = () => {
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {programs.map((program) => (
                 <button
-                  key={program.id}
+                  key={program._id || program.id}
                   onClick={() => handleProgramSelect(program)}
                   className="text-left p-4 border border-gray-700 rounded-lg hover:border-cyan-500 hover:bg-gray-800/50 transition-all"
                 >

@@ -2,25 +2,11 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { body, validationResult } from 'express-validator';
-import { supabase } from '../config/supabase.js';
+import User from '../models/User.js';
+import { authenticateToken } from '../middleware/auth.js';
+import { uploadFileToGridFS, deleteFileFromGridFS, getGridFS } from '../utils/gridfs.js';
+import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-
-const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) {
-    return res.status(401).json({ error: 'Access token required' });
-  }
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
-    next();
-  } catch (error) {
-    return res.status(403).json({ error: 'Invalid token' });
-  }
-};
 
 dotenv.config();
 
@@ -56,11 +42,7 @@ router.post('/register', [
     // Force role to always be student - admin registration not allowed
     const role = 'student';
 
-    const { data: existingUser } = await supabase
-      .from('users')
-      .select('*')
-      .eq('email', email)
-      .single();
+    const existingUser = await User.findOne({ email });
 
     if (existingUser) {
       return res.status(400).json({ error: 'User already exists with this email' });
@@ -68,22 +50,16 @@ router.post('/register', [
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const { data: user, error } = await supabase
-      .from('users')
-      .insert([{
-        email,
-        password_hash: hashedPassword,
-        full_name,
-        role,
-        cnic,
-        phone,
-        address,
-        is_active: true
-      }])
-      .select()
-      .single();
-
-    if (error) throw error;
+    const user = await User.create({
+      email,
+      password: hashedPassword,
+      full_name,
+      role,
+      cnic,
+      phone,
+      address,
+      is_active: true
+    });
 
     const token = generateToken(user);
 
@@ -116,18 +92,10 @@ router.post('/login', [
     const { email, password } = req.body;
     console.log('Login attempt:', email);
 
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('email', email)
-      .single();
-
-    if (error) {
-      console.log('Supabase error:', error);
-    }
+    const user = await User.findOne({ email });
     console.log('User found:', user ? 'YES' : 'NO');
 
-    if (error || !user) {
+    if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -137,7 +105,7 @@ router.post('/login', [
     }
 
     console.log('Comparing password...');
-    const isValidPassword = await bcrypt.compare(password, user.password_hash);
+    const isValidPassword = await bcrypt.compare(password, user.password);
     console.log('Password valid:', isValidPassword);
 
     if (!isValidPassword) {
@@ -146,10 +114,8 @@ router.post('/login', [
 
     console.log('Updating last login...');
     try {
-      await supabase
-        .from('users')
-        .update({ last_login: new Date().toISOString() })
-        .eq('id', user.id);
+      user.last_login = new Date();
+      await user.save();
       console.log('Last login updated');
     } catch (updateError) {
       console.error('Failed to update last_login:', updateError);
@@ -197,13 +163,9 @@ router.get('/me', async (req, res) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('id, email, full_name, role, cnic, phone, address, avatar_url, created_at')
-      .eq('id', decoded.id)
-      .single();
+    const user = await User.findById(decoded.id).select('-password');
 
-    if (error || !user) {
+    if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
@@ -234,14 +196,15 @@ router.put('/profile', authenticateToken, [
     if (avatar_url !== undefined) updates.avatar_url = avatar_url;
     updates.updated_at = new Date().toISOString();
 
-    const { data: user, error } = await supabase
-      .from('users')
-      .update(updates)
-      .eq('id', req.user.id)
-      .select('id, email, full_name, role, cnic, phone, address, avatar_url, created_at')
-      .single();
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      updates,
+      { new: true, runValidators: true }
+    ).select('-password');
 
-    if (error) throw error;
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
 
     res.json({
       message: 'Profile updated successfully',
@@ -265,32 +228,21 @@ router.put('/change-password', authenticateToken, [
 
     const { currentPassword, newPassword } = req.body;
 
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('password_hash')
-      .eq('id', req.user.id)
-      .single();
+    const user = await User.findById(req.user.id);
 
-    if (error || !user) {
+    if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const isValidPassword = await bcrypt.compare(currentPassword, user.password_hash);
+    const isValidPassword = await bcrypt.compare(currentPassword, user.password);
     if (!isValidPassword) {
       return res.status(401).json({ error: 'Current password is incorrect' });
     }
 
     const hashedNewPassword = await bcrypt.hash(newPassword, 10);
 
-    const { error: updateError } = await supabase
-      .from('users')
-      .update({ 
-        password_hash: hashedNewPassword,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', req.user.id);
-
-    if (updateError) throw updateError;
+    user.password = hashedNewPassword;
+    await user.save();
 
     res.json({ message: 'Password changed successfully' });
   } catch (error) {
@@ -314,37 +266,26 @@ router.post('/upload-avatar', authenticateToken, async (req, res) => {
     // Generate unique filename
     const fileExt = file_name ? file_name.split('.').pop() : 'png';
     const fileName = `${req.user.id}-${Date.now()}.${fileExt}`;
-    const filePath = `${fileName}`;
-
-    // Upload to Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabase
-      .storage
-      .from('avatars')
-      .upload(filePath, buffer, {
-        contentType: `image/${fileExt}`,
-        upsert: true
-      });
-
-    if (uploadError) throw uploadError;
-
-    // Get public URL
-    const { data: urlData } = supabase
-      .storage
-      .from('avatars')
-      .getPublicUrl(filePath);
+    
+    // Upload file to GridFS (MongoDB storage bucket)
+    const fileId = await uploadFileToGridFS(buffer, fileName, {
+      userId: req.user.id,
+      contentType: `image/${fileExt}`
+    });
+    
+    // Store GridFS file ID as avatar URL
+    const avatarUrl = `/api/auth/avatar/${fileId}`;
 
     // Update user record with avatar URL
-    const { data: user, error } = await supabase
-      .from('users')
-      .update({ 
-        avatar_url: urlData.publicUrl,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', req.user.id)
-      .select('id, email, full_name, avatar_url')
-      .single();
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { avatar_url: avatarUrl },
+      { new: true }
+    ).select('id, email, full_name, avatar_url');
 
-    if (error) throw error;
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
 
     res.json({
       message: 'Avatar uploaded successfully',
@@ -359,43 +300,27 @@ router.post('/upload-avatar', authenticateToken, async (req, res) => {
 router.delete('/remove-avatar', authenticateToken, async (req, res) => {
   try {
     // Get current user to check if they have an avatar
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('avatar_url')
-      .eq('id', req.user.id)
-      .single();
+    const user = await User.findById(req.user.id);
 
-    if (userError) throw userError;
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
 
-    if (userData.avatar_url) {
-      // Extract filename from URL
-      const urlParts = userData.avatar_url.split('/');
-      const fileName = urlParts[urlParts.length - 1];
-
-      // Remove from Supabase Storage
-      const { error: deleteError } = await supabase
-        .storage
-        .from('avatars')
-        .remove([fileName]);
-
-      if (deleteError) {
-        console.error('Storage delete error:', deleteError);
-        // Continue to update database even if storage delete fails
+    // Delete the file from GridFS if it exists
+    if (user.avatar_url) {
+      try {
+        const fileId = user.avatar_url.split('/').pop();
+        if (fileId && fileId.length === 24) {
+          await deleteFileFromGridFS(fileId);
+        }
+      } catch (err) {
+        console.log('File not found in GridFS or already deleted');
       }
     }
 
     // Update user record to remove avatar_url
-    const { data: user, error } = await supabase
-      .from('users')
-      .update({ 
-        avatar_url: null,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', req.user.id)
-      .select('id, email, full_name, avatar_url')
-      .single();
-
-    if (error) throw error;
+    user.avatar_url = null;
+    await user.save();
 
     res.json({
       message: 'Avatar removed successfully',
@@ -404,6 +329,46 @@ router.delete('/remove-avatar', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Avatar removal error:', error);
     res.status(500).json({ error: 'Failed to remove avatar' });
+  }
+});
+
+// Serve avatar from GridFS
+router.get('/avatar/:fileId', async (req, res) => {
+  try {
+    const { fileId } = req.params;
+    
+    // Validate fileId format
+    if (!fileId || fileId.length !== 24) {
+      return res.status(400).json({ error: 'Invalid file ID' });
+    }
+    
+    const bucket = getGridFS();
+    if (!bucket) {
+      return res.status(500).json({ error: 'GridFS not initialized' });
+    }
+    
+    // Find file metadata
+    const files = await bucket.find({ _id: new mongoose.Types.ObjectId(fileId) }).toArray();
+    if (!files || files.length === 0) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+    
+    const file = files[0];
+    
+    // Set content type
+    res.set('Content-Type', file.metadata?.contentType || 'image/png');
+    
+    // Stream file to response
+    const downloadStream = bucket.openDownloadStream(new mongoose.Types.ObjectId(fileId));
+    downloadStream.pipe(res);
+    
+    downloadStream.on('error', (err) => {
+      console.error('GridFS download error:', err);
+      res.status(500).json({ error: 'Failed to retrieve file' });
+    });
+  } catch (error) {
+    console.error('Avatar retrieval error:', error);
+    res.status(500).json({ error: 'Failed to retrieve avatar' });
   }
 });
 
