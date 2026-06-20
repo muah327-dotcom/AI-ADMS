@@ -41,7 +41,22 @@ app.use('/api/ocr', ocrRoutes);
 app.use('/api/recommendations', recommendationRoutes);
 
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'AI Admission System API is running' });
+  const dbState = {
+    0: 'disconnected',
+    1: 'connected',
+    2: 'connecting',
+    3: 'disconnecting'
+  }[mongoose.connection.readyState] || 'unknown';
+
+  res.json({ 
+    status: 'OK', 
+    message: 'AI Admission System API is running',
+    database: dbState,
+    env: {
+      has_mongodb_uri: !!process.env.MONGODB_URI,
+      has_jwt_secret: !!process.env.JWT_SECRET
+    }
+  });
 });
 
 app.listen(PORT, () => {
