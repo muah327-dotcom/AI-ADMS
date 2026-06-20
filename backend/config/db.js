@@ -20,6 +20,12 @@ const connectDB = async () => {
     console.log(`MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
     console.warn(`Cloud MongoDB connection failed (${error.message}).`);
+    
+    if (process.env.VERCEL) {
+      console.error('Cannot run in-memory MongoDB on Vercel serverless environment. Throwing connection error.');
+      throw error;
+    }
+    
     console.log('Starting in-memory MongoDB server as fallback...');
     
     try {
