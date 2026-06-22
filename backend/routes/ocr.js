@@ -9,21 +9,22 @@ const upload = multer({ storage: multer.memoryStorage() });
 router.use(authenticateToken);
 
 const extractCNICData = (text) => {
-  const cnicPattern = /\d{5}-\d{7}-\d/;
+  const cnicPattern = /\b\d{5}[-\s]\d{7}[-\s]\d\b/;
   const cnicMatch = text.match(cnicPattern);
   
-  const namePattern = /Name[\s:]+([A-Za-z\s]+)/i;
+  // Use [A-Za-z \t.-] to exclude newlines but allow spaces, dots, and hyphens in names
+  const namePattern = /(?:Name(?:\s*\/\s*Name)?[\s:]+)([A-Za-z \t.-]{3,})/i;
   const nameMatch = text.match(namePattern);
   
-  const fatherPattern = /Father[\s:]+([A-Za-z\s]+)/i;
+  const fatherPattern = /(?:Father(?:'s)?(?:\s*Name)?(?:\s*\/\s*Father\s*Name)?[\s:]+)([A-Za-z \t.-]{3,})/i;
   const fatherMatch = text.match(fatherPattern);
   
-  // Support Date of Birth, DOB, D.O.B with slashes, hyphens or dots
-  const dobPattern = /(?:Date of Birth|DOB|D\.O\.B)[\s:]+(\d{2}[/.-]\d{2}[/.-]\d{4})/i;
+  // Support Date of Birth, DOB, D.O.B with slashes, hyphens or dots and optional internal spacing
+  const dobPattern = /(?:Date of Birth|DOB|D\.O\.B)[\s:/.-]*(\d{2}\s*[/.-]\s*\d{2}\s*[/.-]\s*\d{4})/i;
   const dobMatch = text.match(dobPattern);
   
   // Support alphanumeric characters, spaces, commas, dots, slashes, hyphens, and hash signs
-  const addressPattern = /Address[\s:]+([A-Za-z0-9\s,./#-]+)/i;
+  const addressPattern = /Address[\s:/.-]+([A-Za-z0-9 \t,./#-]{10,})/i;
   const addressMatch = text.match(addressPattern);
 
   // Gender extraction - prioritize Male/Female over single letters M/F
@@ -36,10 +37,10 @@ const extractCNICData = (text) => {
   }
   
   return {
-    cnic: cnicMatch ? cnicMatch[0] : null,
+    cnic: cnicMatch ? cnicMatch[0].replace(/\s/g, '-') : null,
     name: nameMatch ? nameMatch[1].trim() : null,
     father_name: fatherMatch ? fatherMatch[1].trim() : null,
-    date_of_birth: dobMatch ? dobMatch[1] : null,
+    date_of_birth: dobMatch ? dobMatch[1].replace(/\s/g, '') : null,
     address: addressMatch ? addressMatch[1].trim() : null,
     gender,
     raw_text: text
