@@ -1,5 +1,6 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
+import { useAuth } from '../../hooks/useAuth';
 import {
   Upload,
   FileText,
@@ -10,16 +11,180 @@ import {
   AlertCircle,
   X,
   Scan,
-  Sparkles
+  Sparkles,
+  Camera,
+  GraduationCap,
+  ScrollText,
+  MapPin,
+  User,
+  Phone,
+  Mail,
+  Save
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const DocumentUpload = () => {
+  const { user, setUser } = useAuth();
   const [uploading, setUploading] = useState(false);
-  const [extractedData, setExtractedData] = useState(null);
   const [documentType, setDocumentType] = useState('cnic');
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [processingFile, setProcessingFile] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  // Declaration checkboxes
+  const [declarations, setDeclarations] = useState({
+    confirmCorrect: false,
+    understandFalseInfo: false
+  });
+
+  // Admission form state
+  const [formData, setFormData] = useState({
+    // Personal Information
+    full_name: '',
+    father_name: '',
+    date_of_birth: '',
+    gender: '',
+    cnic: '',
+    // Contact Information
+    email: '',
+    phone: '',
+    alternate_phone: '',
+    address: '',
+    permanent_address: '',
+    // Academic Information - Matric
+    matric_board: '',
+    matric_passing_year: '',
+    matric_obtained_marks: '',
+    matric_total_marks: '',
+    // Academic Information - Intermediate
+    inter_board: '',
+    inter_passing_year: '',
+    inter_obtained_marks: '',
+    inter_total_marks: ''
+  });
+
+  // Track which fields were auto-filled by OCR
+  const [ocrFilledFields, setOcrFilledFields] = useState(new Set());
+
+  // Pre-populate form from existing user data
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        full_name: user.full_name || prev.full_name,
+        father_name: user.father_name || prev.father_name,
+        date_of_birth: user.date_of_birth || prev.date_of_birth,
+        gender: user.gender || prev.gender,
+        cnic: user.cnic || prev.cnic,
+        email: user.email || prev.email,
+        phone: user.phone || prev.phone,
+        alternate_phone: user.alternate_phone || prev.alternate_phone,
+        address: user.address || prev.address,
+        permanent_address: user.permanent_address || prev.permanent_address,
+        matric_board: user.matric_board || prev.matric_board,
+        matric_passing_year: user.matric_passing_year || prev.matric_passing_year,
+        matric_obtained_marks: user.matric_obtained_marks || prev.matric_obtained_marks,
+        matric_total_marks: user.matric_total_marks || prev.matric_total_marks,
+        inter_board: user.inter_board || prev.inter_board,
+        inter_passing_year: user.inter_passing_year || prev.inter_passing_year,
+        inter_obtained_marks: user.inter_obtained_marks || prev.inter_obtained_marks,
+        inter_total_marks: user.inter_total_marks || prev.inter_total_marks
+      }));
+    }
+  }, [user]);
+
+  const documentTypes = [
+    { id: 'cnic', name: 'CNIC / B-Form', icon: CreditCard, desc: 'Identity document', required: true },
+    { id: 'photograph', name: 'Recent Photograph', icon: Camera, desc: 'Passport size photo', required: true },
+    { id: 'matric', name: 'Matric Certificate', icon: Award, desc: 'SSC / O-Level', required: true },
+    { id: 'intermediate', name: 'Intermediate Certificate', icon: GraduationCap, desc: 'HSSC / A-Level', required: true },
+    { id: 'transcript', name: 'Transcript / Mark Sheet', icon: ScrollText, desc: 'Detailed marks', required: true },
+    { id: 'domicile', name: 'Domicile Certificate', icon: MapPin, desc: 'Optional', required: false }
+  ];
+
+  // Auto-fill form fields based on OCR extracted data and document type
+  const autoFillFromOCR = (extractedData, docType) => {
+    const newFilledFields = new Set(ocrFilledFields);
+
+    setFormData(prev => {
+      const updated = { ...prev };
+
+      if (docType === 'cnic') {
+        if (extractedData.name && !prev.full_name) {
+          updated.full_name = extractedData.name;
+          newFilledFields.add('full_name');
+        }
+        if (extractedData.father_name && !prev.father_name) {
+          updated.father_name = extractedData.father_name;
+          newFilledFields.add('father_name');
+        }
+        if (extractedData.date_of_birth && !prev.date_of_birth) {
+          updated.date_of_birth = extractedData.date_of_birth;
+          newFilledFields.add('date_of_birth');
+        }
+        if (extractedData.gender && !prev.gender) {
+          updated.gender = extractedData.gender;
+          newFilledFields.add('gender');
+        }
+        if (extractedData.cnic && !prev.cnic) {
+          updated.cnic = extractedData.cnic;
+          newFilledFields.add('cnic');
+        }
+        if (extractedData.address) {
+          if (!prev.address) {
+            updated.address = extractedData.address;
+            newFilledFields.add('address');
+          }
+          if (!prev.permanent_address) {
+            updated.permanent_address = extractedData.address;
+            newFilledFields.add('permanent_address');
+          }
+        }
+      }
+
+      if (docType === 'matric') {
+        if (extractedData.board && !prev.matric_board) {
+          updated.matric_board = extractedData.board;
+          newFilledFields.add('matric_board');
+        }
+        if (extractedData.passing_year && !prev.matric_passing_year) {
+          updated.matric_passing_year = extractedData.passing_year;
+          newFilledFields.add('matric_passing_year');
+        }
+        if (extractedData.obtained_marks && !prev.matric_obtained_marks) {
+          updated.matric_obtained_marks = extractedData.obtained_marks;
+          newFilledFields.add('matric_obtained_marks');
+        }
+        if (extractedData.total_marks && !prev.matric_total_marks) {
+          updated.matric_total_marks = extractedData.total_marks;
+          newFilledFields.add('matric_total_marks');
+        }
+      }
+
+      if (docType === 'intermediate' || docType === 'transcript') {
+        if (extractedData.board && !prev.inter_board) {
+          updated.inter_board = extractedData.board;
+          newFilledFields.add('inter_board');
+        }
+        if (extractedData.passing_year && !prev.inter_passing_year) {
+          updated.inter_passing_year = extractedData.passing_year;
+          newFilledFields.add('inter_passing_year');
+        }
+        if (extractedData.obtained_marks && !prev.inter_obtained_marks) {
+          updated.inter_obtained_marks = extractedData.obtained_marks;
+          newFilledFields.add('inter_obtained_marks');
+        }
+        if (extractedData.total_marks && !prev.inter_total_marks) {
+          updated.inter_total_marks = extractedData.total_marks;
+          newFilledFields.add('inter_total_marks');
+        }
+      }
+
+      return updated;
+    });
+
+    setOcrFilledFields(newFilledFields);
+  };
 
   const onDrop = useCallback(async (acceptedFiles) => {
     if (acceptedFiles.length === 0) return;
@@ -29,9 +194,27 @@ const DocumentUpload = () => {
     setUploading(true);
 
     try {
-      const formData = new FormData();
-      formData.append('document', file);
-      formData.append('document_type', documentType);
+      // Photograph doesn't need OCR
+      if (documentType === 'photograph') {
+        setUploadedFiles(prev => [...prev, {
+          name: file.name,
+          type: documentType,
+          extractedData: null,
+          confidence: 100
+        }]);
+        toast.success('Photograph uploaded successfully!');
+        setUploading(false);
+        setProcessingFile(null);
+        return;
+      }
+
+      const formDataUpload = new FormData();
+      formDataUpload.append('document', file);
+
+      // Map our document types to the backend's expected types
+      const backendType = (documentType === 'matric' || documentType === 'intermediate' || documentType === 'transcript')
+        ? 'academic' : documentType === 'cnic' ? 'cnic' : 'other';
+      formDataUpload.append('document_type', backendType);
 
       const token = localStorage.getItem('token');
       const response = await fetch('/api/ocr/extract', {
@@ -39,20 +222,23 @@ const DocumentUpload = () => {
         headers: {
           'Authorization': `Bearer ${token}`
         },
-        body: formData
+        body: formDataUpload
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        setExtractedData(data.extracted_data);
         setUploadedFiles(prev => [...prev, {
           name: file.name,
           type: documentType,
           extractedData: data.extracted_data,
           confidence: data.confidence
         }]);
-        toast.success('Document processed successfully!');
+
+        // Auto-fill form fields from OCR data
+        autoFillFromOCR(data.extracted_data, documentType);
+
+        toast.success('Document processed & data extracted successfully!');
       } else {
         toast.error(data.error || 'Failed to process document');
       }
@@ -63,7 +249,7 @@ const DocumentUpload = () => {
       setUploading(false);
       setProcessingFile(null);
     }
-  }, [documentType]);
+  }, [documentType, ocrFilledFields]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -77,44 +263,182 @@ const DocumentUpload = () => {
 
   const removeFile = (index) => {
     setUploadedFiles(prev => prev.filter((_, i) => i !== index));
-    if (uploadedFiles.length === 1) {
-      setExtractedData(null);
+  };
+
+  const handleFormChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    // If user manually changes an OCR-filled field, remove the OCR indicator
+    if (ocrFilledFields.has(field)) {
+      setOcrFilledFields(prev => {
+        const next = new Set(prev);
+        next.delete(field);
+        return next;
+      });
     }
   };
 
+  const handleSubmitProfile = async () => {
+    if (!declarations.confirmCorrect || !declarations.understandFalseInfo) {
+      toast.error('Please accept both declarations before submitting');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const token = localStorage.getItem('token');
+      const payload = {
+        full_name: formData.full_name,
+        phone: formData.phone,
+        address: formData.address,
+        father_name: formData.father_name,
+        date_of_birth: formData.date_of_birth,
+        gender: formData.gender,
+        alternate_phone: formData.alternate_phone,
+        permanent_address: formData.permanent_address,
+        matric_board: formData.matric_board,
+        matric_passing_year: formData.matric_passing_year ? parseInt(formData.matric_passing_year) : undefined,
+        matric_obtained_marks: formData.matric_obtained_marks ? parseInt(formData.matric_obtained_marks) : undefined,
+        matric_total_marks: formData.matric_total_marks ? parseInt(formData.matric_total_marks) : undefined,
+        inter_board: formData.inter_board,
+        inter_passing_year: formData.inter_passing_year ? parseInt(formData.inter_passing_year) : undefined,
+        inter_obtained_marks: formData.inter_obtained_marks ? parseInt(formData.inter_obtained_marks) : undefined,
+        inter_total_marks: formData.inter_total_marks ? parseInt(formData.inter_total_marks) : undefined
+      };
+
+      const response = await fetch('/api/auth/profile', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setUser({ ...user, ...data.user });
+        toast.success('Profile verified and saved successfully!');
+      } else {
+        toast.error(data.error || 'Failed to save profile');
+      }
+    } catch (error) {
+      console.error('Save profile error:', error);
+      toast.error('Error saving profile');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Check if a document type is already uploaded
+  const isDocUploaded = (typeId) => uploadedFiles.some(f => f.type === typeId);
+
+  // Input field helper with OCR indicator
+  const renderField = (label, field, type = 'text', options = {}) => {
+    const isOcrFilled = ocrFilledFields.has(field);
+    return (
+      <div className={options.colSpan2 ? 'sm:col-span-2' : ''}>
+        <label className="block text-sm font-medium text-gray-300 mb-2">
+          {label}
+          {isOcrFilled && (
+            <span className="ml-2 inline-flex items-center gap-1 text-xs text-purple-400 font-normal">
+              <Sparkles className="h-3 w-3" />
+              Auto-filled
+            </span>
+          )}
+        </label>
+        {type === 'select' ? (
+          <select
+            value={formData[field] || ''}
+            onChange={(e) => handleFormChange(field, e.target.value)}
+            disabled={options.disabled}
+            className={`w-full px-4 py-2.5 bg-[#0f0f0f] border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white transition-all ${
+              isOcrFilled ? 'border-purple-500/50' : 'border-gray-700'
+            } ${options.disabled ? 'text-gray-500 cursor-not-allowed' : ''}`}
+          >
+            <option value="">{options.placeholder || 'Select...'}</option>
+            {(options.selectOptions || []).map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        ) : (
+          <input
+            type={type}
+            value={formData[field] || ''}
+            onChange={(e) => handleFormChange(field, e.target.value)}
+            placeholder={options.placeholder || ''}
+            disabled={options.disabled}
+            className={`w-full px-4 py-2.5 bg-[#0f0f0f] border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white placeholder-gray-500 transition-all ${
+              isOcrFilled ? 'border-purple-500/50' : 'border-gray-700'
+            } ${options.disabled ? 'text-gray-500 cursor-not-allowed' : ''}`}
+          />
+        )}
+      </div>
+    );
+  };
+
   return (
-    <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
+    <div className="max-w-4xl mx-auto space-y-6 animate-fade-in pb-8">
       {/* Header */}
       <div>
-        <h1 className="text-2xl lg:text-3xl font-bold text-white">Document Upload</h1>
-        <p className="text-gray-400 mt-1">Upload your documents for automatic data extraction using OCR</p>
+        <h1 className="text-2xl lg:text-3xl font-bold text-white">Document Upload & Verification</h1>
+        <p className="text-gray-400 mt-1">Upload your documents for automatic data extraction and verify your admission information</p>
+      </div>
+
+      {/* Step Indicator */}
+      <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-4">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 text-cyan-400">
+            <div className="w-8 h-8 rounded-full bg-cyan-500 text-white flex items-center justify-center text-sm font-bold">1</div>
+            <span className="text-sm font-medium">Upload Documents</span>
+          </div>
+          <div className="flex-1 h-0.5 bg-gray-700">
+            <div className="h-full bg-cyan-500 transition-all" style={{ width: uploadedFiles.length > 0 ? '100%' : '0%' }} />
+          </div>
+          <div className={`flex items-center gap-2 ${uploadedFiles.length > 0 ? 'text-cyan-400' : 'text-gray-500'}`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${uploadedFiles.length > 0 ? 'bg-cyan-500 text-white' : 'bg-gray-700 text-gray-400'}`}>2</div>
+            <span className="text-sm font-medium">OCR Extraction</span>
+          </div>
+          <div className="flex-1 h-0.5 bg-gray-700">
+            <div className="h-full bg-cyan-500 transition-all" style={{ width: ocrFilledFields.size > 0 ? '100%' : '0%' }} />
+          </div>
+          <div className={`flex items-center gap-2 ${ocrFilledFields.size > 0 ? 'text-cyan-400' : 'text-gray-500'}`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${ocrFilledFields.size > 0 ? 'bg-cyan-500 text-white' : 'bg-gray-700 text-gray-400'}`}>3</div>
+            <span className="text-sm font-medium">Verify & Submit</span>
+          </div>
+        </div>
       </div>
 
       {/* Document Type Selection */}
       <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-6">
         <h3 className="text-lg font-semibold text-white mb-4">Select Document Type</h3>
-        <div className="grid sm:grid-cols-3 gap-4">
-          {[
-            { id: 'cnic', name: 'CNIC / ID Card', icon: CreditCard, desc: 'Identity document' },
-            { id: 'academic', name: 'Academic Certificate', icon: Award, desc: 'Matric/FSc/Equivalent' },
-            { id: 'other', name: 'Other Document', icon: FileText, desc: 'Additional documents' }
-          ].map((type) => {
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {documentTypes.map((type) => {
             const Icon = type.icon;
+            const uploaded = isDocUploaded(type.id);
             return (
               <button
                 key={type.id}
                 onClick={() => setDocumentType(type.id)}
-                className={`p-4 rounded-xl border-2 text-left transition-all ${
+                className={`p-4 rounded-xl border-2 text-left transition-all relative ${
                   documentType === type.id
                     ? 'border-cyan-500 bg-cyan-500/10'
+                    : uploaded
+                    ? 'border-green-500/30 bg-green-500/5'
                     : 'border-gray-700 hover:border-gray-600'
                 }`}
               >
-                <Icon className={`h-8 w-8 mb-2 ${documentType === type.id ? 'text-cyan-400' : 'text-gray-500'}`} />
-                <h4 className={`font-medium ${documentType === type.id ? 'text-white' : 'text-gray-300'}`}>
+                {uploaded && (
+                  <div className="absolute top-2 right-2">
+                    <CheckCircle className="h-4 w-4 text-green-400" />
+                  </div>
+                )}
+                <Icon className={`h-7 w-7 mb-2 ${documentType === type.id ? 'text-cyan-400' : uploaded ? 'text-green-400' : 'text-gray-500'}`} />
+                <h4 className={`font-medium text-sm ${documentType === type.id ? 'text-white' : 'text-gray-300'}`}>
                   {type.name}
                 </h4>
-                <p className="text-sm text-gray-500">{type.desc}</p>
+                <p className="text-xs text-gray-500 mt-0.5">{type.desc}</p>
+                {!type.required && <span className="text-xs text-gray-600 mt-1 block">Optional</span>}
               </button>
             );
           })}
@@ -123,7 +447,9 @@ const DocumentUpload = () => {
 
       {/* Upload Area */}
       <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-6">
-        <h3 className="text-lg font-semibold text-white mb-4">Upload Document</h3>
+        <h3 className="text-lg font-semibold text-white mb-4">
+          Upload {documentTypes.find(t => t.id === documentType)?.name}
+        </h3>
         <div
           {...getRootProps()}
           className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
@@ -155,107 +481,10 @@ const DocumentUpload = () => {
         </div>
       </div>
 
-      {/* Extracted Data Preview */}
-      {extractedData && (
-        <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-6 animate-scale-in">
-          <div className="flex items-center gap-3 mb-4">
-            <Sparkles className="h-6 w-6 text-purple-400" />
-            <h3 className="text-lg font-semibold text-white">AI Extracted Data</h3>
-          </div>
-          <div className="bg-[#0f0f0f] rounded-lg p-4 border border-gray-800">
-            {documentType === 'cnic' ? (
-              <div className="grid sm:grid-cols-2 gap-4">
-                {extractedData.cnic && (
-                  <div>
-                    <label className="text-xs font-medium text-gray-500 uppercase">CNIC Number</label>
-                    <p className="text-white font-medium">{extractedData.cnic}</p>
-                  </div>
-                )}
-                {extractedData.name && (
-                  <div>
-                    <label className="text-xs font-medium text-gray-500 uppercase">Name</label>
-                    <p className="text-white font-medium">{extractedData.name}</p>
-                  </div>
-                )}
-                {extractedData.father_name && (
-                  <div>
-                    <label className="text-xs font-medium text-gray-500 uppercase">Father&apos;s Name</label>
-                    <p className="text-white font-medium">{extractedData.father_name}</p>
-                  </div>
-                )}
-                {extractedData.date_of_birth && (
-                  <div>
-                    <label className="text-xs font-medium text-gray-500 uppercase">Date of Birth</label>
-                    <p className="text-white font-medium">{extractedData.date_of_birth}</p>
-                  </div>
-                )}
-                {extractedData.address && (
-                  <div className="sm:col-span-2">
-                    <label className="text-xs font-medium text-gray-500 uppercase">Address</label>
-                    <p className="text-white">{extractedData.address}</p>
-                  </div>
-                )}
-              </div>
-            ) : documentType === 'academic' ? (
-              <div className="grid sm:grid-cols-2 gap-4">
-                {extractedData.percentage && (
-                  <div>
-                    <label className="text-xs font-medium text-gray-500 uppercase">Percentage</label>
-                    <p className="text-white font-medium">{extractedData.percentage}%</p>
-                  </div>
-                )}
-                {extractedData.grade && (
-                  <div>
-                    <label className="text-xs font-medium text-gray-500 uppercase">Grade</label>
-                    <p className="text-white font-medium">{extractedData.grade}</p>
-                  </div>
-                )}
-                {extractedData.passing_year && (
-                  <div>
-                    <label className="text-xs font-medium text-gray-500 uppercase">Passing Year</label>
-                    <p className="text-white font-medium">{extractedData.passing_year}</p>
-                  </div>
-                )}
-                {extractedData.board && (
-                  <div>
-                    <label className="text-xs font-medium text-gray-500 uppercase">Board/University</label>
-                    <p className="text-white font-medium">{extractedData.board}</p>
-                  </div>
-                )}
-                {extractedData.subject_scores && Object.keys(extractedData.subject_scores).length > 0 && (
-                  <div className="sm:col-span-2">
-                    <label className="text-xs font-medium text-gray-500 uppercase">Subject Scores</label>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
-                      {Object.entries(extractedData.subject_scores).map(([subject, score]) => (
-                        <div key={subject} className="bg-[#1a1a1a] rounded px-3 py-2 border border-gray-800">
-                          <span className="text-sm text-gray-400">{subject}:</span>
-                          <span className="text-sm font-medium text-white ml-2">{score}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-gray-400">
-                <p>Document processed. Raw text extracted:</p>
-                <pre className="mt-2 p-3 bg-[#1a1a1a] rounded text-sm overflow-auto max-h-48 text-gray-300 border border-gray-800">
-                  {extractedData.raw_text}
-                </pre>
-              </div>
-            )}
-          </div>
-          <div className="mt-4 flex items-center gap-2 text-sm text-green-400">
-            <CheckCircle className="h-4 w-4" />
-            <span>Data extracted successfully</span>
-          </div>
-        </div>
-      )}
-
       {/* Uploaded Files List */}
       {uploadedFiles.length > 0 && (
         <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-6">
-          <h3 className="text-lg font-semibold text-white mb-4">Uploaded Documents</h3>
+          <h3 className="text-lg font-semibold text-white mb-4">Uploaded Documents ({uploadedFiles.length})</h3>
           <div className="space-y-3">
             {uploadedFiles.map((file, index) => (
               <div key={index} className="flex items-center justify-between p-4 bg-[#0f0f0f] rounded-lg border border-gray-800">
@@ -265,7 +494,10 @@ const DocumentUpload = () => {
                   </div>
                   <div>
                     <p className="font-medium text-white">{file.name}</p>
-                    <p className="text-sm text-gray-500 capitalize">{file.type} • Confidence: {file.confidence?.toFixed(1)}%</p>
+                    <p className="text-sm text-gray-500 capitalize">
+                      {documentTypes.find(t => t.id === file.type)?.name}
+                      {file.confidence ? ` • Confidence: ${file.confidence?.toFixed(1)}%` : ''}
+                    </p>
                   </div>
                 </div>
                 <button
@@ -292,6 +524,180 @@ const DocumentUpload = () => {
               <li>Upload the complete document without cropping</li>
               <li>Supported file formats: PDF, PNG, JPG</li>
             </ul>
+          </div>
+        </div>
+      </div>
+
+      {/* ===== BASIC ADMISSION FORM ===== */}
+      <div className="relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 via-purple-500/20 to-pink-500/20 rounded-2xl blur-xl opacity-30" />
+        <div className="relative bg-[#1a1a1a] rounded-2xl border border-gray-800 overflow-hidden">
+          {/* Form Header */}
+          <div className="bg-gradient-to-r from-cyan-600 to-purple-600 p-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-white/10 rounded-lg backdrop-blur-sm">
+                <User className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">Basic Admission Form</h2>
+                <p className="text-sm text-cyan-100 mt-0.5">
+                  Fields marked with <Sparkles className="h-3 w-3 inline text-purple-200" /> are auto-filled from your uploaded documents
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6 space-y-8">
+            {/* Personal Information */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="p-1.5 bg-cyan-500/10 rounded-lg border border-cyan-500/20">
+                  <User className="h-4 w-4 text-cyan-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-white">Personal Information</h3>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-4">
+                {renderField('Full Name', 'full_name', 'text', { placeholder: 'Enter full name' })}
+                {renderField("Father / Guardian Name", 'father_name', 'text', { placeholder: "Enter father's name" })}
+                {renderField('Date of Birth', 'date_of_birth', 'text', { placeholder: 'DD/MM/YYYY' })}
+                {renderField('Gender', 'gender', 'select', {
+                  placeholder: 'Select gender',
+                  selectOptions: [
+                    { value: 'male', label: 'Male' },
+                    { value: 'female', label: 'Female' },
+                    { value: 'other', label: 'Other' }
+                  ]
+                })}
+                {renderField('CNIC / B-Form Number', 'cnic', 'text', { placeholder: 'XXXXX-XXXXXXX-X' })}
+              </div>
+            </div>
+
+            <hr className="border-gray-800" />
+
+            {/* Contact Information */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="p-1.5 bg-green-500/10 rounded-lg border border-green-500/20">
+                  <Phone className="h-4 w-4 text-green-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-white">Contact Information</h3>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-4">
+                {renderField('Email Address', 'email', 'email', { placeholder: 'student@example.com', disabled: true })}
+                {renderField('Mobile Number', 'phone', 'tel', { placeholder: '03XX-XXXXXXX' })}
+                {renderField('Alternate Mobile Number', 'alternate_phone', 'tel', { placeholder: '03XX-XXXXXXX (Optional)' })}
+                <div>{/* spacer */}</div>
+                {renderField('Current Address', 'address', 'text', { placeholder: 'Enter current address', colSpan2: true })}
+                {renderField('Permanent Address', 'permanent_address', 'text', { placeholder: 'Enter permanent address', colSpan2: true })}
+              </div>
+            </div>
+
+            <hr className="border-gray-800" />
+
+            {/* Academic Information */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="p-1.5 bg-purple-500/10 rounded-lg border border-purple-500/20">
+                  <GraduationCap className="h-4 w-4 text-purple-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-white">Academic Information</h3>
+              </div>
+
+              {/* Matric Details */}
+              <div className="mb-6">
+                <h4 className="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+                  <Award className="h-4 w-4 text-yellow-400" />
+                  Matric / SSC Details
+                </h4>
+                <div className="grid sm:grid-cols-2 gap-4 pl-6 border-l-2 border-yellow-500/20">
+                  {renderField('Board', 'matric_board', 'text', { placeholder: 'e.g., BISE Lahore' })}
+                  {renderField('Passing Year', 'matric_passing_year', 'number', { placeholder: 'e.g., 2022' })}
+                  {renderField('Marks Obtained', 'matric_obtained_marks', 'number', { placeholder: 'e.g., 950' })}
+                  {renderField('Total Marks', 'matric_total_marks', 'number', { placeholder: 'e.g., 1100' })}
+                </div>
+              </div>
+
+              {/* Intermediate Details */}
+              <div>
+                <h4 className="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+                  <GraduationCap className="h-4 w-4 text-blue-400" />
+                  Intermediate / HSSC Details
+                </h4>
+                <div className="grid sm:grid-cols-2 gap-4 pl-6 border-l-2 border-blue-500/20">
+                  {renderField('Board', 'inter_board', 'text', { placeholder: 'e.g., BISE Lahore' })}
+                  {renderField('Passing Year', 'inter_passing_year', 'number', { placeholder: 'e.g., 2024' })}
+                  {renderField('Marks Obtained', 'inter_obtained_marks', 'number', { placeholder: 'e.g., 450' })}
+                  {renderField('Total Marks', 'inter_total_marks', 'number', { placeholder: 'e.g., 550' })}
+                </div>
+              </div>
+            </div>
+
+            <hr className="border-gray-800" />
+
+            {/* Declaration */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="p-1.5 bg-red-500/10 rounded-lg border border-red-500/20">
+                  <AlertCircle className="h-4 w-4 text-red-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-white">Declaration</h3>
+              </div>
+              <div className="space-y-4 bg-[#0f0f0f] rounded-xl p-5 border border-gray-800">
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <div className="relative flex items-center justify-center mt-0.5">
+                    <input
+                      type="checkbox"
+                      checked={declarations.confirmCorrect}
+                      onChange={(e) => setDeclarations(prev => ({ ...prev, confirmCorrect: e.target.checked }))}
+                      className="sr-only peer"
+                    />
+                    <div className="w-5 h-5 rounded border-2 border-gray-600 peer-checked:bg-cyan-500 peer-checked:border-cyan-500 transition-all flex items-center justify-center">
+                      {declarations.confirmCorrect && <CheckCircle className="h-3.5 w-3.5 text-white" />}
+                    </div>
+                  </div>
+                  <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
+                    I confirm that the extracted information is correct and I have reviewed all the auto-filled fields for accuracy.
+                  </span>
+                </label>
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <div className="relative flex items-center justify-center mt-0.5">
+                    <input
+                      type="checkbox"
+                      checked={declarations.understandFalseInfo}
+                      onChange={(e) => setDeclarations(prev => ({ ...prev, understandFalseInfo: e.target.checked }))}
+                      className="sr-only peer"
+                    />
+                    <div className="w-5 h-5 rounded border-2 border-gray-600 peer-checked:bg-cyan-500 peer-checked:border-cyan-500 transition-all flex items-center justify-center">
+                      {declarations.understandFalseInfo && <CheckCircle className="h-3.5 w-3.5 text-white" />}
+                    </div>
+                  </div>
+                  <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
+                    I understand that providing false information may result in cancellation of my admission.
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <div className="flex items-center justify-end gap-4 pt-2">
+              <button
+                onClick={handleSubmitProfile}
+                disabled={saving || !declarations.confirmCorrect || !declarations.understandFalseInfo}
+                className="inline-flex items-center px-8 py-3 bg-gradient-to-r from-cyan-500 to-cyan-600 text-white rounded-xl hover:from-cyan-600 hover:to-cyan-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed font-semibold shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/30"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="animate-spin -ml-1 mr-2 h-5 w-5" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-5 w-5 mr-2" />
+                    Submit Verified Profile
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>

@@ -34,9 +34,9 @@ const Layout = () => {
 
   const studentNavItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
+    { name: 'Document Upload', icon: Upload, path: '/dashboard/documents' },
     { name: 'My Applications', icon: FileText, path: '/dashboard/applications' },
     { name: 'Program Recommendations', icon: Sparkles, path: '/dashboard/recommendations' },
-    { name: 'Document Upload', icon: Upload, path: '/dashboard/documents' },
     { name: 'Merit List', icon: Award, path: '/dashboard/merit-list' },
   ];
 

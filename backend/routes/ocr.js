@@ -18,11 +18,22 @@ const extractCNICData = (text) => {
   const fatherPattern = /Father[\s:]+([A-Za-z\s]+)/i;
   const fatherMatch = text.match(fatherPattern);
   
-  const dobPattern = /Date of Birth[\s:]+(\d{2}[/-]\d{2}[/-]\d{4})/i;
+  // Support Date of Birth, DOB, D.O.B with slashes, hyphens or dots
+  const dobPattern = /(?:Date of Birth|DOB|D\.O\.B)[\s:]+(\d{2}[/.-]\d{2}[/.-]\d{4})/i;
   const dobMatch = text.match(dobPattern);
   
-  const addressPattern = /Address[\s:]+([A-Za-z0-9\s,]+)/i;
+  // Support alphanumeric characters, spaces, commas, dots, slashes, hyphens, and hash signs
+  const addressPattern = /Address[\s:]+([A-Za-z0-9\s,./#-]+)/i;
   const addressMatch = text.match(addressPattern);
+
+  // Gender extraction - prioritize Male/Female over single letters M/F
+  const genderPattern = /\b(Male|Female|MALE|FEMALE)\b/i;
+  const genderMatch = text.match(genderPattern) || text.match(/\b(M|F)\b/i);
+  let gender = null;
+  if (genderMatch) {
+    const g = genderMatch[1].toLowerCase();
+    gender = (g === 'm' || g === 'male') ? 'male' : (g === 'f' || g === 'female') ? 'female' : null;
+  }
   
   return {
     cnic: cnicMatch ? cnicMatch[0] : null,
@@ -30,6 +41,7 @@ const extractCNICData = (text) => {
     father_name: fatherMatch ? fatherMatch[1].trim() : null,
     date_of_birth: dobMatch ? dobMatch[1] : null,
     address: addressMatch ? addressMatch[1].trim() : null,
+    gender,
     raw_text: text
   };
 };
@@ -43,10 +55,25 @@ const extractAcademicData = (text) => {
   
   const yearPattern = /(20\d{2})\s*-\s*(20\d{2})/;
   const yearMatch = text.match(yearPattern);
+  // Fallback: single year
+  const singleYearPattern = /(?:Year|Passing)[\s:]*(20\d{2})/i;
+  const singleYearMatch = text.match(singleYearPattern);
   
-  const boardPattern = /(BISE\s+[A-Za-z]+|Board of Intermediate)/i;
+  const boardPattern = /(BISE\s+[A-Za-z]+|Board of Intermediate[\s\w]*)/i;
   const boardMatch = text.match(boardPattern);
   
+  // Roll number extraction
+  const rollPattern = /Roll\s*(?:No|Number|#)?[\s:.]+([A-Za-z0-9-]+)/i;
+  const rollMatch = text.match(rollPattern);
+
+  // Obtained marks / Total marks extraction
+  const marksPattern = /(\d+)\s*(?:out of|\/)\s*(\d+)/i;
+  const marksMatch = text.match(marksPattern);
+  const obtainedPattern = /(?:Obtained|Marks Obtained)[\s:]*(\d+)/i;
+  const obtainedMatch = text.match(obtainedPattern);
+  const totalPattern = /(?:Total Marks|Maximum Marks|Out of)[\s:]*(\d+)/i;
+  const totalMatch = text.match(totalPattern);
+
   const subjectPatterns = {
     'Physics': /Physics[\s:]+(\d+)/i,
     'Chemistry': /Chemistry[\s:]+(\d+)/i,
@@ -70,8 +97,11 @@ const extractAcademicData = (text) => {
   return {
     percentage: percentageMatch ? parseFloat(percentageMatch[1]) : null,
     grade: gradeMatch ? gradeMatch[1] : null,
-    passing_year: yearMatch ? yearMatch[2] : null,
+    passing_year: yearMatch ? yearMatch[2] : (singleYearMatch ? singleYearMatch[1] : null),
     board: boardMatch ? boardMatch[1] : null,
+    roll_number: rollMatch ? rollMatch[1] : null,
+    obtained_marks: marksMatch ? parseInt(marksMatch[1]) : (obtainedMatch ? parseInt(obtainedMatch[1]) : null),
+    total_marks: marksMatch ? parseInt(marksMatch[2]) : (totalMatch ? parseInt(totalMatch[1]) : null),
     subject_scores: subjectScores,
     raw_text: text
   };

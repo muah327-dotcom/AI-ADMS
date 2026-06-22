@@ -179,7 +179,20 @@ router.get('/me', async (req, res) => {
 router.put('/profile', authenticateToken, [
   body('full_name').optional().trim().notEmpty(),
   body('phone').optional().trim(),
-  body('address').optional().trim()
+  body('address').optional().trim(),
+  body('father_name').optional({ checkFalsy: true }).trim(),
+  body('date_of_birth').optional({ checkFalsy: true }).trim(),
+  body('gender').optional({ checkFalsy: true }).trim(),
+  body('alternate_phone').optional({ checkFalsy: true }).trim(),
+  body('permanent_address').optional({ checkFalsy: true }).trim(),
+  body('matric_board').optional({ checkFalsy: true }).trim(),
+  body('matric_passing_year').optional({ checkFalsy: true }).isInt(),
+  body('matric_obtained_marks').optional({ checkFalsy: true }).isInt(),
+  body('matric_total_marks').optional({ checkFalsy: true }).isInt(),
+  body('inter_board').optional({ checkFalsy: true }).trim(),
+  body('inter_passing_year').optional({ checkFalsy: true }).isInt(),
+  body('inter_obtained_marks').optional({ checkFalsy: true }).isInt(),
+  body('inter_total_marks').optional({ checkFalsy: true }).isInt()
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -187,13 +200,31 @@ router.put('/profile', authenticateToken, [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { full_name, phone, address, avatar_url } = req.body;
+    const {
+      full_name, phone, address, avatar_url,
+      father_name, date_of_birth, gender, alternate_phone, permanent_address,
+      matric_board, matric_passing_year, matric_obtained_marks, matric_total_marks,
+      inter_board, inter_passing_year, inter_obtained_marks, inter_total_marks
+    } = req.body;
     const updates = {};
     
     if (full_name) updates.full_name = full_name;
-    if (phone !== undefined) updates.phone = phone;
-    if (address !== undefined) updates.address = address;
+    if (phone !== undefined) updates.phone = phone || null;
+    if (address !== undefined) updates.address = address || null;
     if (avatar_url !== undefined) updates.avatar_url = avatar_url;
+    if (father_name !== undefined) updates.father_name = father_name || null;
+    if (date_of_birth !== undefined) updates.date_of_birth = date_of_birth || null;
+    if (gender !== undefined) updates.gender = gender || null;
+    if (alternate_phone !== undefined) updates.alternate_phone = alternate_phone || null;
+    if (permanent_address !== undefined) updates.permanent_address = permanent_address || null;
+    if (matric_board !== undefined) updates.matric_board = matric_board || null;
+    if (matric_passing_year !== undefined) updates.matric_passing_year = matric_passing_year || null;
+    if (matric_obtained_marks !== undefined) updates.matric_obtained_marks = matric_obtained_marks || null;
+    if (matric_total_marks !== undefined) updates.matric_total_marks = matric_total_marks || null;
+    if (inter_board !== undefined) updates.inter_board = inter_board || null;
+    if (inter_passing_year !== undefined) updates.inter_passing_year = inter_passing_year || null;
+    if (inter_obtained_marks !== undefined) updates.inter_obtained_marks = inter_obtained_marks || null;
+    if (inter_total_marks !== undefined) updates.inter_total_marks = inter_total_marks || null;
     updates.updated_at = new Date().toISOString();
 
     const user = await User.findByIdAndUpdate(
