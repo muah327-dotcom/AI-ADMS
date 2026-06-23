@@ -26,6 +26,25 @@ const Layout = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  React.useEffect(() => {
+    // Save original styles
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalBodyBg = document.body.style.backgroundColor;
+
+    // Set styles for dashboard layout
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    document.body.style.backgroundColor = '#0f0f0f';
+
+    return () => {
+      // Restore original styles on unmount
+      document.documentElement.style.overflow = originalHtmlOverflow;
+      document.body.style.overflow = originalBodyOverflow;
+      document.body.style.backgroundColor = originalBodyBg;
+    };
+  }, []);
+
   const handleLogout = () => {
     logout();
     toast.success('Logged out successfully');
