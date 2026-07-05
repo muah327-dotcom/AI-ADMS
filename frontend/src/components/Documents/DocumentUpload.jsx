@@ -60,6 +60,10 @@ const cleanAndScoreCandidates = (candidates) => {
     .map(c => {
       let clean = c.trim().replace(/^[^A-Za-z]+|[^A-Za-z]+$/g, '').trim();
       clean = clean.replace(/^[A-Za-z]{1,2}\s+(?=[A-Z])/, '').trim();
+      // Remove embedded special characters (quotes, punctuation)
+      clean = clean.replace(/[^A-Za-z\s]/g, '').trim();
+      // Remove trailing short words (1-2 chars) that are OCR noise
+      clean = clean.replace(/\s+[A-Za-z]{1,2}$/g, '').trim();
       return { original: c, clean, score: getCandidateScore(clean) };
     })
     .filter(item => {
