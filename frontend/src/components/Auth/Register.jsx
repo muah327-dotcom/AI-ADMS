@@ -42,7 +42,7 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     setIsLoading(true);
@@ -51,7 +51,7 @@ const Register = () => {
       const { confirm_password, ...registerData } = formData;
       // Force role to be student - no admin registration allowed
       const result = await register({ ...registerData, role: 'student' });
-      
+
       if (result.success) {
         toast.success('Registration successful! Welcome aboard.');
         navigate(result.user.role === 'admin' ? '/admin' : '/dashboard');

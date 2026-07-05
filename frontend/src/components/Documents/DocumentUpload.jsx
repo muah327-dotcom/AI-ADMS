@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import Tesseract from 'tesseract.js';
 import { useDropzone } from 'react-dropzone';
 import { useAuth } from '../../hooks/useAuth';
 import {
@@ -22,6 +23,206 @@ import {
   Save
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+
+// ===== OCR Extraction Helpers (client-side) =====
+const cleanOcrText = (text) => {
+  return text
+    .replace(/[^\x00-\x7F\s]/g, ' ')
+    .replace(/\r\n/g, '\n')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+};
+
+const fixOcrDigits = (str) => {
+  return str
+    .replace(/O/gi, '0')
+    .replace(/[Il]/g, '1')
+    .replace(/S/gi, '5')
+    .replace(/B/g, '8')
+    .replace(/Z/gi, '2');
+};
+
+const getCandidateScore = (nameStr) => {
+  const words = nameStr.split(/\s+/).filter(w => w.length > 0);
+  let score = nameStr.length;
+  if (words.length >= 2) score += 20;
+  const hasSingleCharWord = words.some(w => w.length === 1);
+  if (hasSingleCharWord) score -= 15;
+  if (words.length === 1 && nameStr.length <= 4) score -= 30;
+  if (/^(Nal|Nam|Nom|Nene|Namo)$/i.test(nameStr)) score -= 50;
+  return score;
+};
+
+const cleanAndScoreCandidates = (candidates) => {
+  if (!candidates || candidates.length === 0) return null;
+  const scored = candidates
+    .map(c => {
+      let clean = c.trim().replace(/^[^A-Za-z]+|[^A-Za-z]+$/g, '').trim();
+      clean = clean.replace(/^[A-Za-z]{1,2}\s+(?=[A-Z])/, '').trim();
+      return { original: c, clean, score: getCandidateScore(clean) };
+    })
+    .filter(item => {
+      if (item.clean.length < 3) return false;
+      if (/^(Nal|Nam|Nom|Nene|Namo|Card|Holder|Father|Husband|Date|Gender|Sex|Country|Expiry|Issue|National|Republic)$/i.test(item.clean)) return false;
+      return true;
+    });
+  if (scored.length === 0) return null;
+  scored.sort((a, b) => b.score - a.score);
+  return scored[0].clean;
+};
+
+const extractCNICData = (rawText) => {
+  const text = rawText || '';
+  const cleanText = cleanOcrText(text);
+  const lines = cleanText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+  // 1. CNIC Number
+  let cnic = null;
+  const robustCnicPattern = /\b([0-9OolISB]{5})[-\s]?([0-9OolISB]{7})[-\s]?([0-9OolISB])\b/i;
+  const cnicMatch = cleanText.match(robustCnicPattern);
+  if (cnicMatch) {
+    cnic = `${fixOcrDigits(cnicMatch[1])}-${fixOcrDigits(cnicMatch[2])}-${fixOcrDigits(cnicMatch[3])}`;
+  }
+
+  // 2. Name
+  let name = null;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/(?:Name|Narne|Namo|Nene|Holder|Card|Nal)/i.test(line) && !/(?:Father|Husband|Mother|Date|Birth|CNIC|Identity|Gender|Sex)/i.test(line)) {
+      const candidates = [];
+      const sameLineMatch = line.match(/(?:Name|Narne|Namo|Nene|Holder|Card|Nal)\s*[^A-Za-z]*(.+)$/i);
+      if (sameLineMatch && sameLineMatch[1]) candidates.push(sameLineMatch[1]);
+      for (let j = 1; j <= 3; j++) {
+        const nextLine = lines[i + j];
+        if (!nextLine) break;
+        if (/(?:Father|Husband|Mother|Date|Birth|CNIC|Identity|Gender|Sex|Country|Expiry|Issue|Card|National)/i.test(nextLine)) break;
+        candidates.push(nextLine);
+      }
+      name = cleanAndScoreCandidates(candidates);
+      if (name) break;
+    }
+  }
+
+  // 3. Father / Husband Name
+  let fatherName = null;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/(?:Father|Husband|Fathor|Fathar|Falher|Fathsr|Fatner|Fathe|F[ao]th|Husb)/i.test(line) && !/(?:Date|Birth|CNIC|Identity|Gender|Sex)/i.test(line)) {
+      const candidates = [];
+      const sameLineMatch = line.match(/(?:Father|Husband|Fathor|Fathar|Falher|Fathsr|Fatner|Fathe|F[ao]th|Husb)(?:[\s']*(?:Name|Narne|Namo))?\s*[^A-Za-z]*(.+)$/i);
+      if (sameLineMatch && sameLineMatch[1]) candidates.push(sameLineMatch[1]);
+      for (let j = 1; j <= 3; j++) {
+        const nextLine = lines[i + j];
+        if (!nextLine) break;
+        if (/(?:Father|Husband|Mother|Date|Birth|CNIC|Identity|Gender|Sex|Country|Expiry|Issue|Card|National)/i.test(nextLine)) break;
+        candidates.push(nextLine);
+      }
+      fatherName = cleanAndScoreCandidates(candidates);
+      if (fatherName) break;
+    }
+  }
+  // Fallback father name
+  if (!fatherName && name) {
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (line.includes(name)) continue;
+      if (/(?:Name|Narne|Namo|Nal|Date|Birth|Gender|Sex|CNIC|Identity|Country|Expiry|Issue|Card|National|Address|Republic)/i.test(line)) continue;
+      if (/\d{5}-\d{7}-\d/.test(line) || /\d{1,2}[.\-\/]\d{1,2}[.\-\/]\d{4}/.test(line)) continue;
+      const cleanLine = line.replace(/^[^A-Za-z]+|[^A-Za-z]+$/g, '').replace(/^[A-Za-z]{1,2}\s+(?=[A-Z])/, '').trim();
+      const words = cleanLine.split(/\s+/).filter(w => w.length > 1);
+      if (words.length >= 2 && words.every(w => /^[A-Z]/.test(w)) && cleanLine !== name) {
+        fatherName = cleanLine;
+        break;
+      }
+    }
+  }
+
+  // 4. Date of Birth
+  let dateOfBirth = null;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/Date\s*(?:of)?\s*Birth|Birth\s*Date|D\.?O\.?B/i.test(line)) {
+      for (let j = 0; j <= 2; j++) {
+        const checkLine = lines[i + j];
+        if (!checkLine) continue;
+        for (const token of checkLine.split(/\s+/)) {
+          const dateMatch = token.match(/\b([0-9OolISB]{1,2})[.\-\/]([0-9OolISB]{1,2})[.\-\/]([0-9OolISB]{4})\b/i);
+          if (dateMatch) {
+            const day = fixOcrDigits(dateMatch[1]).padStart(2, '0');
+            const month = fixOcrDigits(dateMatch[2]).padStart(2, '0');
+            const year = fixOcrDigits(dateMatch[3]);
+            if (parseInt(day) <= 31 && parseInt(month) <= 12 && parseInt(year) >= 1950 && parseInt(year) <= 2015) {
+              dateOfBirth = `${day}/${month}/${year}`;
+              break;
+            }
+          }
+        }
+        if (dateOfBirth) break;
+      }
+    }
+    if (dateOfBirth) break;
+  }
+
+  // 5. Gender
+  let gender = null;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/Gender|Sex/i.test(line)) {
+      for (let j = 0; j <= 2; j++) {
+        const checkLine = lines[i + j];
+        if (!checkLine) continue;
+        for (const token of checkLine.split(/[\s/]+/)) {
+          const cleanToken = token.trim().toUpperCase();
+          if (cleanToken === 'M' || cleanToken === 'MALE') { gender = 'male'; break; }
+          else if (cleanToken === 'F' || cleanToken === 'FEMALE') { gender = 'female'; break; }
+        }
+        if (gender) break;
+      }
+    }
+    if (gender) break;
+  }
+
+  // 6. Address
+  let address = null;
+  const addressPatterns = [
+    /(?:Address|Addr)\s*[:\-\/\s]+([A-Za-z0-9][A-Za-z0-9 ,.\/#\-]{10,})/im,
+    /(?:Address|Addr)\s*\n\s*([A-Za-z0-9][A-Za-z0-9 ,.\/#\-]{10,})/im,
+  ];
+  for (const pattern of addressPatterns) {
+    const match = cleanText.match(pattern);
+    if (match) {
+      address = match[1].trim().replace(/\s*(Country|Expiry|Date).*$/i, '').trim();
+      if (address.length < 10) address = null;
+      else break;
+    }
+  }
+
+  return { cnic, name, father_name: fatherName, date_of_birth: dateOfBirth, gender, address };
+};
+
+const extractAcademicData = (text) => {
+  const percentageMatch = text.match(/(\d+(?:\.\d+)?)\s*%/);
+  const gradeMatch = text.match(/Grade[\s:]+([A-F][+-]?)/i);
+  const yearMatch = text.match(/(20\d{2})\s*-\s*(20\d{2})/);
+  const singleYearMatch = text.match(/(?:Year|Passing)[\s:]*(20\d{2})/i);
+  const boardMatch = text.match(/(BISE\s+[A-Za-z]+|Board of Intermediate[\s\w]*)/i);
+  const rollMatch = text.match(/Roll\s*(?:No|Number|#)?[\s:.]+([A-Za-z0-9-]+)/i);
+  const marksMatch = text.match(/(\d+)\s*(?:out of|\/)\s*(\d+)/i);
+  const obtainedMatch = text.match(/(?:Obtained|Marks Obtained)[\s:]*(\d+)/i);
+  const totalMatch = text.match(/(?:Total Marks|Maximum Marks|Out of)[\s:]*(\d+)/i);
+
+  return {
+    percentage: percentageMatch ? parseFloat(percentageMatch[1]) : null,
+    grade: gradeMatch ? gradeMatch[1] : null,
+    passing_year: yearMatch ? yearMatch[2] : (singleYearMatch ? singleYearMatch[1] : null),
+    board: boardMatch ? boardMatch[1] : null,
+    roll_number: rollMatch ? rollMatch[1] : null,
+    obtained_marks: marksMatch ? parseInt(marksMatch[1]) : (obtainedMatch ? parseInt(obtainedMatch[1]) : null),
+    total_marks: marksMatch ? parseInt(marksMatch[2]) : (totalMatch ? parseInt(totalMatch[1]) : null),
+  };
+};
+// ===== End OCR Helpers =====
 
 const DocumentUpload = () => {
   const { user, setUser } = useAuth();
@@ -206,40 +407,49 @@ const DocumentUpload = () => {
         return;
       }
 
-      const formDataUpload = new FormData();
-      formDataUpload.append('document', file);
-
-      // Map our document types to the backend's expected types
-      const backendType = (documentType === 'matric' || documentType === 'intermediate' || documentType === 'transcript')
-        ? 'academic' : documentType === 'cnic' ? 'cnic' : 'other';
-      formDataUpload.append('document_type', backendType);
-
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/ocr/extract', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formDataUpload
+      // Client-side OCR using Tesseract.js (no backend call needed)
+      const result = await Tesseract.recognize(file, 'eng', {
+        logger: m => {
+          if (m.status === 'recognizing text') {
+            console.log(`OCR Progress: ${(m.progress * 100).toFixed(0)}%`);
+          }
+        }
       });
 
-      const data = await response.json();
+      const extractedText = result?.data?.text || '';
+      const confidence = result?.data?.confidence || 0;
 
-      if (response.ok) {
-        setUploadedFiles(prev => [...prev, {
-          name: file.name,
-          type: documentType,
-          extractedData: data.extracted_data,
-          confidence: data.confidence
-        }]);
-
-        // Auto-fill form fields from OCR data
-        autoFillFromOCR(data.extracted_data, documentType);
-
-        toast.success('Document processed & data extracted successfully!');
-      } else {
-        toast.error(data.error || 'Failed to process document');
+      if (!extractedText || extractedText.trim().length === 0) {
+        toast.error('No text could be extracted. Please ensure the image is clear and well-lit.');
+        setUploading(false);
+        setProcessingFile(null);
+        return;
       }
+
+      // Map document types and run extraction
+      const docCategory = (documentType === 'matric' || documentType === 'intermediate' || documentType === 'transcript')
+        ? 'academic' : documentType === 'cnic' ? 'cnic' : 'other';
+
+      let extractedData;
+      if (docCategory === 'cnic') {
+        extractedData = extractCNICData(extractedText);
+      } else if (docCategory === 'academic') {
+        extractedData = extractAcademicData(extractedText);
+      } else {
+        extractedData = { ...extractCNICData(extractedText), ...extractAcademicData(extractedText) };
+      }
+
+      setUploadedFiles(prev => [...prev, {
+        name: file.name,
+        type: documentType,
+        extractedData,
+        confidence
+      }]);
+
+      // Auto-fill form fields from OCR data
+      autoFillFromOCR(extractedData, documentType);
+
+      toast.success('Document processed & data extracted successfully!');
     } catch (error) {
       console.error('Upload error:', error);
       toast.error('Error processing document');
