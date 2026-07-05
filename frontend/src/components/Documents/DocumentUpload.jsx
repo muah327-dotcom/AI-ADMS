@@ -130,10 +130,10 @@ const extractCNICData = (rawText) => {
       if (/(?:Name|Narne|Namo|Nal|Date|Birth|Gender|Sex|CNIC|Identity|Country|Expiry|Issue|Card|National|Address|Republic)/i.test(line)) continue;
       if (/\d{5}-\d{7}-\d/.test(line) || /\d{1,2}[.\-\/]\d{1,2}[.\-\/]\d{4}/.test(line)) continue;
       const cleanLine = line.replace(/^[^A-Za-z]+|[^A-Za-z]+$/g, '').replace(/^[A-Za-z]{1,2}\s+(?=[A-Z])/, '').trim();
-      const words = cleanLine.split(/\s+/).filter(w => w.length > 0);
-      // Accept lines with 2+ words that look like a name (at least first word capitalized)
-      if (words.length >= 2 && /^[A-Z]/.test(words[0]) && cleanLine.length >= 5 && cleanLine !== name) {
-        fatherName = cleanLine;
+      const words = cleanLine.split(/\s+/).filter(w => w.length >= 3);
+      // Accept lines with 2+ real words (each 3+ chars), first word capitalized
+      if (words.length >= 2 && /^[A-Z]/.test(words[0]) && cleanLine.length >= 6 && cleanLine !== name) {
+        fatherName = words.join(' ');
         break;
       }
     }
