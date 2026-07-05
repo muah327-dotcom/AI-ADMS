@@ -122,7 +122,7 @@ const extractCNICData = (rawText) => {
       if (fatherName) break;
     }
   }
-  // Fallback father name
+  // Fallback father name: scan for name-like lines that aren't the holder's name
   if (!fatherName && name) {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
@@ -130,8 +130,9 @@ const extractCNICData = (rawText) => {
       if (/(?:Name|Narne|Namo|Nal|Date|Birth|Gender|Sex|CNIC|Identity|Country|Expiry|Issue|Card|National|Address|Republic)/i.test(line)) continue;
       if (/\d{5}-\d{7}-\d/.test(line) || /\d{1,2}[.\-\/]\d{1,2}[.\-\/]\d{4}/.test(line)) continue;
       const cleanLine = line.replace(/^[^A-Za-z]+|[^A-Za-z]+$/g, '').replace(/^[A-Za-z]{1,2}\s+(?=[A-Z])/, '').trim();
-      const words = cleanLine.split(/\s+/).filter(w => w.length > 1);
-      if (words.length >= 2 && words.every(w => /^[A-Z]/.test(w)) && cleanLine !== name) {
+      const words = cleanLine.split(/\s+/).filter(w => w.length > 0);
+      // Accept lines with 2+ words that look like a name (at least first word capitalized)
+      if (words.length >= 2 && /^[A-Z]/.test(words[0]) && cleanLine.length >= 5 && cleanLine !== name) {
         fatherName = cleanLine;
         break;
       }
@@ -181,6 +182,27 @@ const extractCNICData = (rawText) => {
       }
     }
     if (gender) break;
+  }
+
+  // Gender fallback: scan entire text for standalone Male/Female
+  if (!gender) {
+    for (const line of lines) {
+      const tokens = line.split(/[\s/,;:]+/);
+      for (const token of tokens) {
+        const t = token.trim().toUpperCase();
+        if (t === 'MALE') { gender = 'male'; break; }
+        if (t === 'FEMALE') { gender = 'female'; break; }
+      }
+      if (gender) break;
+    }
+  }
+
+  // Gender fallback: infer from CNIC last digit (Pakistani CNICs: odd = male, even = female)
+  if (!gender && cnic) {
+    const lastDigit = parseInt(cnic.replace(/-/g, '').slice(-1));
+    if (!isNaN(lastDigit)) {
+      gender = lastDigit % 2 !== 0 ? 'male' : 'female';
+    }
   }
 
   // 6. Address
