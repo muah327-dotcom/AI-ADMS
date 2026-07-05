@@ -14,11 +14,11 @@ const router = express.Router();
 
 const generateToken = (user) => {
   return jwt.sign(
-    { 
-      id: user.id, 
-      email: user.email, 
+    {
+      id: user.id,
+      email: user.email,
       role: user.role,
-      full_name: user.full_name 
+      full_name: user.full_name
     },
     process.env.JWT_SECRET,
     { expiresIn: '24h' }
@@ -38,7 +38,7 @@ router.post('/register', [
     }
 
     const { email, password, full_name, cnic, phone, address } = req.body;
-    
+
     // Force role to always be student - admin registration not allowed
     const role = 'student';
 
@@ -162,7 +162,7 @@ router.get('/me', async (req, res) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
+
     const user = await User.findById(decoded.id).select('-password');
 
     if (!user) {
@@ -180,10 +180,12 @@ router.put('/profile', authenticateToken, [
   body('full_name').optional().trim().notEmpty(),
   body('phone').optional().trim(),
   body('address').optional().trim(),
+  body('cnic').optional({ checkFalsy: true }).trim(),
   body('father_name').optional({ checkFalsy: true }).trim(),
   body('date_of_birth').optional({ checkFalsy: true }).trim(),
   body('gender').optional({ checkFalsy: true }).trim(),
   body('alternate_phone').optional({ checkFalsy: true }).trim(),
+  body('father_phone').optional({ checkFalsy: true }).trim(),
   body('permanent_address').optional({ checkFalsy: true }).trim(),
   body('matric_board').optional({ checkFalsy: true }).trim(),
   body('matric_passing_year').optional({ checkFalsy: true }).isInt(),
@@ -201,21 +203,23 @@ router.put('/profile', authenticateToken, [
     }
 
     const {
-      full_name, phone, address, avatar_url,
-      father_name, date_of_birth, gender, alternate_phone, permanent_address,
+      full_name, phone, address, avatar_url, cnic,
+      father_name, date_of_birth, gender, alternate_phone, father_phone, permanent_address,
       matric_board, matric_passing_year, matric_obtained_marks, matric_total_marks,
       inter_board, inter_passing_year, inter_obtained_marks, inter_total_marks
     } = req.body;
     const updates = {};
-    
+
     if (full_name) updates.full_name = full_name;
     if (phone !== undefined) updates.phone = phone || null;
     if (address !== undefined) updates.address = address || null;
     if (avatar_url !== undefined) updates.avatar_url = avatar_url;
+    if (cnic !== undefined) updates.cnic = cnic || null;
     if (father_name !== undefined) updates.father_name = father_name || null;
     if (date_of_birth !== undefined) updates.date_of_birth = date_of_birth || null;
     if (gender !== undefined) updates.gender = gender || null;
     if (alternate_phone !== undefined) updates.alternate_phone = alternate_phone || null;
+    if (father_phone !== undefined) updates.father_phone = father_phone || null;
     if (permanent_address !== undefined) updates.permanent_address = permanent_address || null;
     if (matric_board !== undefined) updates.matric_board = matric_board || null;
     if (matric_passing_year !== undefined) updates.matric_passing_year = matric_passing_year || null;
@@ -285,7 +289,7 @@ router.put('/change-password', authenticateToken, [
 router.post('/upload-avatar', authenticateToken, async (req, res) => {
   try {
     const { avatar_base64, file_name } = req.body;
-    
+
     if (!avatar_base64) {
       return res.status(400).json({ error: 'Avatar data is required' });
     }
@@ -293,17 +297,17 @@ router.post('/upload-avatar', authenticateToken, async (req, res) => {
     // Convert base64 to buffer
     const base64Data = avatar_base64.replace(/^data:image\/\w+;base64,/, '');
     const buffer = Buffer.from(base64Data, 'base64');
-    
+
     // Generate unique filename
     const fileExt = file_name ? file_name.split('.').pop() : 'png';
     const fileName = `${req.user.id}-${Date.now()}.${fileExt}`;
-    
+
     // Upload file to GridFS (MongoDB storage bucket)
     const fileId = await uploadFileToGridFS(buffer, fileName, {
       userId: req.user.id,
       contentType: `image/${fileExt}`
     });
-    
+
     // Store GridFS file ID as avatar URL
     const avatarUrl = `/api/auth/avatar/${fileId}`;
 
@@ -367,32 +371,32 @@ router.delete('/remove-avatar', authenticateToken, async (req, res) => {
 router.get('/avatar/:fileId', async (req, res) => {
   try {
     const { fileId } = req.params;
-    
+
     // Validate fileId format
     if (!fileId || fileId.length !== 24) {
       return res.status(400).json({ error: 'Invalid file ID' });
     }
-    
+
     const bucket = getGridFS();
     if (!bucket) {
       return res.status(500).json({ error: 'GridFS not initialized' });
     }
-    
+
     // Find file metadata
     const files = await bucket.find({ _id: new mongoose.Types.ObjectId(fileId) }).toArray();
     if (!files || files.length === 0) {
       return res.status(404).json({ error: 'File not found' });
     }
-    
+
     const file = files[0];
-    
+
     // Set content type
     res.set('Content-Type', file.metadata?.contentType || 'image/png');
-    
+
     // Stream file to response
     const downloadStream = bucket.openDownloadStream(new mongoose.Types.ObjectId(fileId));
     downloadStream.pipe(res);
-    
+
     downloadStream.on('error', (err) => {
       console.error('GridFS download error:', err);
       res.status(500).json({ error: 'Failed to retrieve file' });

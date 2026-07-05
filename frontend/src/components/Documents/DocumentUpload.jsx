@@ -49,6 +49,7 @@ const DocumentUpload = () => {
     email: '',
     phone: '',
     alternate_phone: '',
+    father_phone: '',
     address: '',
     permanent_address: '',
     // Academic Information - Matric
@@ -79,6 +80,7 @@ const DocumentUpload = () => {
         email: user.email || prev.email,
         phone: user.phone || prev.phone,
         alternate_phone: user.alternate_phone || prev.alternate_phone,
+        father_phone: user.father_phone || prev.father_phone,
         address: user.address || prev.address,
         permanent_address: user.permanent_address || prev.permanent_address,
         matric_board: user.matric_board || prev.matric_board,
@@ -110,71 +112,67 @@ const DocumentUpload = () => {
       const updated = { ...prev };
 
       if (docType === 'cnic') {
-        if (extractedData.name && !prev.full_name) {
+        if (extractedData.name) {
           updated.full_name = extractedData.name;
           newFilledFields.add('full_name');
         }
-        if (extractedData.father_name && !prev.father_name) {
+        if (extractedData.father_name) {
           updated.father_name = extractedData.father_name;
           newFilledFields.add('father_name');
         }
-        if (extractedData.date_of_birth && !prev.date_of_birth) {
+        if (extractedData.date_of_birth) {
           updated.date_of_birth = extractedData.date_of_birth;
           newFilledFields.add('date_of_birth');
         }
-        if (extractedData.gender && !prev.gender) {
+        if (extractedData.gender) {
           updated.gender = extractedData.gender;
           newFilledFields.add('gender');
         }
-        if (extractedData.cnic && !prev.cnic) {
+        if (extractedData.cnic) {
           updated.cnic = extractedData.cnic;
           newFilledFields.add('cnic');
         }
         if (extractedData.address) {
-          if (!prev.address) {
-            updated.address = extractedData.address;
-            newFilledFields.add('address');
-          }
-          if (!prev.permanent_address) {
-            updated.permanent_address = extractedData.address;
-            newFilledFields.add('permanent_address');
-          }
+          updated.address = extractedData.address;
+          newFilledFields.add('address');
+          updated.permanent_address = extractedData.address;
+          newFilledFields.add('permanent_address');
         }
       }
 
       if (docType === 'matric') {
-        if (extractedData.board && !prev.matric_board) {
+        if (extractedData.board) {
           updated.matric_board = extractedData.board;
           newFilledFields.add('matric_board');
         }
-        if (extractedData.passing_year && !prev.matric_passing_year) {
+        if (extractedData.passing_year) {
           updated.matric_passing_year = extractedData.passing_year;
           newFilledFields.add('matric_passing_year');
         }
-        if (extractedData.obtained_marks && !prev.matric_obtained_marks) {
+        if (extractedData.obtained_marks) {
           updated.matric_obtained_marks = extractedData.obtained_marks;
           newFilledFields.add('matric_obtained_marks');
         }
-        if (extractedData.total_marks && !prev.matric_total_marks) {
+        if (extractedData.total_marks) {
           updated.matric_total_marks = extractedData.total_marks;
           newFilledFields.add('matric_total_marks');
         }
       }
 
       if (docType === 'intermediate' || docType === 'transcript') {
-        if (extractedData.board && !prev.inter_board) {
+        if (extractedData.board) {
           updated.inter_board = extractedData.board;
           newFilledFields.add('inter_board');
         }
-        if (extractedData.passing_year && !prev.inter_passing_year) {
+        if (extractedData.passing_year) {
           updated.inter_passing_year = extractedData.passing_year;
           newFilledFields.add('inter_passing_year');
         }
-        if (extractedData.obtained_marks && !prev.inter_obtained_marks) {
+        if (extractedData.obtained_marks) {
           updated.inter_obtained_marks = extractedData.obtained_marks;
           newFilledFields.add('inter_obtained_marks');
         }
-        if (extractedData.total_marks && !prev.inter_total_marks) {
+        if (extractedData.total_marks) {
           updated.inter_total_marks = extractedData.total_marks;
           newFilledFields.add('inter_total_marks');
         }
@@ -290,10 +288,12 @@ const DocumentUpload = () => {
         full_name: formData.full_name,
         phone: formData.phone,
         address: formData.address,
+        cnic: formData.cnic,
         father_name: formData.father_name,
         date_of_birth: formData.date_of_birth,
         gender: formData.gender,
         alternate_phone: formData.alternate_phone,
+        father_phone: formData.father_phone,
         permanent_address: formData.permanent_address,
         matric_board: formData.matric_board,
         matric_passing_year: formData.matric_passing_year ? parseInt(formData.matric_passing_year) : undefined,
@@ -352,9 +352,8 @@ const DocumentUpload = () => {
             value={formData[field] || ''}
             onChange={(e) => handleFormChange(field, e.target.value)}
             disabled={options.disabled}
-            className={`w-full px-4 py-2.5 bg-[#0f0f0f] border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white transition-all ${
-              isOcrFilled ? 'border-purple-500/50' : 'border-gray-700'
-            } ${options.disabled ? 'text-gray-500 cursor-not-allowed' : ''}`}
+            className={`w-full px-4 py-2.5 bg-[#0f0f0f] border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white transition-all ${isOcrFilled ? 'border-purple-500/50' : 'border-gray-700'
+              } ${options.disabled ? 'text-gray-500 cursor-not-allowed' : ''}`}
           >
             <option value="">{options.placeholder || 'Select...'}</option>
             {(options.selectOptions || []).map(opt => (
@@ -368,9 +367,8 @@ const DocumentUpload = () => {
             onChange={(e) => handleFormChange(field, e.target.value)}
             placeholder={options.placeholder || ''}
             disabled={options.disabled}
-            className={`w-full px-4 py-2.5 bg-[#0f0f0f] border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white placeholder-gray-500 transition-all ${
-              isOcrFilled ? 'border-purple-500/50' : 'border-gray-700'
-            } ${options.disabled ? 'text-gray-500 cursor-not-allowed' : ''}`}
+            className={`w-full px-4 py-2.5 bg-[#0f0f0f] border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white placeholder-gray-500 transition-all ${isOcrFilled ? 'border-purple-500/50' : 'border-gray-700'
+              } ${options.disabled ? 'text-gray-500 cursor-not-allowed' : ''}`}
           />
         )}
       </div>
@@ -420,13 +418,12 @@ const DocumentUpload = () => {
               <button
                 key={type.id}
                 onClick={() => setDocumentType(type.id)}
-                className={`p-4 rounded-xl border-2 text-left transition-all relative ${
-                  documentType === type.id
-                    ? 'border-cyan-500 bg-cyan-500/10'
-                    : uploaded
+                className={`p-4 rounded-xl border-2 text-left transition-all relative ${documentType === type.id
+                  ? 'border-cyan-500 bg-cyan-500/10'
+                  : uploaded
                     ? 'border-green-500/30 bg-green-500/5'
                     : 'border-gray-700 hover:border-gray-600'
-                }`}
+                  }`}
               >
                 {uploaded && (
                   <div className="absolute top-2 right-2">
@@ -452,11 +449,10 @@ const DocumentUpload = () => {
         </h3>
         <div
           {...getRootProps()}
-          className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
-            isDragActive
-              ? 'border-cyan-500 bg-cyan-500/10'
-              : 'border-gray-700 hover:border-gray-600 bg-[#0f0f0f]'
-          } ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+          className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${isDragActive
+            ? 'border-cyan-500 bg-cyan-500/10'
+            : 'border-gray-700 hover:border-gray-600 bg-[#0f0f0f]'
+            } ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           <input {...getInputProps()} />
           <div className="mx-auto w-16 h-16 bg-cyan-500/10 rounded-full flex items-center justify-center mb-4">
@@ -585,8 +581,8 @@ const DocumentUpload = () => {
               <div className="grid sm:grid-cols-2 gap-4">
                 {renderField('Email Address', 'email', 'email', { placeholder: 'student@example.com', disabled: true })}
                 {renderField('Mobile Number', 'phone', 'tel', { placeholder: '03XX-XXXXXXX' })}
+                {renderField("Father's / Guardian Phone Number", 'father_phone', 'tel', { placeholder: '03XX-XXXXXXX' })}
                 {renderField('Alternate Mobile Number', 'alternate_phone', 'tel', { placeholder: '03XX-XXXXXXX (Optional)' })}
-                <div>{/* spacer */}</div>
                 {renderField('Current Address', 'address', 'text', { placeholder: 'Enter current address', colSpan2: true })}
                 {renderField('Permanent Address', 'permanent_address', 'text', { placeholder: 'Enter permanent address', colSpan2: true })}
               </div>

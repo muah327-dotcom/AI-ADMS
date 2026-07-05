@@ -49,6 +49,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  father_phone: {
+    type: String,
+    default: null
+  },
   permanent_address: {
     type: String,
     default: null
