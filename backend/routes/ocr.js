@@ -69,6 +69,10 @@ const cleanAndScoreCandidates = (candidates) => {
       let clean = c.trim().replace(/^[^A-Za-z]+|[^A-Za-z]+$/g, '').trim();
       // Remove leading short OCR noise fragments (1-2 char garbage before real name)
       clean = clean.replace(/^[A-Za-z]{1,2}\s+(?=[A-Z])/, '').trim();
+      // Remove embedded special characters (quotes, punctuation)
+      clean = clean.replace(/[^A-Za-z\s]/g, '').trim();
+      // Remove trailing short words (1-2 chars) that are OCR noise
+      clean = clean.replace(/\s+[A-Za-z]{1,2}$/g, '').trim();
       return {
         original: c,
         clean: clean,
@@ -251,6 +255,13 @@ const extractCNICData = (rawText) => {
       if (address.length < 10) address = null;
       else break;
     }
+  }
+
+  if (fatherName) {
+    fatherName = fatherName.trim().replace(/^[^A-Za-z]+|[^A-Za-z]+$/g, '').trim();
+    fatherName = fatherName.replace(/^[A-Za-z]{1,2}\s+(?=[A-Z])/, '').trim();
+    fatherName = fatherName.replace(/[^A-Za-z\s]/g, '').trim();
+    fatherName = fatherName.replace(/\s+[A-Za-z]{1,2}$/g, '').trim();
   }
 
   const result = {

@@ -224,6 +224,13 @@ const extractCNICData = (rawText) => {
     }
   }
 
+  if (fatherName) {
+    fatherName = fatherName.trim().replace(/^[^A-Za-z]+|[^A-Za-z]+$/g, '').trim();
+    fatherName = fatherName.replace(/^[A-Za-z]{1,2}\s+(?=[A-Z])/, '').trim();
+    fatherName = fatherName.replace(/[^A-Za-z\s]/g, '').trim();
+    fatherName = fatherName.replace(/\s+[A-Za-z]{1,2}$/g, '').trim();
+  }
+
   return { cnic, name, father_name: fatherName, date_of_birth: dateOfBirth, gender, address };
 };
 
