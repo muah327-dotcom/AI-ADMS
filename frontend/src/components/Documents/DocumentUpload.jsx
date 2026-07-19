@@ -235,24 +235,286 @@ const extractCNICData = (rawText) => {
 };
 
 const extractAcademicData = (text) => {
+  const cleanText = cleanOcrText(text);
+  const lines = cleanText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
   const percentageMatch = text.match(/(\d+(?:\.\d+)?)\s*%/);
   const gradeMatch = text.match(/Grade[\s:]+([A-F][+-]?)/i);
-  const yearMatch = text.match(/(20\d{2})\s*-\s*(20\d{2})/);
-  const singleYearMatch = text.match(/(?:Year|Passing)[\s:]*(20\d{2})/i);
-  const boardMatch = text.match(/(BISE\s+[A-Za-z]+|Board of Intermediate[\s\w]*)/i);
+  
+  // Board: Match "Board of Intermediate & Secondary Education, Lahore" or similar, or "BISE Lahore"
+  // Format it as "BISE <City>"
+  let board = null;
+  const biseMatch = text.match(/(?:Board\s+of\s+Intermediate(?:\s+(?:and|&|&amp;)?\s+Secondary\s+Education)?|BISE)[\s,:]*([A-Za-z]+)/i);
+  if (biseMatch) {
+    const city = biseMatch[1].trim();
+    const formattedCity = city.charAt(0).toUpperCase() + city.slice(1).toLowerCase();
+    board = `BISE ${formattedCity}`;
+  } else if (/Federal\s+Board/i.test(text)) {
+    board = "FBISE Islamabad";
+  }
+
+  // Passing Year: Extract from Annual/Supplementary/Exam/Session year patterns
+  let passingYear = null;
+  const annualExamMatch = text.match(/(?:Annual|Supplementary|Special|Bi-Annual)\s+(?:Examination\s+)?(20\d{2}|19\d{2})/i);
+  const examMatch = text.match(/(?:Examination|Exam|Session)[\s,:]+(20\d{2}|19\d{2})/i);
+  const rangeMatch = text.match(/(?:20\d{2}|19\d{2})\s*-\s*(20\d{2}|19\d{2})/);
+  const generalYearMatch = text.match(/\b(20\d{2}|19\d{2})\b/);
+
+  if (annualExamMatch) {
+    passingYear = annualExamMatch[1];
+  } else if (examMatch) {
+    passingYear = examMatch[1];
+  } else if (rangeMatch) {
+    passingYear = rangeMatch[1]; // end of range
+  } else if (generalYearMatch) {
+    passingYear = generalYearMatch[1];
+  }
+
   const rollMatch = text.match(/Roll\s*(?:No|Number|#)?[\s:.]+([A-Za-z0-9-]+)/i);
-  const marksMatch = text.match(/(\d+)\s*(?:out of|\/)\s*(\d+)/i);
-  const obtainedMatch = text.match(/(?:Obtained|Marks Obtained)[\s:]*(\d+)/i);
-  const totalMatch = text.match(/(?:Total Marks|Maximum Marks|Out of)[\s:]*(\d+)/i);
+
+  // Obtained and Total Marks extraction logic
+  let obtainedMarks = null;
+  let totalMarks = null;
+
+  // 1. Scan for X / Y patterns (e.g. 950 / 1100)
+  const allMarksMatches = [...text.matchAll(/(\d{2,4})\s*(?:out of|\/|\\)\s*(\d{3,4})/gi)];
+  if (allMarksMatches.length > 0) {
+    let maxTotal = 0;
+    let bestMatch = null;
+    for (const match of allMarksMatches) {
+      const obt = parseInt(match[1]);
+      const tot = parseInt(match[2]);
+      // Total marks should be a valid scale (e.g., 300 to 1200) and obtained marks <= total marks
+      if (tot >= 300 && tot <= 1200 && obt <= tot) {
+        if (tot > maxTotal) {
+          maxTotal = tot;
+          bestMatch = { obt, tot };
+        }
+      }
+    }
+    if (bestMatch) {
+      obtainedMarks = bestMatch.obt;
+      totalMarks = bestMatch.tot;
+    }
+  }
+
+  // 2. Label based fallback search
+  if (!obtainedMarks) {
+    const obtainedMatch = text.match(/(?:Obtained|Marks Obtained|Total Marks Obtained|Marks)[\s:]*(\d{2,4})\b/i);
+    if (obtainedMatch) obtainedMarks = parseInt(obtainedMatch[1]);
+  }
+  if (!totalMarks) {
+    const totalMatch = text.match(/(?:Total Marks|Maximum Marks|Max Marks|Out of|Total)[\s:]*(\d{3,4})\b/i);
+    if (totalMatch) totalMarks = parseInt(totalMatch[1]);
+  }
+
+  // 3. Keep values within bounds
+  if (obtainedMarks && totalMarks && obtainedMarks > totalMarks) {
+    const temp = obtainedMarks;
+    obtainedMarks = totalMarks;
+    totalMarks = temp;
+  }
+
+  // Extract candidate name from academic certificate
+  let name = null;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    // Match patterns like "Name of Candidate", "Student Name", "Candidate Name", "Name:"
+    if (/(?:Name\s*(?:of\s+)?(?:Candidate|Student|Examinee)|Student\s*Name|Candidate\s*Name)\s*[:\-]?/i.test(line)
+        && !/(?:Father|Husband|Mother|Board|Institution|School|College)/i.test(line)) {
+      const sameLineMatch = line.match(/(?:Name\s*(?:of\s+)?(?:Candidate|Student|Examinee)|Student\s*Name|Candidate\s*Name)\s*[:\-]?\s*(.+)$/i);
+      if (sameLineMatch && sameLineMatch[1]) {
+        const val = sameLineMatch[1].replace(/[^A-Za-z\s]/g, '').trim();
+        if (val.length >= 3) name = val;
+      }
+      if (!name) {
+        for (let j = 1; j <= 2; j++) {
+          const nextLine = lines[i + j];
+          if (!nextLine) break;
+          if (/(?:Father|Husband|Mother|Board|Institution|School|College|Roll|Marks)/i.test(nextLine)) break;
+          const val = nextLine.replace(/[^A-Za-z\s]/g, '').trim();
+          if (val.length >= 3) { name = val; break; }
+        }
+      }
+      if (name) break;
+    }
+  }
+
+  // Extract father/guardian name from academic certificate
+  let fatherName = null;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/(?:Father|Guardian|Parent)[\s']?s?\s*(?:Name)?\s*[:\-]?/i.test(line)
+        && !/(?:Date|Birth|CNIC|Identity|Gender|Board|Institution|School)/i.test(line)) {
+      const sameLineMatch = line.match(/(?:Father|Guardian|Parent)[\s']?s?\s*(?:Name)?\s*[:\-]?\s*(.+)$/i);
+      if (sameLineMatch && sameLineMatch[1]) {
+        const val = sameLineMatch[1].replace(/[^A-Za-z\s]/g, '').trim();
+        if (val.length >= 3) fatherName = val;
+      }
+      if (!fatherName) {
+        for (let j = 1; j <= 2; j++) {
+          const nextLine = lines[i + j];
+          if (!nextLine) break;
+          if (/(?:Name|Roll|Marks|Board|Institution|School|College|Date)/i.test(nextLine)) break;
+          const val = nextLine.replace(/[^A-Za-z\s]/g, '').trim();
+          if (val.length >= 3) { fatherName = val; break; }
+        }
+      }
+      if (fatherName) break;
+    }
+  }
 
   return {
     percentage: percentageMatch ? parseFloat(percentageMatch[1]) : null,
     grade: gradeMatch ? gradeMatch[1] : null,
-    passing_year: yearMatch ? yearMatch[2] : (singleYearMatch ? singleYearMatch[1] : null),
-    board: boardMatch ? boardMatch[1] : null,
+    passing_year: passingYear,
+    board: board,
     roll_number: rollMatch ? rollMatch[1] : null,
-    obtained_marks: marksMatch ? parseInt(marksMatch[1]) : (obtainedMatch ? parseInt(obtainedMatch[1]) : null),
-    total_marks: marksMatch ? parseInt(marksMatch[2]) : (totalMatch ? parseInt(totalMatch[1]) : null),
+    obtained_marks: obtainedMarks,
+    total_marks: totalMarks,
+    name: name,
+    father_name: fatherName,
+  };
+};
+
+// ===== Cross-Document Name Verification =====
+const normalizeNameForComparison = (name) => {
+  if (!name) return '';
+  return name
+    .toLowerCase()
+    .replace(/[^a-z\s]/g, '')  // remove non-alpha
+    .replace(/\s+/g, ' ')      // collapse whitespace
+    .trim();
+};
+
+const namesMatch = (name1, name2) => {
+  if (!name1 || !name2) return true; // can't compare if either is missing, skip
+  const n1 = normalizeNameForComparison(name1);
+  const n2 = normalizeNameForComparison(name2);
+  if (!n1 || !n2) return true;
+
+  // Exact match
+  if (n1 === n2) return true;
+
+  // Check if one name contains the other (handles middle name differences)
+  if (n1.includes(n2) || n2.includes(n1)) return true;
+
+  // Token-based comparison: if all tokens of the shorter name appear in the longer name
+  const tokens1 = n1.split(' ');
+  const tokens2 = n2.split(' ');
+  const shorter = tokens1.length <= tokens2.length ? tokens1 : tokens2;
+  const longer = tokens1.length > tokens2.length ? tokens1 : tokens2;
+  const allShorterInLonger = shorter.every(t => longer.some(lt => lt === t || lt.includes(t) || t.includes(lt)));
+  if (allShorterInLonger) return true;
+
+  return false;
+};
+
+const crossDocumentNameVerification = (currentDocType, currentExtractedData, uploadedFiles) => {
+  const warnings = [];
+  let rejectCurrentDoc = false;
+  const removeIndices = []; // indices of existing docs to remove (mismatched academic docs when CNIC is uploaded)
+
+  // Find previously uploaded CNIC data
+  const cnicFile = uploadedFiles.find(f => f.type === 'cnic' && f.extractedData);
+  const cnicData = cnicFile?.extractedData || null;
+
+  if (currentDocType === 'cnic' && currentExtractedData) {
+    // CNIC is the source of truth — remove any existing academic documents that don't match
+    uploadedFiles.forEach((f, index) => {
+      if (!['matric', 'intermediate', 'transcript'].includes(f.type) || !f.extractedData) return;
+      const acadData = f.extractedData;
+      const docLabel = f.type === 'matric' ? 'Matric Certificate' : f.type === 'intermediate' ? 'Intermediate Certificate' : 'Transcript';
+
+      let mismatch = false;
+      if (acadData.name && currentExtractedData.name && !namesMatch(currentExtractedData.name, acadData.name)) {
+        warnings.push(`Name on ${docLabel} ("${acadData.name}") does not match CNIC ("${currentExtractedData.name}"). ${docLabel} has been removed.`);
+        mismatch = true;
+      }
+      if (acadData.father_name && currentExtractedData.father_name && !namesMatch(currentExtractedData.father_name, acadData.father_name)) {
+        warnings.push(`Father's name on ${docLabel} ("${acadData.father_name}") does not match CNIC ("${currentExtractedData.father_name}"). ${docLabel} has been removed.`);
+        mismatch = true;
+      }
+      if (mismatch) {
+        removeIndices.push(index);
+      }
+    });
+  } else if (['matric', 'intermediate', 'transcript'].includes(currentDocType) && currentExtractedData) {
+    // Academic document uploaded — compare against CNIC. Reject the academic doc if it doesn't match.
+    const docLabel = currentDocType === 'matric' ? 'Matric Certificate' : currentDocType === 'intermediate' ? 'Intermediate Certificate' : 'Transcript';
+
+    if (cnicData) {
+      if (currentExtractedData.name && cnicData.name && !namesMatch(cnicData.name, currentExtractedData.name)) {
+        warnings.push(`Name on ${docLabel} ("${currentExtractedData.name}") does not match name on CNIC ("${cnicData.name}").`);
+        rejectCurrentDoc = true;
+      }
+      if (currentExtractedData.father_name && cnicData.father_name && !namesMatch(cnicData.father_name, currentExtractedData.father_name)) {
+        warnings.push(`Father's name on ${docLabel} ("${currentExtractedData.father_name}") does not match father's name on CNIC ("${cnicData.father_name}").`);
+        rejectCurrentDoc = true;
+      }
+    }
+  }
+
+  return { warnings, rejectCurrentDoc, removeIndices };
+};
+
+// Extract text from PDF: digital text directly or OCR via canvas rendering
+const extractTextFromPDF = async (file, onProgress) => {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdfjsLib = window.pdfjsLib;
+  if (!pdfjsLib) {
+    throw new Error('PDF.js library is not loaded. Please refresh the page.');
+  }
+
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  let fullText = '';
+
+  // 1. Try digital text extraction first
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const textContent = await page.getTextContent();
+    const pageText = textContent.items.map(item => item.str).join(' ');
+    fullText += pageText + '\n';
+  }
+
+  if (fullText.trim().length > 50) {
+    console.log('Extracted digital text directly from PDF');
+    return { text: fullText, confidence: 100 };
+  }
+
+  // 2. Scanned PDF fallback: render pages to canvas and run Tesseract OCR
+  console.log('Scanned PDF detected. Rendering to canvas and running OCR...');
+  let ocrText = '';
+  let totalConfidence = 0;
+  let pageCount = pdf.numPages;
+
+  for (let i = 1; i <= pageCount; i++) {
+    const page = await pdf.getPage(i);
+    const viewport = page.getViewport({ scale: 2.0 }); // Use 2.0 scale for high resolution rendering to improve OCR
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    canvas.height = viewport.height;
+    canvas.width = viewport.width;
+
+    await page.render({ canvasContext: context, viewport }).promise;
+
+    // Run Tesseract OCR on page canvas
+    const result = await Tesseract.recognize(canvas, 'eng', {
+      logger: m => {
+        if (onProgress && m.status === 'recognizing text') {
+          const overallProgress = ((i - 1) / pageCount) + (m.progress / pageCount);
+          onProgress(overallProgress);
+        }
+      }
+    });
+
+    ocrText += (result?.data?.text || '') + '\n';
+    totalConfidence += result?.data?.confidence || 0;
+  }
+
+  return {
+    text: ocrText,
+    confidence: Math.round(totalConfidence / pageCount)
   };
 };
 // ===== End OCR Helpers =====
@@ -334,7 +596,7 @@ const DocumentUpload = () => {
     { id: 'photograph', name: 'Recent Photograph', icon: Camera, desc: 'Passport size photo', required: true },
     { id: 'matric', name: 'Matric Certificate', icon: Award, desc: 'SSC / O-Level', required: true },
     { id: 'intermediate', name: 'Intermediate Certificate', icon: GraduationCap, desc: 'HSSC / A-Level', required: true },
-    { id: 'transcript', name: 'Transcript / Mark Sheet', icon: ScrollText, desc: 'Detailed marks', required: true },
+    { id: 'transcript', name: 'Transcript', icon: ScrollText, desc: 'Detailed marks', required: false },
     { id: 'domicile', name: 'Domicile Certificate', icon: MapPin, desc: 'Optional', required: false }
   ];
 
@@ -418,15 +680,28 @@ const DocumentUpload = () => {
     setOcrFilledFields(newFilledFields);
   };
 
-  const onDrop = useCallback(async (acceptedFiles) => {
+  const onDrop = useCallback(async (acceptedFiles, fileRejections) => {
+    if (fileRejections && fileRejections.length > 0) {
+      toast.error('Only PDF, PNG, or JPG/JPEG documents are allowed.');
+      return;
+    }
+
     if (acceptedFiles.length === 0) return;
 
     const file = acceptedFiles[0];
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    const isImage = file.type.startsWith('image/') || /\.(png|jpe?g)$/i.test(file.name);
+
+    if (!isPdf && !isImage) {
+      toast.error('Only PDF, PNG, or JPG/JPEG documents are allowed.');
+      return;
+    }
+
     setProcessingFile(file);
     setUploading(true);
 
     try {
-      // Photograph doesn't need OCR
+      // Photograph doesn't need OCR but still must be a valid format (PDF or image)
       if (documentType === 'photograph') {
         setUploadedFiles(prev => [...prev, {
           name: file.name,
@@ -440,20 +715,31 @@ const DocumentUpload = () => {
         return;
       }
 
-      // Client-side OCR using Tesseract.js (no backend call needed)
-      const result = await Tesseract.recognize(file, 'eng', {
-        logger: m => {
-          if (m.status === 'recognizing text') {
-            console.log(`OCR Progress: ${(m.progress * 100).toFixed(0)}%`);
-          }
-        }
-      });
+      let extractedText = '';
+      let confidence = 0;
 
-      const extractedText = result?.data?.text || '';
-      const confidence = result?.data?.confidence || 0;
+      if (isPdf) {
+        // Extract text/OCR from PDF client-side
+        const pdfResult = await extractTextFromPDF(file, (progress) => {
+          console.log(`OCR Progress: ${(progress * 100).toFixed(0)}%`);
+        });
+        extractedText = pdfResult.text;
+        confidence = pdfResult.confidence;
+      } else {
+        // Run Tesseract OCR directly on image file
+        const result = await Tesseract.recognize(file, 'eng', {
+          logger: m => {
+            if (m.status === 'recognizing text') {
+              console.log(`OCR Progress: ${(m.progress * 100).toFixed(0)}%`);
+            }
+          }
+        });
+        extractedText = result?.data?.text || '';
+        confidence = result?.data?.confidence || 0;
+      }
 
       if (!extractedText || extractedText.trim().length === 0) {
-        toast.error('No text could be extracted. Please ensure the image is clear and well-lit.');
+        toast.error('No text could be extracted from the document. Please ensure it is clear and legible.');
         setUploading(false);
         setProcessingFile(null);
         return;
@@ -472,6 +758,28 @@ const DocumentUpload = () => {
         extractedData = { ...extractCNICData(extractedText), ...extractAcademicData(extractedText) };
       }
 
+      // Cross-document name verification before adding to list
+      const { warnings: nameWarnings, rejectCurrentDoc, removeIndices } = crossDocumentNameVerification(documentType, extractedData, uploadedFiles);
+
+      // If this is an academic document that doesn't match the CNIC, reject it
+      if (rejectCurrentDoc) {
+        nameWarnings.forEach(warning => {
+          toast.error(warning, { duration: 8000, icon: '⚠️' });
+        });
+        toast.error('Document rejected: Name or Father\'s name does not match with your CNIC. Please upload the correct document.', { duration: 10000 });
+        setUploading(false);
+        setProcessingFile(null);
+        return;
+      }
+
+      // If CNIC was uploaded and some existing academic docs don't match, remove them
+      if (removeIndices.length > 0) {
+        setUploadedFiles(prev => prev.filter((_, i) => !removeIndices.includes(i)));
+        nameWarnings.forEach(warning => {
+          toast.error(warning, { duration: 8000, icon: '⚠️' });
+        });
+      }
+
       setUploadedFiles(prev => [...prev, {
         name: file.name,
         type: documentType,
@@ -485,7 +793,7 @@ const DocumentUpload = () => {
       toast.success('Document processed & data extracted successfully!');
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error('Error processing document');
+      toast.error(error.message || 'Error processing document');
     } finally {
       setUploading(false);
       setProcessingFile(null);
@@ -495,8 +803,8 @@ const DocumentUpload = () => {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'image/*': ['.png', '.jpg', '.jpeg'],
-      'application/pdf': ['.pdf']
+      'application/pdf': ['.pdf'],
+      'image/*': ['.png', '.jpg', '.jpeg']
     },
     maxFiles: 1,
     disabled: uploading
@@ -519,6 +827,45 @@ const DocumentUpload = () => {
   };
 
   const handleSubmitProfile = async () => {
+    // Validate all form fields are filled
+    const requiredFields = [
+      { key: 'full_name', label: 'Full Name' },
+      { key: 'father_name', label: "Father's Name" },
+      { key: 'date_of_birth', label: 'Date of Birth' },
+      { key: 'gender', label: 'Gender' },
+      { key: 'cnic', label: 'CNIC' },
+      { key: 'email', label: 'Email' },
+      { key: 'phone', label: 'Phone Number' },
+      { key: 'father_phone', label: "Father's Phone" },
+      { key: 'address', label: 'Current Address' },
+      { key: 'permanent_address', label: 'Permanent Address' },
+      { key: 'matric_board', label: 'Matric Board' },
+      { key: 'matric_passing_year', label: 'Matric Passing Year' },
+      { key: 'matric_obtained_marks', label: 'Matric Obtained Marks' },
+      { key: 'matric_total_marks', label: 'Matric Total Marks' },
+      { key: 'inter_board', label: 'Intermediate Board' },
+      { key: 'inter_passing_year', label: 'Intermediate Passing Year' },
+      { key: 'inter_obtained_marks', label: 'Intermediate Obtained Marks' },
+      { key: 'inter_total_marks', label: 'Intermediate Total Marks' },
+    ];
+
+    const missingFields = requiredFields.filter(f => !formData[f.key] || String(formData[f.key]).trim() === '');
+    if (missingFields.length > 0) {
+      const fieldNames = missingFields.slice(0, 3).map(f => f.label).join(', ');
+      const extra = missingFields.length > 3 ? ` and ${missingFields.length - 3} more` : '';
+      toast.error(`Please fill all required fields: ${fieldNames}${extra}`, { duration: 6000 });
+      return;
+    }
+
+    // Check required documents are uploaded
+    const requiredDocs = documentTypes.filter(d => d.required);
+    const missingDocs = requiredDocs.filter(d => !uploadedFiles.some(f => f.type === d.id));
+    if (missingDocs.length > 0) {
+      const docNames = missingDocs.map(d => d.name).join(', ');
+      toast.error(`Please upload all required documents: ${docNames}`, { duration: 6000 });
+      return;
+    }
+
     if (!declarations.confirmCorrect || !declarations.understandFalseInfo) {
       toast.error('Please accept both declarations before submitting');
       return;

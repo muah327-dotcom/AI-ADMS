@@ -4,9 +4,14 @@ import Tesseract from 'tesseract.js';
 import { authenticateToken } from '../middleware/auth.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const pdf = require('pdf-parse');
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+// Trigger nodemon reload
 const router = express.Router();
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -281,29 +286,82 @@ const extractCNICData = (rawText) => {
 };
 
 const extractAcademicData = (text) => {
-  const percentagePattern = /(\d+(?:\.\d+)?)\s*%/;
-  const percentageMatch = text.match(percentagePattern);
+  const percentageMatch = text.match(/(\d+(?:\.\d+)?)\s*%/);
+  const gradeMatch = text.match(/Grade[\s:]+([A-F][+-]?)/i);
+  
+  // Board: Match "Board of Intermediate & Secondary Education, Lahore" or similar, or "BISE Lahore"
+  // Format it as "BISE <City>"
+  let board = null;
+  const biseMatch = text.match(/(?:Board\s+of\s+Intermediate(?:\s+(?:and|&|&amp;)?\s+Secondary\s+Education)?|BISE)[\s,:]*([A-Za-z]+)/i);
+  if (biseMatch) {
+    const city = biseMatch[1].trim();
+    const formattedCity = city.charAt(0).toUpperCase() + city.slice(1).toLowerCase();
+    board = `BISE ${formattedCity}`;
+  } else if (/Federal\s+Board/i.test(text)) {
+    board = "FBISE Islamabad";
+  }
 
-  const gradePattern = /Grade[\s:]+([A-F][+-]?)/i;
-  const gradeMatch = text.match(gradePattern);
+  // Passing Year: Extract from Annual/Supplementary/Exam/Session year patterns
+  let passingYear = null;
+  const annualExamMatch = text.match(/(?:Annual|Supplementary|Special|Bi-Annual)\s+(?:Examination\s+)?(20\d{2}|19\d{2})/i);
+  const examMatch = text.match(/(?:Examination|Exam|Session)[\s,:]+(20\d{2}|19\d{2})/i);
+  const rangeMatch = text.match(/(?:20\d{2}|19\d{2})\s*-\s*(20\d{2}|19\d{2})/);
+  const generalYearMatch = text.match(/\b(20\d{2}|19\d{2})\b/);
 
-  const yearPattern = /(20\d{2})\s*-\s*(20\d{2})/;
-  const yearMatch = text.match(yearPattern);
-  const singleYearPattern = /(?:Year|Passing)[\s:]*(20\d{2})/i;
-  const singleYearMatch = text.match(singleYearPattern);
+  if (annualExamMatch) {
+    passingYear = annualExamMatch[1];
+  } else if (examMatch) {
+    passingYear = examMatch[1];
+  } else if (rangeMatch) {
+    passingYear = rangeMatch[1]; // end of range
+  } else if (generalYearMatch) {
+    passingYear = generalYearMatch[1];
+  }
 
-  const boardPattern = /(BISE\s+[A-Za-z]+|Board of Intermediate[\s\w]*)/i;
-  const boardMatch = text.match(boardPattern);
+  const rollMatch = text.match(/Roll\s*(?:No|Number|#)?[\s:.]+([A-Za-z0-9-]+)/i);
 
-  const rollPattern = /Roll\s*(?:No|Number|#)?[\s:.]+([A-Za-z0-9-]+)/i;
-  const rollMatch = text.match(rollPattern);
+  // Obtained and Total Marks extraction logic
+  let obtainedMarks = null;
+  let totalMarks = null;
 
-  const marksPattern = /(\d+)\s*(?:out of|\/)\s*(\d+)/i;
-  const marksMatch = text.match(marksPattern);
-  const obtainedPattern = /(?:Obtained|Marks Obtained)[\s:]*(\d+)/i;
-  const obtainedMatch = text.match(obtainedPattern);
-  const totalPattern = /(?:Total Marks|Maximum Marks|Out of)[\s:]*(\d+)/i;
-  const totalMatch = text.match(totalPattern);
+  // 1. Scan for X / Y patterns (e.g. 950 / 1100)
+  const allMarksMatches = [...text.matchAll(/(\d{2,4})\s*(?:out of|\/|\\)\s*(\d{3,4})/gi)];
+  if (allMarksMatches.length > 0) {
+    let maxTotal = 0;
+    let bestMatch = null;
+    for (const match of allMarksMatches) {
+      const obt = parseInt(match[1]);
+      const tot = parseInt(match[2]);
+      // Total marks should be a valid scale (e.g., 300 to 1200) and obtained marks <= total marks
+      if (tot >= 300 && tot <= 1200 && obt <= tot) {
+        if (tot > maxTotal) {
+          maxTotal = tot;
+          bestMatch = { obt, tot };
+        }
+      }
+    }
+    if (bestMatch) {
+      obtainedMarks = bestMatch.obt;
+      totalMarks = bestMatch.tot;
+    }
+  }
+
+  // 2. Label based fallback search
+  if (!obtainedMarks) {
+    const obtainedMatch = text.match(/(?:Obtained|Marks Obtained|Total Marks Obtained|Marks)[\s:]*(\d{2,4})\b/i);
+    if (obtainedMatch) obtainedMarks = parseInt(obtainedMatch[1]);
+  }
+  if (!totalMarks) {
+    const totalMatch = text.match(/(?:Total Marks|Maximum Marks|Max Marks|Out of|Total)[\s:]*(\d{3,4})\b/i);
+    if (totalMatch) totalMarks = parseInt(totalMatch[1]);
+  }
+
+  // 3. Keep values within bounds
+  if (obtainedMarks && totalMarks && obtainedMarks > totalMarks) {
+    const temp = obtainedMarks;
+    obtainedMarks = totalMarks;
+    totalMarks = temp;
+  }
 
   const subjectPatterns = {
     'Physics': /Physics[\s:]+(\d+)/i,
@@ -328,11 +386,11 @@ const extractAcademicData = (text) => {
   return {
     percentage: percentageMatch ? parseFloat(percentageMatch[1]) : null,
     grade: gradeMatch ? gradeMatch[1] : null,
-    passing_year: yearMatch ? yearMatch[2] : (singleYearMatch ? singleYearMatch[1] : null),
-    board: boardMatch ? boardMatch[1] : null,
+    passing_year: passingYear,
+    board: board,
     roll_number: rollMatch ? rollMatch[1] : null,
-    obtained_marks: marksMatch ? parseInt(marksMatch[1]) : (obtainedMatch ? parseInt(obtainedMatch[1]) : null),
-    total_marks: marksMatch ? parseInt(marksMatch[2]) : (totalMatch ? parseInt(totalMatch[1]) : null),
+    obtained_marks: obtainedMarks,
+    total_marks: totalMarks,
     subject_scores: subjectScores,
     raw_text: text
   };
@@ -345,47 +403,72 @@ router.post('/extract', upload.single('document'), async (req, res) => {
     }
 
     const { document_type } = req.body;
-    const imageBuffer = req.file.buffer;
+    const fileBuffer = req.file.buffer;
 
     console.log(`\n=== OCR Request: type=${document_type}, file=${req.file.originalname}, size=${req.file.size} bytes ===`);
 
     let extractedText = '';
-    let confidence = 0;
+    let confidence = 100;
 
-    try {
-      // Use createWorker for more reliable processing with local traineddata
-      const worker = await Tesseract.createWorker('eng', 1, {
-        langPath: path.join(__dirname, '..'),
-        logger: m => {
-          if (m.status === 'recognizing text') {
-            console.log(`OCR Progress: ${(m.progress * 100).toFixed(0)}%`);
+    // Check file format
+    const isPdf = req.file.mimetype === 'application/pdf' || req.file.originalname.toLowerCase().endsWith('.pdf');
+    const isImage = req.file.mimetype.startsWith('image/') || /\.(png|jpe?g)$/i.test(req.file.originalname);
+
+    if (!isPdf && !isImage) {
+      return res.status(400).json({ error: 'Only PDF, PNG, or JPG/JPEG documents are allowed.' });
+    }
+
+    if (isPdf) {
+      try {
+        const pdfData = await pdf(fileBuffer);
+        extractedText = pdfData.text || '';
+        console.log(`PDF digital text extraction complete. Extracted length: ${extractedText.length}`);
+      } catch (pdfError) {
+        console.error('pdf-parse error, falling back to Tesseract:', pdfError);
+      }
+    }
+
+    // Fallback to Tesseract OCR if PDF digital text extraction returned no text, or if file is an image
+    if (!extractedText || extractedText.trim().length < 50) {
+      console.log('Running Tesseract OCR on the file buffer...');
+      try {
+        // Use createWorker for more reliable processing with local traineddata
+        const worker = await Tesseract.createWorker('eng', 1, {
+          langPath: path.join(__dirname, '..'),
+          logger: m => {
+            if (m.status === 'recognizing text') {
+              console.log(`OCR Progress: ${(m.progress * 100).toFixed(0)}%`);
+            }
           }
+        });
+
+        // Set page segmentation mode to automatic for best results
+        await worker.setParameters({
+          tessedit_pageseg_mode: Tesseract.PSM.AUTO,
+        });
+
+        const result = await worker.recognize(fileBuffer);
+        extractedText = result?.data?.text || '';
+        confidence = result?.data?.confidence || 0;
+
+        console.log(`OCR Complete: confidence=${confidence}%, text length=${extractedText.length}`);
+
+        await worker.terminate();
+      } catch (tesseractError) {
+        console.error('Tesseract error:', tesseractError);
+        // If we don't have any extracted text from digital parse either, fail
+        if (!extractedText) {
+          return res.status(500).json({
+            error: 'OCR processing failed',
+            details: tesseractError.message
+          });
         }
-      });
-
-      // Set page segmentation mode to automatic for best results
-      await worker.setParameters({
-        tessedit_pageseg_mode: Tesseract.PSM.AUTO,
-      });
-
-      const result = await worker.recognize(imageBuffer);
-      extractedText = result?.data?.text || '';
-      confidence = result?.data?.confidence || 0;
-
-      console.log(`OCR Complete: confidence=${confidence}%, text length=${extractedText.length}`);
-
-      await worker.terminate();
-    } catch (tesseractError) {
-      console.error('Tesseract error:', tesseractError);
-      return res.status(500).json({
-        error: 'OCR processing failed',
-        details: tesseractError.message
-      });
+      }
     }
 
     if (!extractedText || extractedText.trim().length === 0) {
       return res.status(400).json({
-        error: 'No text could be extracted from the document. Please ensure the image is clear and well-lit.'
+        error: 'No text could be extracted from the document. Please ensure it is clear and legible.'
       });
     }
 
