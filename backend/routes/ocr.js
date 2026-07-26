@@ -6,10 +6,20 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { createRequire } from 'module';
 
-const require = createRequire(import.meta.url);
-const pdf = require('pdf-parse');
-
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+let pdfParse = null;
+const getPdfParse = () => {
+  if (!pdfParse) {
+    try {
+      const require = createRequire(import.meta.url);
+      pdfParse = require('pdf-parse');
+    } catch (e) {
+      console.warn('pdf-parse lazy load warning:', e.message);
+    }
+  }
+  return pdfParse;
+};
 
 // Trigger nodemon reload
 const router = express.Router();
@@ -580,9 +590,12 @@ router.post('/extract', upload.single('document'), async (req, res) => {
 
     if (isPdf) {
       try {
-        const pdfData = await pdf(fileBuffer);
-        extractedText = pdfData.text || '';
-        console.log(`PDF digital text extraction complete. Extracted length: ${extractedText.length}`);
+        const pdfParser = getPdfParse();
+        if (pdfParser) {
+          const pdfData = await pdfParser(fileBuffer);
+          extractedText = pdfData.text || '';
+          console.log(`PDF digital text extraction complete. Extracted length: ${extractedText.length}`);
+        }
       } catch (pdfError) {
         console.error('pdf-parse error, falling back to Tesseract:', pdfError);
       }
