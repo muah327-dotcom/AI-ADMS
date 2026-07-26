@@ -58,6 +58,20 @@ app.options('*', cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
+// Ensure database connection is ready before processing API requests
+app.use(async (req, res, next) => {
+  if (req.method === 'OPTIONS') return next();
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      await connectDB();
+    }
+    next();
+  } catch (dbErr) {
+    console.error('DB Connection middleware error:', dbErr);
+    res.status(500).json({ error: 'Database connection error', details: dbErr.message });
+  }
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/admin', adminRoutes);

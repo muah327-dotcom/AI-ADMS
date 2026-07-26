@@ -12,6 +12,8 @@ dotenv.config();
 
 const router = express.Router();
 
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-here';
+
 const generateToken = (user) => {
   return jwt.sign(
     {
@@ -20,7 +22,7 @@ const generateToken = (user) => {
       role: user.role,
       full_name: user.full_name
     },
-    process.env.JWT_SECRET,
+    JWT_SECRET,
     { expiresIn: '24h' }
   );
 };
@@ -161,7 +163,7 @@ router.get('/me', async (req, res) => {
       return res.status(401).json({ error: 'Access token required' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET);
 
     const user = await User.findById(decoded.id).select('-password');
 

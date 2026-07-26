@@ -7,15 +7,19 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const connectDB = async () => {
-  let conn;
-  let uri = process.env.MONGODB_URI;
+  if (mongoose.connection.readyState === 1) {
+    return mongoose.connection;
+  }
+
+  const DEFAULT_MONGODB_URI = 'mongodb+srv://muah327_db_user:abc%40gmail@cluster0.rzzuhei.mongodb.net/admission_system?retryWrites=true&w=majority';
+  let uri = process.env.MONGODB_URI || DEFAULT_MONGODB_URI;
   
   try {
     console.log('Attempting to connect to Cloud MongoDB...');
-    conn = await mongoose.connect(uri, {
+    const conn = await mongoose.connect(uri, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 5000 // Timeout after 5s instead of 30s
+      serverSelectionTimeoutMS: 10000
     });
     console.log(`MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
