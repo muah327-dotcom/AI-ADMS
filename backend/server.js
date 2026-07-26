@@ -28,7 +28,33 @@ mongoose.connection.once('open', () => {
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(cors());
+// CORS configuration — allow Vercel frontend and local dev
+const allowedOrigins = [
+  'https://projectabc-frontend.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000'
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.some(allowed => origin.startsWith(allowed) || origin === allowed)) {
+      return callback(null, true);
+    }
+    // Also allow any *.vercel.app subdomain for preview deployments
+    if (/\.vercel\.app$/.test(origin)) {
+      return callback(null, true);
+    }
+    return callback(null, true); // fallback: allow all for now
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'X-CSRF-Token']
+}));
+
+// Explicitly handle preflight OPTIONS for all routes
+app.options('*', cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
