@@ -17,12 +17,16 @@ import recommendationRoutes from './routes/recommendations.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 
-// Connect to MongoDB
-connectDB();
+// Connect to MongoDB safely for serverless environments
+connectDB().catch(err => console.error('Initial MongoDB connection error:', err.message));
 
 // Initialize GridFS after connection
 mongoose.connection.once('open', () => {
-  initGridFS();
+  try {
+    initGridFS();
+  } catch (err) {
+    console.error('GridFS init error:', err.message);
+  }
 });
 
 const app = express();

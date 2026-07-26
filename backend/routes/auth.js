@@ -92,13 +92,14 @@ router.post('/login', [
     }
 
     const { email, password } = req.body;
-    console.log('Login attempt:', email);
+    const cleanEmail = email ? email.trim().toLowerCase() : '';
+    console.log('Login attempt:', email, 'clean:', cleanEmail);
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: cleanEmail }) || await User.findOne({ email });
     console.log('User found:', user ? 'YES' : 'NO');
 
     if (!user) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ error: 'Invalid email or password' });
     }
 
     if (!user.is_active) {
@@ -111,7 +112,7 @@ router.post('/login', [
     console.log('Password valid:', isValidPassword);
 
     if (!isValidPassword) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ error: 'Invalid email or password' });
     }
 
     console.log('Updating last login...');
@@ -130,7 +131,7 @@ router.post('/login', [
       console.log('Token generated successfully');
     } catch (tokenError) {
       console.error('Token generation error:', tokenError);
-      return res.status(500).json({ error: 'Failed to generate authentication token' });
+      return res.status(500).json({ error: 'Failed to generate authentication token', details: tokenError.message });
     }
 
     console.log('Sending response...');
@@ -150,7 +151,7 @@ router.post('/login', [
     });
   } catch (error) {
     console.error('Login error:', error);
-    return res.status(500).json({ error: 'Failed to login' });
+    return res.status(500).json({ error: 'Failed to login', details: error.message, stack: process.env.NODE_ENV === 'development' ? error.stack : undefined });
   }
 });
 
