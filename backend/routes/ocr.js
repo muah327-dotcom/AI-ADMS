@@ -285,83 +285,243 @@ const extractCNICData = (rawText) => {
   return result;
 };
 
+// Board normalization dictionary for Pakistani Boards & common OCR misreads
+const normalizeBoardName = (rawText) => {
+  if (!rawText) return null;
+  const str = rawText.toLowerCase();
+
+  // Known city/board mappings & common OCR misreads (e.g. Latiore -> Lahore)
+  if (/federal|fbise|islamabad/i.test(str)) return "FBISE Islamabad";
+  if (/lahore|latiore|lafore|lahor|lahere|lahr|latior/i.test(str)) return "BISE Lahore";
+  if (/gujranwala|gujranwla|gujrat/i.test(str)) return "BISE Gujranwala";
+  if (/rawalpindi|rawalpind|rwp|pindi/i.test(str)) return "BISE Rawalpindi";
+  if (/multan|mooltan/i.test(str)) return "BISE Multan";
+  if (/faisalabad|faislabad|lyallpur/i.test(str)) return "BISE Faisalabad";
+  if (/sargodha|sargoda/i.test(str)) return "BISE Sargodha";
+  if (/sahiwal|sahiwa/i.test(str)) return "BISE Sahiwal";
+  if (/bahawalpur|bahawlpur|bwl/i.test(str)) return "BISE Bahawalpur";
+  if (/dg\s*khan|d\.g\s*khan|dera\s*ghazi\s*khan/i.test(str)) return "BISE DG Khan";
+  if (/karachi|khi/i.test(str)) return "BISE Karachi";
+  if (/hyderabad/i.test(str)) return "BISE Hyderabad";
+  if (/sukkur/i.test(str)) return "BISE Sukkur";
+  if (/larkana/i.test(str)) return "BISE Larkana";
+  if (/mirpurkhas/i.test(str)) return "BISE Mirpurkhas";
+  if (/peshawar|psh/i.test(str)) return "BISE Peshawar";
+  if (/swat/i.test(str)) return "BISE Swat";
+  if (/kohat/i.test(str)) return "BISE Kohat";
+  if (/abbottabad|abottabad/i.test(str)) return "BISE Abbottabad";
+  if (/bannu/i.test(str)) return "BISE Bannu";
+  if (/mardan/i.test(str)) return "BISE Mardan";
+  if (/malakand/i.test(str)) return "BISE Malakand";
+  if (/quetta/i.test(str)) return "BISE Quetta";
+  if (/aga\s*khan|aku/i.test(str)) return "Aga Khan Board";
+  if (/cambridge|cie|edexcel|igcse/i.test(str)) return "Cambridge Board";
+
+  return null;
+};
+
+// Convert number words in English (e.g., "Nine Hundred Fifty") to digits
+const wordsToNumber = (text) => {
+  const wordsMap = {
+    zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9,
+    ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16,
+    seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20, thirty: 30, forty: 40, fifty: 50,
+    sixty: 60, seventy: 70, eighty: 80, ninety: 90, hundred: 100, thousand: 1000
+  };
+
+  const matches = text.match(/(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|\band\b|\s+)+/gi);
+  if (!matches) return null;
+
+  for (const matchStr of matches) {
+    const tokens = matchStr.toLowerCase().trim().split(/[\s\-]+/);
+    if (tokens.length < 2) continue;
+    let current = 0;
+    let total = 0;
+    let valid = false;
+
+    for (const token of tokens) {
+      if (token === 'and') continue;
+      const val = wordsMap[token];
+      if (val !== undefined) {
+        valid = true;
+        if (val === 100) {
+          current = (current || 1) * 100;
+        } else if (val === 1000) {
+          current = (current || 1) * 1000;
+          total += current;
+          current = 0;
+        } else {
+          current += val;
+        }
+      } else {
+        break;
+      }
+    }
+    total += current;
+    if (valid && total >= 100 && total <= 1200) {
+      return total;
+    }
+  }
+  return null;
+};
+
 const extractAcademicData = (text) => {
-  const percentageMatch = text.match(/(\d+(?:\.\d+)?)\s*%/);
-  const gradeMatch = text.match(/Grade[\s:]+([A-F][+-]?)/i);
-  
-  // Board: Match "Board of Intermediate & Secondary Education, Lahore" or similar, or "BISE Lahore"
-  // Format it as "BISE <City>"
+  const cleanText = cleanOcrText(text);
+
+  // 1. Board Name Detection & Normalization
   let board = null;
   const biseMatch = text.match(/(?:Board\s+of\s+Intermediate(?:\s+(?:and|&|&amp;)?\s+Secondary\s+Education)?|BISE)[\s,:]*([A-Za-z]+)/i);
   if (biseMatch) {
-    const city = biseMatch[1].trim();
-    const formattedCity = city.charAt(0).toUpperCase() + city.slice(1).toLowerCase();
-    board = `BISE ${formattedCity}`;
-  } else if (/Federal\s+Board/i.test(text)) {
-    board = "FBISE Islamabad";
+    const rawCity = biseMatch[1].trim();
+    board = normalizeBoardName(rawCity);
+    if (!board) {
+      const formattedCity = rawCity.charAt(0).toUpperCase() + rawCity.slice(1).toLowerCase();
+      board = `BISE ${formattedCity}`;
+    }
+  }
+  
+  if (!board) {
+    board = normalizeBoardName(text);
   }
 
-  // Passing Year: Extract from Annual/Supplementary/Exam/Session year patterns
+  // 2. Passing Year Extraction
   let passingYear = null;
-  const annualExamMatch = text.match(/(?:Annual|Supplementary|Special|Bi-Annual)\s+(?:Examination\s+)?(20\d{2}|19\d{2})/i);
-  const examMatch = text.match(/(?:Examination|Exam|Session)[\s,:]+(20\d{2}|19\d{2})/i);
-  const rangeMatch = text.match(/(?:20\d{2}|19\d{2})\s*-\s*(20\d{2}|19\d{2})/);
-  const generalYearMatch = text.match(/\b(20\d{2}|19\d{2})\b/);
+  const cleanedForYear = text.replace(/([12])([OolISBZ])([0-9OolISBZ]{2})/g, (m, p1, p2, p3) => `${p1}${fixOcrDigits(p2)}${fixOcrDigits(p3)}`);
+  
+  const annualExamMatch = cleanedForYear.match(/(?:Annual|Supplementary|Special|Bi-Annual|Spring|Fall)\s+(?:Exam(?:ination)?\s+)?([12][09]\d{2})/i);
+  const examMatch = cleanedForYear.match(/(?:Examination|Exam|Session|Passing|Held\s+in|Year|Dated)[\s,:]+([12][09]\d{2})/i);
+  const rangeMatch = cleanedForYear.match(/(?:20\d{2}|19\d{2})\s*-\s*(20\d{2}|19\d{2})/);
+  const rangeShortMatch = cleanedForYear.match(/\b(20\d{2})\s*-\s*(\d{2})\b/);
 
   if (annualExamMatch) {
     passingYear = annualExamMatch[1];
   } else if (examMatch) {
     passingYear = examMatch[1];
   } else if (rangeMatch) {
-    passingYear = rangeMatch[1]; // end of range
-  } else if (generalYearMatch) {
-    passingYear = generalYearMatch[1];
+    passingYear = rangeMatch[1];
+  } else if (rangeShortMatch) {
+    passingYear = `20${rangeShortMatch[2]}`;
+  } else {
+    const yearMatches = [...cleanedForYear.matchAll(/\b(199\d|20[0-2]\d)\b/g)];
+    if (yearMatches.length > 0) {
+      const currentYear = new Date().getFullYear();
+      const validYears = yearMatches.map(m => parseInt(m[1])).filter(y => y >= 1995 && y <= currentYear + 1);
+      if (validYears.length > 0) {
+        passingYear = Math.max(...validYears).toString();
+      }
+    }
   }
 
+  // 3. Roll Number
   const rollMatch = text.match(/Roll\s*(?:No|Number|#)?[\s:.]+([A-Za-z0-9-]+)/i);
 
-  // Obtained and Total Marks extraction logic
+  // 4. Obtained Marks & Total Marks Extraction
   let obtainedMarks = null;
   let totalMarks = null;
 
-  // 1. Scan for X / Y patterns (e.g. 950 / 1100)
-  const allMarksMatches = [...text.matchAll(/(\d{2,4})\s*(?:out of|\/|\\)\s*(\d{3,4})/gi)];
-  if (allMarksMatches.length > 0) {
-    let maxTotal = 0;
-    let bestMatch = null;
-    for (const match of allMarksMatches) {
-      const obt = parseInt(match[1]);
-      const tot = parseInt(match[2]);
-      // Total marks should be a valid scale (e.g., 300 to 1200) and obtained marks <= total marks
-      if (tot >= 300 && tot <= 1200 && obt <= tot) {
-        if (tot > maxTotal) {
-          maxTotal = tot;
-          bestMatch = { obt, tot };
-        }
+  // Pre-clean text: collapse spaced digits (e.g. "9 5 0" -> "950", "1 1 0 0" -> "1100")
+  let cleanSpacedDigits = text.replace(/(?<=\b\d)\s+(?=\d\b)/g, '');
+
+  const cleanedNumText = cleanSpacedDigits
+    .replace(/([0-9])([OolISBZ])([0-9])/gi, (m, p1, p2, p3) => `${p1}${fixOcrDigits(p2)}${p3}`)
+    .replace(/([0-9]{2,3})([OolISBZ])\b/gi, (m, p1, p2) => `${p1}${fixOcrDigits(p2)}`);
+
+  // a) Ratio patterns (e.g. 950 / 1100, 450/550, 450 out of 550, 450 of 550, 950-1100, 950:1100)
+  const ratioMatches = [...cleanedNumText.matchAll(/\b([0-9OolISBZ]{2,4})\s*(?:\/|\\|out\s+of|\bof\b|:|-)\s*([0-9OolISBZ]{3,4})\b/gi)];
+  for (const match of ratioMatches) {
+    const obtCandidate = parseInt(fixOcrDigits(match[1]));
+    const totCandidate = parseInt(fixOcrDigits(match[2]));
+    if (!isNaN(obtCandidate) && !isNaN(totCandidate)) {
+      if (totCandidate >= 300 && totCandidate <= 1200 && obtCandidate <= totCandidate && obtCandidate >= 100) {
+        obtainedMarks = obtCandidate;
+        totalMarks = totCandidate;
+        break;
       }
     }
-    if (bestMatch) {
-      obtainedMarks = bestMatch.obt;
-      totalMarks = bestMatch.tot;
+  }
+
+  // b) Explicit field labels if missing
+  if (!obtainedMarks) {
+    const obtMatch = cleanedNumText.match(/(?:Marks\s*Obtained|Obtained\s*Marks|Total\s*Marks\s*Obtained|Marks\s*Secured|Secured\s*Marks|Marks\s*Obt|Obt\s*Marks|Obtained|securing|passed\s+with|with)[\s:\-]*([0-9OolISBZ]{3,4})\s*(?:marks)?\b/i)
+      || cleanedNumText.match(/([0-9OolISBZ]{3,4})\s*marks\b/i);
+    if (obtMatch) {
+      const val = parseInt(fixOcrDigits(obtMatch[1]));
+      if (!isNaN(val) && val >= 100 && val <= 1200) obtainedMarks = val;
     }
   }
 
-  // 2. Label based fallback search
-  if (!obtainedMarks) {
-    const obtainedMatch = text.match(/(?:Obtained|Marks Obtained|Total Marks Obtained|Marks)[\s:]*(\d{2,4})\b/i);
-    if (obtainedMatch) obtainedMarks = parseInt(obtainedMatch[1]);
-  }
   if (!totalMarks) {
-    const totalMatch = text.match(/(?:Total Marks|Maximum Marks|Max Marks|Out of|Total)[\s:]*(\d{3,4})\b/i);
-    if (totalMatch) totalMarks = parseInt(totalMatch[1]);
+    const totMatch = cleanedNumText.match(/(?:Total\s*Marks|Maximum\s*Marks|Max\s*Marks|Out\s*of|Total)[\s:\-]*([0-9OolISBZ]{3,4})\b/i);
+    if (totMatch) {
+      const val = parseInt(fixOcrDigits(totMatch[1]));
+      if (!isNaN(val) && val >= 300 && val <= 1200) totalMarks = val;
+    }
   }
 
-  // 3. Keep values within bounds
+  // c) English Word-based marks parsing (e.g., "Nine Hundred Fifty")
+  if (!obtainedMarks) {
+    const wordNum = wordsToNumber(text);
+    if (wordNum && wordNum >= 100 && wordNum <= 1200) {
+      obtainedMarks = wordNum;
+    }
+  }
+
+  // d) Summary row search (GRAND TOTAL / TOTAL / AGGREGATE row)
+  if (!obtainedMarks || !totalMarks) {
+    const totalRows = [...cleanedNumText.matchAll(/(?:GRAND\s+TOTAL|TOTAL\s+MARKS|TOTAL|AGGREGATE|RESULT)[\s:\-]+([0-9OolISBZ\s]{3,30})/gi)];
+    for (const rowMatch of totalRows) {
+      const numbersInRow = rowMatch[1].split(/\s+/).map(n => parseInt(fixOcrDigits(n))).filter(n => !isNaN(n) && n >= 100 && n <= 1200);
+      if (numbersInRow.length >= 2) {
+        const stdTotals = [1100, 1050, 850, 550, 500, 600, 1200, 800, 400];
+        const foundTotal = numbersInRow.find(n => stdTotals.includes(n)) || Math.max(...numbersInRow);
+        const foundObt = numbersInRow.find(n => n !== foundTotal && n <= foundTotal && n >= 100);
+        if (foundTotal && !totalMarks) totalMarks = foundTotal;
+        if (foundObt && !obtainedMarks) obtainedMarks = foundObt;
+      }
+    }
+  }
+
+  // e) Generic Pakistani total marks scan if total is still missing
+  if (!totalMarks) {
+    const stdTotals = [1100, 550, 1050, 500, 1200, 850, 800, 600];
+    for (const stdTot of stdTotals) {
+      if (new RegExp(`\\b${stdTot}\\b`).test(cleanedNumText)) {
+        totalMarks = stdTot;
+        break;
+      }
+    }
+  }
+
+  // f) Fallback: If obtained is missing but there are numbers <= totalMarks in text
+  if (!obtainedMarks && totalMarks) {
+    const allNums = [...cleanedNumText.matchAll(/\b([0-9OolISBZ]{3,4})\b/g)]
+      .map(m => parseInt(fixOcrDigits(m[1])))
+      .filter(n => !isNaN(n) && n >= 150 && n < totalMarks && n !== totalMarks);
+    if (allNums.length > 0) {
+      obtainedMarks = Math.max(...allNums);
+    }
+  }
+
+  // g) Fallback: If totalMarks is missing but obtainedMarks is found, default to standard Pakistani total (1100 or 550)
+  if (obtainedMarks && !totalMarks) {
+    totalMarks = obtainedMarks > 550 ? 1100 : 550;
+  }
+
+  // Ensure obtainedMarks <= totalMarks
   if (obtainedMarks && totalMarks && obtainedMarks > totalMarks) {
     const temp = obtainedMarks;
     obtainedMarks = totalMarks;
     totalMarks = temp;
   }
+
+  // Percentage & Grade calculation / extraction
+  let percentageMatch = text.match(/(\d+(?:\.\d+)?)\s*%/);
+  let percentage = percentageMatch ? parseFloat(percentageMatch[1]) : null;
+  if (!percentage && obtainedMarks && totalMarks && totalMarks > 0) {
+    percentage = parseFloat(((obtainedMarks / totalMarks) * 100).toFixed(2));
+  }
+
+  const gradeMatch = text.match(/Grade[\s:]+([A-F][+-]?)/i);
 
   const subjectPatterns = {
     'Physics': /Physics[\s:]+(\d+)/i,
@@ -384,7 +544,7 @@ const extractAcademicData = (text) => {
   });
 
   return {
-    percentage: percentageMatch ? parseFloat(percentageMatch[1]) : null,
+    percentage: percentage,
     grade: gradeMatch ? gradeMatch[1] : null,
     passing_year: passingYear,
     board: board,

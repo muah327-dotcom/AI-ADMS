@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
 import {
@@ -17,6 +18,7 @@ import toast from 'react-hot-toast';
 
 const NewApplication = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [programs, setPrograms] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,6 +46,45 @@ const NewApplication = () => {
   useEffect(() => {
     fetchProgramsAndRecommendations();
   }, []);
+
+  // Auto-fill academic records from user profile (matric & inter marks)
+  useEffect(() => {
+    if (!user) return;
+
+    const matricObt = parseFloat(user.matric_obtained_marks);
+    const matricTot = parseFloat(user.matric_total_marks);
+    const interObt = parseFloat(user.inter_obtained_marks);
+    const interTot = parseFloat(user.inter_total_marks);
+
+    // Calculate individual percentages
+    const matricPct = (!isNaN(matricObt) && !isNaN(matricTot) && matricTot > 0)
+      ? (matricObt / matricTot) * 100 : null;
+    const interPct = (!isNaN(interObt) && !isNaN(interTot) && interTot > 0)
+      ? (interObt / interTot) * 100 : null;
+
+    // Average of available percentages
+    let avgPercentage = null;
+    if (matricPct !== null && interPct !== null) {
+      avgPercentage = ((matricPct + interPct) / 2).toFixed(2);
+    } else if (interPct !== null) {
+      avgPercentage = interPct.toFixed(2);
+    } else if (matricPct !== null) {
+      avgPercentage = matricPct.toFixed(2);
+    }
+
+    const interPassingYear = user.inter_passing_year || '';
+    const interBoard = user.inter_board || '';
+
+    setFormData(prev => ({
+      ...prev,
+      academic_records: {
+        ...prev.academic_records,
+        percentage: avgPercentage || prev.academic_records.percentage,
+        passing_year: interPassingYear || prev.academic_records.passing_year,
+        board: interBoard || prev.academic_records.board
+      }
+    }));
+  }, [user]);
 
   const fetchProgramsAndRecommendations = async () => {
     try {
