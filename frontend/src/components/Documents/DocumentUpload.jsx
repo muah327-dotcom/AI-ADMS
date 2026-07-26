@@ -43,6 +43,54 @@ const fixOcrDigits = (str) => {
     .replace(/Z/gi, '2');
 };
 
+const CNIC_NOISE_WORDS = new Set([
+  'gney', 'attorney', 'sign', 'signature', 'sig', 'specimen', 'card', 'holder',
+  'national', 'republic', 'pakistan', 'islamic', 'identity', 'number', 'reg',
+  'general', 'registrar', 'head', 'authority', 'nadra', 'govt', 'gov', 'pak',
+  'sai', 'sam', 'nam', 'namo', 'nene', 'nal', 'fath', 'fathar', 'fathor', 'fathsr',
+  'fatner', 'husb', 'father', 'husband', 'mother', 'date', 'birth', 'gender',
+  'sex', 'country', 'stay', 'expiry', 'issue', 'address', 'nic', 'cnic', 'puck',
+  'name', 'narne', 'neme'
+]);
+
+const sanitizeNameString = (nameStr) => {
+  if (!nameStr) return null;
+
+  let cleaned = nameStr
+    .replace(/[^A-Za-z\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!cleaned) return null;
+
+  const words = cleaned.split(' ').filter(w => w.length > 0);
+
+  const validWords = words.filter((word, idx) => {
+    const lower = word.toLowerCase();
+
+    // 1. Strip known CNIC label & OCR noise words
+    if (CNIC_NOISE_WORDS.has(lower)) return false;
+
+    // 2. Strip lowercase-only words at the start of the name (e.g., "gney" in "gney Muhammad Zahid")
+    if (idx === 0 && word === lower && words.length > 1) return false;
+
+    // 3. Strip trailing short noise (1-2 chars) at the end
+    if (idx === words.length - 1 && word.length <= 2 && words.length > 1) return false;
+
+    // 4. Strip single char words unless first word
+    if (word.length === 1 && idx !== 0) return false;
+
+    return true;
+  });
+
+  if (validWords.length === 0) return null;
+
+  const result = validWords.join(' ');
+  if (CNIC_NOISE_WORDS.has(result.toLowerCase()) || result.length < 3) return null;
+
+  return result;
+};
+
 const getCandidateScore = (nameStr) => {
   const words = nameStr.split(/\s+/).filter(w => w.length > 0);
   let score = nameStr.length;
@@ -58,19 +106,11 @@ const cleanAndScoreCandidates = (candidates) => {
   if (!candidates || candidates.length === 0) return null;
   const scored = candidates
     .map(c => {
-      let clean = c.trim().replace(/^[^A-Za-z]+|[^A-Za-z]+$/g, '').trim();
-      clean = clean.replace(/^[A-Za-z]{1,2}\s+(?=[A-Z])/, '').trim();
-      // Remove embedded special characters (quotes, punctuation)
-      clean = clean.replace(/[^A-Za-z\s]/g, '').trim();
-      // Remove trailing short words (1-2 chars) that are OCR noise
-      clean = clean.replace(/\s+[A-Za-z]{1,2}$/g, '').trim();
-      return { original: c, clean, score: getCandidateScore(clean) };
+      const clean = sanitizeNameString(c);
+      return { original: c, clean: clean || '', score: clean ? getCandidateScore(clean) : -100 };
     })
-    .filter(item => {
-      if (item.clean.length < 3) return false;
-      if (/^(Nal|Nam|Nom|Nene|Namo|Card|Holder|Father|Husband|Date|Gender|Sex|Country|Expiry|Issue|National|Republic)$/i.test(item.clean)) return false;
-      return true;
-    });
+    .filter(item => item.clean && item.clean.length >= 3);
+
   if (scored.length === 0) return null;
   scored.sort((a, b) => b.score - a.score);
   return scored[0].clean;
@@ -224,11 +264,11 @@ const extractCNICData = (rawText) => {
     }
   }
 
+  if (name) {
+    name = sanitizeNameString(name);
+  }
   if (fatherName) {
-    fatherName = fatherName.trim().replace(/^[^A-Za-z]+|[^A-Za-z]+$/g, '').trim();
-    fatherName = fatherName.replace(/^[A-Za-z]{1,2}\s+(?=[A-Z])/, '').trim();
-    fatherName = fatherName.replace(/[^A-Za-z\s]/g, '').trim();
-    fatherName = fatherName.replace(/\s+[A-Za-z]{1,2}$/g, '').trim();
+    fatherName = sanitizeNameString(fatherName);
   }
 
   return { cnic, name, father_name: fatherName, date_of_birth: dateOfBirth, gender, address };
