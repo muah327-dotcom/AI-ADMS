@@ -204,6 +204,7 @@ router.post('/generate-next/:programId', requireRole(['admin']), async (req, res
     for (const app of approvedApps) {
       if (app.fee_status === 'unpaid' || app.fee_status === 'rejected') {
         app.status = 'dropped';
+        app.priority = app.priority || 1;
         app.remarks += ` | Dropped in List #${nextListNum} due to non-payment of fee.`;
         await app.save();
         droppedCount++;
@@ -247,6 +248,7 @@ router.post('/generate-next/:programId', requireRole(['admin']), async (req, res
         const challanNum = `CHL-${program.name.substring(0, 3).toUpperCase()}-${app._id.toString().slice(-6).toUpperCase()}`;
 
         app.status = 'approved';
+        app.priority = app.priority || 1;
         app.merit_list_number = nextListNum;
         app.fee_deadline = newDeadline;
         app.fee_challan = {
@@ -260,8 +262,14 @@ router.post('/generate-next/:programId', requireRole(['admin']), async (req, res
       }
     }
 
+const getOrdinal = (n) => {
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+};
+
     res.json({
-      message: `${nextListNum}${nextListNum === 2 ? 'nd' : 'rd'} Merit List generated successfully`,
+      message: `${getOrdinal(nextListNum)} Merit List generated successfully`,
       program: program.name,
       meritListNumber: nextListNum,
       droppedUnpaidCount: droppedCount,

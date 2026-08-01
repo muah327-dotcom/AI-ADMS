@@ -169,10 +169,10 @@ const MeritList = ({ admin = false }) => {
       if (response.ok) {
         const data = await response.json();
         fetchMeritList(selectedProgram);
-        toast.success(`${data.meritListNumber}nd/rd Merit List Generated!\nDropped Unpaid: ${data.droppedUnpaidCount}, Promoted: ${data.promotedWaitlistedCount}`);
+        toast.success(`${getOrdinal(data.meritListNumber)} Merit List Generated!\nDropped Unpaid: ${data.droppedUnpaidCount}, Promoted: ${data.promotedWaitlistedCount}`);
       } else {
         const error = await response.json();
-        toast.error(error.error || 'Failed to generate next merit list');
+        toast.error(error.error || 'Failed to generate merit list');
       }
     } catch (error) {
       console.error('Generate next merit list error:', error);
@@ -180,6 +180,13 @@ const MeritList = ({ admin = false }) => {
     } finally {
       setGeneratingNext(false);
     }
+  };
+
+  const getOrdinal = (n) => {
+    if (!n || isNaN(n)) return '';
+    const s = ['th', 'st', 'nd', 'rd'];
+    const v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
   };
 
   const handleSaveFeeConfig = async (e) => {
@@ -269,42 +276,56 @@ const MeritList = ({ admin = false }) => {
               <DollarSign className="h-5 w-5 mr-2 text-green-400" />
               Configure Fee & Deadline
             </button>
-            <button
-              onClick={generateMeritList}
-              disabled={generating || !selectedProgram}
-              className="inline-flex items-center px-4 py-2 bg-cyan-500 text-white font-medium rounded-lg hover:bg-cyan-600 transition-colors disabled:opacity-50"
-            >
-              {generating ? (
-                <>
-                  <Loader2 className="animate-spin -ml-1 mr-2 h-5 w-5" />
-                  Generating 1st List...
-                </>
-              ) : (
-                <>
-                  <Award className="h-5 w-5 mr-2" />
-                  Generate 1st Merit List
-                </>
-              )}
-            </button>
-            {meritList.length > 0 && (
-              <button
-                onClick={generateNextMeritList}
-                disabled={generatingNext || !selectedProgram}
-                className="inline-flex items-center px-4 py-2 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50"
-              >
-                {generatingNext ? (
-                  <>
-                    <Loader2 className="animate-spin -ml-1 mr-2 h-5 w-5" />
-                    Generating 2nd List...
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="h-5 w-5 mr-2" />
-                    Generate 2nd Merit List (Auto-Drop Unpaid)
-                  </>
-                )}
-              </button>
-            )}
+
+            {/* Single Dynamic Action Button: 1st Merit List -> 2nd Merit List -> 3rd Merit List */}
+            {(() => {
+              const currentListNum = programDetails?.current_merit_list || 0;
+              const isFirstGen = currentListNum === 0 || meritList.length === 0;
+
+              if (isFirstGen) {
+                return (
+                  <button
+                    onClick={generateMeritList}
+                    disabled={generating || !selectedProgram}
+                    className="inline-flex items-center px-4 py-2 bg-cyan-500 text-white font-medium rounded-lg hover:bg-cyan-600 transition-colors disabled:opacity-50"
+                  >
+                    {generating ? (
+                      <>
+                        <Loader2 className="animate-spin -ml-1 mr-2 h-5 w-5" />
+                        Generating 1st Merit List...
+                      </>
+                    ) : (
+                      <>
+                        <Award className="h-5 w-5 mr-2" />
+                        Generate 1st Merit List
+                      </>
+                    )}
+                  </button>
+                );
+              } else {
+                const nextListNum = currentListNum + 1;
+                const nextListOrdinal = getOrdinal(nextListNum);
+                return (
+                  <button
+                    onClick={generateNextMeritList}
+                    disabled={generatingNext || !selectedProgram}
+                    className="inline-flex items-center px-4 py-2 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                  >
+                    {generatingNext ? (
+                      <>
+                        <Loader2 className="animate-spin -ml-1 mr-2 h-5 w-5" />
+                        Generating {nextListOrdinal} Merit List...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="h-5 w-5 mr-2" />
+                        Generate {nextListOrdinal} Merit List (Auto-Drop Unpaid)
+                      </>
+                    )}
+                  </button>
+                );
+              }
+            })()}
           </div>
         )}
       </div>

@@ -268,13 +268,17 @@ const runSeeder = async () => {
 
         await Application.findByIdAndUpdate(app._id, {
           status,
+          merit_list_number: 1,
           remarks: `Category: ${category}, Rank: ${rank++}, Score: ${score}%`
         });
       }
 
+      program.current_merit_list = 1;
+      await program.save();
+
       const selected = scoredApps.slice(0, totalSeats).length;
       const waitlisted = Math.max(0, scoredApps.length - totalSeats);
-      console.log(`  🏆 ${program.name}: ${scoredApps.length} applicants → ${selected} selected, ${waitlisted} waitlisted`);
+      console.log(`  🏆 ${program.name}: ${scoredApps.length} applicants → ${selected} selected, ${waitlisted} waitlisted (Merit List #1)`);
     }
 
     console.log('\n🎉 DONE! Realistic test data seeded successfully.');
