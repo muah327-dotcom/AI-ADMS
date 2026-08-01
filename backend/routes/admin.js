@@ -15,21 +15,59 @@ router.get('/dashboard-stats', async (req, res) => {
     const total = await Application.countDocuments();
     const pending = await Application.countDocuments({ status: 'pending' });
     const approved = await Application.countDocuments({ status: 'approved' });
+    const confirmed = await Application.countDocuments({ status: 'confirmed' });
+    const waitlisted = await Application.countDocuments({ status: 'waitlisted' });
     const rejected = await Application.countDocuments({ status: 'rejected' });
-    const activePrograms = await Program.countDocuments({ is_active: true });
-    const students = await User.countDocuments({ role: 'student' });
-    const programs = await Program.countDocuments();
-    const meritListCount = await Application.countDocuments({ status: 'approved' });
+    const dropped = await Application.countDocuments({ status: 'dropped' });
+
+    const totalStudents = await User.countDocuments({ role: 'student' });
+    const totalPrograms = await Program.countDocuments();
+
+    const admittedCount = approved + confirmed;
+    const admissionRate = total > 0 ? (admittedCount / total) * 100 : 0;
+
+    // Real By-Program distribution
+    const allPrograms = await Program.find();
+    const programDistribution = [];
+    for (const prog of allPrograms) {
+      const count = await Application.countDocuments({ program_id: prog._id });
+      programDistribution.push({
+        name: prog.name,
+        count
+      });
+    }
+
+    // Real Category distribution
+    const allApps = await Application.find({ status: { $in: ['approved', 'confirmed', 'waitlisted'] } });
+    let meritCount = 0;
+    let quotaCount = 0;
+    let selfFinanceCount = 0;
+
+    for (const app of allApps) {
+      if (app.remarks?.toLowerCase().includes('category: quota') || app.remarks?.toLowerCase().includes('quota')) quotaCount++;
+      else if (app.remarks?.toLowerCase().includes('category: self_finance') || app.remarks?.toLowerCase().includes('self_finance')) selfFinanceCount++;
+      else meritCount++;
+    }
 
     res.json({
       stats: {
         totalApplications: total,
         pendingApplications: pending,
         approvedApplications: approved,
+        confirmedApplications: confirmed,
+        admittedStudents: admittedCount,
+        admissionRate: Math.round(admissionRate * 10) / 10,
+        waitlistedApplications: waitlisted,
         rejectedApplications: rejected,
-        totalStudents: students,
-        totalPrograms: programs,
-        meritListEntries: meritListCount
+        droppedApplications: dropped,
+        totalStudents,
+        totalPrograms,
+        programDistribution,
+        categoryDistribution: {
+          merit: meritCount,
+          quota: quotaCount,
+          self_finance: selfFinanceCount
+        }
       }
     });
   } catch (error) {

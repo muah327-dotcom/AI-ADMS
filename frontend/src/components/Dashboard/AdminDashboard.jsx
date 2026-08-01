@@ -75,19 +75,27 @@ const AdminDashboard = () => {
     labels: ['Merit', 'Quota', 'Self Finance'],
     datasets: [
       {
-        data: [65, 15, 20],
+        data: [
+          stats?.categoryDistribution?.merit || 0,
+          stats?.categoryDistribution?.quota || 0,
+          stats?.categoryDistribution?.self_finance || 0
+        ],
         backgroundColor: ['#06b6d4', '#10b981', '#f59e0b'],
         borderWidth: 0,
       },
     ],
   };
 
+  const programList = stats?.programDistribution || [];
+  const programLabels = programList.map(p => p.name);
+  const programCounts = programList.map(p => p.count);
+
   const monthlyData = {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+    labels: programLabels.length > 0 ? programLabels : ['CS', 'SE', 'EE', 'BBA', 'BBIT', 'DS'],
     datasets: [
       {
-        label: 'Applications',
-        data: [120, 190, 300, 500, 200, 300],
+        label: 'Applications per Program',
+        data: programCounts.length > 0 ? programCounts : [12, 10, 9, 12, 9, 9],
         backgroundColor: '#06b6d4',
         borderRadius: 4,
       },
@@ -95,11 +103,11 @@ const AdminDashboard = () => {
   };
 
   const programData = {
-    labels: ['CS', 'Engineering', 'Business', 'Medicine', 'Arts'],
+    labels: programLabels.length > 0 ? programLabels : ['BS CS', 'BS SE', 'BE EE', 'BBA', 'BBIT', 'BS DS'],
     datasets: [
       {
-        data: [300, 250, 200, 150, 100],
-        backgroundColor: ['#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
+        data: programCounts.length > 0 ? programCounts : [12, 10, 9, 12, 9, 9],
+        backgroundColor: ['#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#3b82f6'],
         borderWidth: 0,
       },
     ],
@@ -129,25 +137,13 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-3">
-        <select className="px-3 py-2 bg-[#1a1a1a] border border-gray-700 rounded-lg text-sm text-gray-300">
-          <option>Last Month</option>
-          <option>Last 3 Months</option>
-          <option>Last 6 Months</option>
-        </select>
-        <select className="px-3 py-2 bg-[#1a1a1a] border border-gray-700 rounded-lg text-sm text-gray-300">
-          <option>All Programs</option>
-        </select>
-      </div>
-
-      {/* Stats Cards - Dark Theme */}
+      {/* Stats Cards - Dynamic DB Data */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total Applications', value: '1,460', subtext: '+12.5%', icon: FileText, color: 'text-cyan-400' },
-          { label: 'Admitted Students', value: '460', subtext: '+6.2%', icon: Users, color: 'text-green-400' },
-          { label: 'Admission Rate', value: '31.5%', subtext: '+2.1%', icon: TrendingUp, color: 'text-cyan-400' },
-          { label: 'Pending Review', value: '245', subtext: '-1.5%', icon: Clock, color: 'text-yellow-400' },
+          { label: 'Total Applications', value: stats?.totalApplications ?? 0, subtext: `${stats?.totalApplications || 0} Total Received`, icon: FileText, color: 'text-cyan-400' },
+          { label: 'Admitted Students', value: stats?.admittedStudents ?? 0, subtext: `${stats?.confirmedApplications || 0} Paid Confirmed`, icon: Users, color: 'text-green-400' },
+          { label: 'Admission Rate', value: `${stats?.admissionRate ?? 0}%`, subtext: `${stats?.admittedStudents || 0} of ${stats?.totalApplications || 0}`, icon: TrendingUp, color: 'text-cyan-400' },
+          { label: 'Pending Review', value: stats?.pendingApplications ?? 0, subtext: `${stats?.waitlistedApplications || 0} Waitlisted`, icon: Clock, color: 'text-yellow-400' },
         ].map((stat, index) => {
           const Icon = stat.icon;
           return (
@@ -156,7 +152,7 @@ const AdminDashboard = () => {
                 <div>
                   <p className="text-xs text-gray-400 uppercase tracking-wider">{stat.label}</p>
                   <p className="mt-2 text-2xl font-bold text-white">{stat.value}</p>
-                  <p className={`text-xs mt-1 ${stat.subtext.startsWith('+') ? 'text-green-400' : 'text-red-400'}`}>
+                  <p className="text-xs mt-1 text-cyan-400 font-medium">
                     {stat.subtext}
                   </p>
                 </div>
