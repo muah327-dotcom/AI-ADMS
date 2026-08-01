@@ -28,6 +28,38 @@ const programSchema = new mongoose.Schema({
   required_subjects: [{
     type: String
   }],
+  admission_fee: {
+    type: Number,
+    default: 15000
+  },
+  tuition_fee: {
+    type: Number,
+    default: 65000
+  },
+  total_fee: {
+    type: Number,
+    default: 80000
+  },
+  bank_name: {
+    type: String,
+    default: 'Habib Bank Limited (HBL)'
+  },
+  account_number: {
+    type: String,
+    default: 'PK78HABB00012345678901'
+  },
+  account_title: {
+    type: String,
+    default: 'University Admission Office'
+  },
+  fee_deadline: {
+    type: Date,
+    default: null
+  },
+  current_merit_list: {
+    type: Number,
+    default: 1
+  },
   is_active: {
     type: Boolean,
     default: true

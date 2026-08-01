@@ -10,7 +10,9 @@ import {
   CheckCircle,
   AlertCircle,
   ArrowRight,
-  Loader2
+  Loader2,
+  CreditCard,
+  Bell
 } from 'lucide-react';
 
 const StudentDashboard = () => {
@@ -41,13 +43,13 @@ const StudentDashboard = () => {
       const recsData = await recsRes.json();
 
       if (appsRes.ok) {
-        setRecentApplications(appsData.applications?.slice(0, 5) || []);
+        setRecentApplications(appsData.applications || []);
         const apps = appsData.applications || [];
         setStats({
           total: apps.length,
           pending: apps.filter(a => a.status === 'pending').length,
-          approved: apps.filter(a => a.status === 'approved').length,
-          rejected: apps.filter(a => a.status === 'rejected').length
+          approved: apps.filter(a => a.status === 'approved' || a.status === 'confirmed').length,
+          rejected: apps.filter(a => a.status === 'rejected' || a.status === 'dropped').length
         });
       }
 
@@ -61,11 +63,15 @@ const StudentDashboard = () => {
     }
   };
 
+  const selectedApp = recentApplications.find(a => a.status === 'approved');
+
   const getStatusIcon = (status) => {
     switch (status) {
       case 'approved':
+      case 'confirmed':
         return <CheckCircle className="h-5 w-5 text-green-500" />;
       case 'rejected':
+      case 'dropped':
         return <AlertCircle className="h-5 w-5 text-red-500" />;
       case 'pending':
       default:
@@ -76,8 +82,10 @@ const StudentDashboard = () => {
   const getStatusClass = (status) => {
     switch (status) {
       case 'approved':
+      case 'confirmed':
         return 'bg-green-100 text-green-800';
       case 'rejected':
+      case 'dropped':
         return 'bg-red-100 text-red-800';
       case 'pending':
       default:
@@ -95,6 +103,32 @@ const StudentDashboard = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Selected Student Fee Challan Notification Banner */}
+      {selectedApp && (
+        <div className="bg-gradient-to-r from-emerald-600 to-green-700 rounded-2xl p-6 text-white shadow-xl border border-green-400/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex items-start space-x-4">
+            <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+              <Bell className="h-8 w-8 text-yellow-300 animate-bounce" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                🎉 Congratulations! You are Selected!
+              </h2>
+              <p className="text-emerald-100 text-sm mt-1">
+                You have been selected for <span className="font-semibold text-white">{selectedApp.programs?.name}</span>. Download your fee challan, deposit at bank, and upload the paid receipt before the deadline to confirm your seat!
+              </p>
+            </div>
+          </div>
+          <Link
+            to="/dashboard/fee-challan"
+            className="px-5 py-2.5 bg-yellow-400 text-gray-900 font-bold rounded-lg hover:bg-yellow-300 transition-colors shadow-lg flex items-center whitespace-nowrap"
+          >
+            <CreditCard className="h-5 w-5 mr-2" />
+            View & Print Fee Challan
+          </Link>
+        </div>
+      )}
+
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-cyan-600 to-cyan-700 rounded-2xl p-6 lg:p-8 text-white">
         <h1 className="text-2xl lg:text-3xl font-bold">Welcome, {user?.full_name?.split(' ')[0]}!</h1>

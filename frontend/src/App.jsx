@@ -14,6 +14,7 @@ import ApplicationTracking from './components/Applications/ApplicationTracking';
 import ProgramRecommendations from './components/Recommendations/ProgramRecommendations';
 import DocumentUpload from './components/Documents/DocumentUpload';
 import MeritList from './components/MeritList/MeritList';
+import FeeChallan from './components/Fee/FeeChallan';
 import AdminAnalytics from './components/Admin/AdminAnalytics';
 import ManagePrograms from './components/Admin/ManagePrograms';
 import AllApplications from './components/Admin/AllApplications';
@@ -99,6 +100,7 @@ function AppRoutes() {
         <Route path="recommendations" element={<ProgramRecommendations />} />
         <Route path="documents" element={<DocumentUpload />} />
         <Route path="merit-list" element={<MeritList />} />
+        <Route path="fee-challan" element={<FeeChallan />} />
         <Route path="settings" element={<Settings />} />
       </Route>
 

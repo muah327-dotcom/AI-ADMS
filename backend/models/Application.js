@@ -13,8 +13,31 @@ const applicationSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'under_review', 'approved', 'rejected', 'waitlisted'],
+    enum: ['pending', 'under_review', 'approved', 'rejected', 'waitlisted', 'confirmed', 'dropped'],
     default: 'pending'
+  },
+  fee_status: {
+    type: String,
+    enum: ['unpaid', 'submitted', 'verified', 'rejected'],
+    default: 'unpaid'
+  },
+  fee_challan: {
+    challan_number: { type: String, default: null },
+    amount: { type: Number, default: 0 },
+    fee_deadline: { type: Date, default: null },
+    paid_receipt_url: { type: String, default: null },
+    filename: { type: String, default: null },
+    uploaded_at: { type: Date, default: null },
+    verified_at: { type: Date, default: null },
+    verified_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null }
+  },
+  fee_deadline: {
+    type: Date,
+    default: null
+  },
+  merit_list_number: {
+    type: Number,
+    default: 1
   },
   priority: {
     type: Number,

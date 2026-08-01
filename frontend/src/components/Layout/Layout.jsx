@@ -7,6 +7,7 @@ import {
   Sparkles,
   Upload,
   Award,
+  CreditCard,
   BarChart3,
   Users,
   Settings,
@@ -57,6 +58,7 @@ const Layout = () => {
     { name: 'My Applications', icon: FileText, path: '/dashboard/applications' },
     { name: 'Program Recommendations', icon: Sparkles, path: '/dashboard/recommendations' },
     { name: 'Merit List', icon: Award, path: '/dashboard/merit-list' },
+    { name: 'Fee Challan', icon: CreditCard, path: '/dashboard/fee-challan' },
   ];
 
   const adminNavItems = [
