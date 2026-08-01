@@ -1,4 +1,5 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import { body, validationResult } from 'express-validator';
 import { authenticateToken, requireRole } from '../middleware/auth.js';
 import Application from '../models/Application.js';
@@ -7,6 +8,21 @@ import Program from '../models/Program.js';
 const router = express.Router();
 
 router.use(authenticateToken);
+
+const findProgram = async (identifier) => {
+  if (!identifier) return null;
+  const decoded = decodeURIComponent(identifier).trim();
+  if (mongoose.Types.ObjectId.isValid(decoded)) {
+    const prog = await Program.findById(decoded);
+    if (prog) return prog;
+  }
+  return await Program.findOne({
+    $or: [
+      { name: decoded },
+      { name: new RegExp(`^${decoded.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
+    ]
+  });
+};
 
 router.post('/', [
   body('program_id').isMongoId(),
@@ -41,7 +57,7 @@ router.post('/', [
       return res.status(400).json({ error: `You have already selected priority ${priority} for another program.` });
     }
     // Fetch program and enforce eligibility
-    const program = await Program.findById(program_id);
+    const program = await findProgram(program_id);
     if (!program) {
       return res.status(404).json({ error: 'Program not found' });
     }
@@ -146,7 +162,7 @@ router.get('/programs/:id/eligibility', async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
 
-    const program = await Program.findById(id);
+    const program = await findProgram(id);
 
     if (!program) {
       return res.status(404).json({ error: 'Program not found' });

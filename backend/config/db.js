@@ -14,9 +14,10 @@ const connectDB = async () => {
   const DEFAULT_MONGODB_URI = 'mongodb+srv://muah327_db_user:abc%40gmail@cluster0.rzzuhei.mongodb.net/admission_system?retryWrites=true&w=majority';
   let uri = process.env.MONGODB_URI || DEFAULT_MONGODB_URI;
   
+  let conn;
   try {
     console.log('Attempting to connect to Cloud MongoDB...');
-    const conn = await mongoose.connect(uri, {
+    conn = await mongoose.connect(uri, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
       serverSelectionTimeoutMS: 10000

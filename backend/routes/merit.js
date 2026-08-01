@@ -1,4 +1,5 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import { authenticateToken, requireRole } from '../middleware/auth.js';
 import Application from '../models/Application.js';
 import Program from '../models/Program.js';
@@ -7,93 +8,114 @@ const router = express.Router();
 
 router.use(authenticateToken);
 
+// Helper function to resolve Program by ObjectId OR by Name
+const findProgram = async (identifier) => {
+  if (!identifier) return null;
+  const decoded = decodeURIComponent(identifier).trim();
+  if (mongoose.Types.ObjectId.isValid(decoded)) {
+    const prog = await Program.findById(decoded);
+    if (prog) return prog;
+  }
+  return await Program.findOne({
+    $or: [
+      { name: decoded },
+      { name: new RegExp(`^${decoded.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
+    ]
+  });
+};
+
 router.post('/generate/:programId', requireRole(['admin']), async (req, res) => {
   try {
     const { programId } = req.params;
     const { quota_percentages = { merit: 80, quota: 10, self_finance: 10 } } = req.body;
 
-    const program = await Program.findById(programId);
+    const program = await findProgram(programId);
 
     if (!program) {
-      return res.status(404).json({ error: 'Program not found' });
+      return res.status(404).json({ error: `Program '${programId}' not found` });
     }
 
-    const applications = await Application.find({
-      program_id: programId,
+    let applications = await Application.find({
+      program_id: program._id,
       status: 'pending'
     }).populate('user_id', 'full_name email cnic phone');
 
+    // Fallback: If no pending applications, re-evaluate approved & waitlisted applications for regeneration
     if (!applications || applications.length === 0) {
-      return res.status(400).json({ error: 'No pending applications found for this program' });
+      applications = await Application.find({
+        program_id: program._id,
+        status: { $in: ['approved', 'waitlisted'] }
+      }).populate('user_id', 'full_name email cnic phone');
+    }
+
+    if (!applications || applications.length === 0) {
+      return res.status(400).json({ error: 'No applications found for this program' });
     }
 
     const scoredApplications = applications.map(app => {
-      const academicRecords = app.student?.academic_records || {};
-      const percentage = academicRecords.percentage || 0;
-      const subjectScores = academicRecords.subject_scores || {};
-      const extracurricularBonus = app.extracurriculars ? 5 : 0;
-      
-      const subjectAvg = Object.values(subjectScores).reduce((a, b) => a + b, 0) / 
-        (Object.values(subjectScores).length || 1);
-      
-      const totalScore = (percentage * 0.7) + (subjectAvg * 0.3) + extracurricularBonus;
-      
+      const fsc = app.fsc_percentage || 0;
+      const matric = app.matric_percentage || fsc;
+      const entryTest = app.entry_test_marks || 0;
+
+      let totalScore = 0;
+      if (entryTest > 0) {
+        totalScore = (fsc * 0.5) + (entryTest * 0.3) + (matric * 0.2);
+      } else {
+        totalScore = (fsc * 0.7) + (matric * 0.3);
+      }
+
       return {
-        ...app,
-        calculated_score: totalScore,
-        academic_percentage: percentage
+        app,
+        calculated_score: Math.round(totalScore * 100) / 100,
+        academic_percentage: fsc
       };
     });
 
     scoredApplications.sort((a, b) => b.calculated_score - a.calculated_score);
 
-    const meritSeats = Math.floor(program.total_seats * quota_percentages.merit / 100);
-    const quotaSeats = Math.floor(program.total_seats * quota_percentages.quota / 100);
-    const selfFinanceSeats = program.total_seats - meritSeats - quotaSeats;
+    const totalSeats = program.total_seats || 50;
+    const meritSeats = Math.floor(totalSeats * (quota_percentages.merit || 80) / 100);
+    const quotaSeats = Math.floor(totalSeats * (quota_percentages.quota || 10) / 100);
 
     const meritList = [];
     let currentRank = 1;
 
-    for (let i = 0; i < scoredApplications.length && i < program.total_seats; i++) {
-      const app = scoredApplications[i];
+    for (let i = 0; i < scoredApplications.length; i++) {
+      const item = scoredApplications[i];
+      const app = item.app;
       let category = 'merit';
-      
+
       if (i >= meritSeats && i < meritSeats + quotaSeats) {
         category = 'quota';
       } else if (i >= meritSeats + quotaSeats) {
         category = 'self_finance';
       }
 
+      const isSelected = i < totalSeats;
+      const status = isSelected ? 'selected' : 'waitlisted';
+
       meritList.push({
-        application_id: app.id,
-        student_id: app.student_id,
-        program_id: programId,
+        id: app._id,
+        application_id: app._id,
+        student: app.user_id,
+        student_id: app.user_id?._id || app.user_id,
+        program_id: program._id,
         rank: currentRank++,
-        score: app.calculated_score,
+        score: item.calculated_score,
         category,
-        academic_percentage: app.academic_percentage,
-        status: i < program.total_seats ? 'selected' : 'waitlisted',
+        academic_percentage: item.academic_percentage,
+        status,
         generated_at: new Date().toISOString()
       });
     }
 
     // Update applications directly based on merit list
-    for (const entry of meritList.filter(e => e.status === 'selected')) {
+    for (const entry of meritList) {
       await Application.findByIdAndUpdate(
         entry.application_id,
         { 
-          status: 'approved',
-          remarks: `Selected via ${entry.category} category, Rank: ${entry.rank}`
-        }
-      );
-    }
-
-    for (const entry of meritList.filter(e => e.status === 'waitlisted')) {
-      await Application.findByIdAndUpdate(
-        entry.application_id,
-        { 
-          status: 'waitlisted',
-          remarks: `Waitlisted, Rank: ${entry.rank}`
+          status: entry.status === 'selected' ? 'approved' : 'waitlisted',
+          remarks: `Category: ${entry.category}, Rank: ${entry.rank}, Score: ${entry.score}%`
         }
       );
     }
@@ -108,34 +130,71 @@ router.post('/generate/:programId', requireRole(['admin']), async (req, res) => 
     });
   } catch (error) {
     console.error('Generate merit list error:', error);
-    res.status(500).json({ error: 'Failed to generate merit list' });
+    res.status(500).json({ error: 'Failed to generate merit list: ' + error.message });
   }
 });
 
 router.get('/program/:programId', async (req, res) => {
   try {
     const { programId } = req.params;
+    const { category } = req.query;
 
-    // Get approved applications for this program as merit list
+    const program = await findProgram(programId);
+
+    if (!program) {
+      return res.status(404).json({ error: `Program '${programId}' not found` });
+    }
+
     const applications = await Application.find({
-      program_id: programId,
+      program_id: program._id,
       status: { $in: ['approved', 'waitlisted'] }
-    }).populate('user_id', 'full_name email cnic')
-      .sort({ created_at: -1 });
+    }).populate('user_id', 'full_name email cnic phone');
 
-    const meritList = applications.map((app, index) => ({
-      id: app._id,
+    const scoredApps = applications.map(app => {
+      const fsc = app.fsc_percentage || 0;
+      const matric = app.matric_percentage || fsc;
+      const entry = app.entry_test_marks || 0;
+      let score = 0;
+      if (entry > 0) {
+        score = (fsc * 0.5) + (entry * 0.3) + (matric * 0.2);
+      } else {
+        score = (fsc * 0.7) + (matric * 0.3);
+      }
+
+      let cat = 'merit';
+      if (app.remarks?.toLowerCase().includes('category: quota') || app.remarks?.toLowerCase().includes('quota')) cat = 'quota';
+      else if (app.remarks?.toLowerCase().includes('category: self_finance') || app.remarks?.toLowerCase().includes('self_finance')) cat = 'self_finance';
+
+      return {
+        app,
+        score: Math.round(score * 100) / 100,
+        category: cat
+      };
+    });
+
+    scoredApps.sort((a, b) => b.score - a.score);
+
+    let filtered = scoredApps;
+    if (category && category !== 'all') {
+      filtered = scoredApps.filter(item => item.category === category);
+    }
+
+    const meritList = filtered.map((item, index) => ({
+      id: item.app._id,
       rank: index + 1,
-      student_id: app.user_id,
-      program_id: app.program_id,
-      status: app.status,
-      score: (app.matric_percentage + app.fsc_percentage) / 2
+      student: item.app.user_id,
+      student_id: item.app.user_id?._id || item.app.user_id,
+      program_id: program._id,
+      status: item.app.status === 'approved' ? 'selected' : 'waitlisted',
+      score: item.score,
+      category: item.category,
+      remarks: item.app.remarks
     }));
 
     res.json({ meritList });
   } catch (error) {
     console.error('Fetch merit list error:', error);
-    res.status(500).json({ error: 'Failed to fetch merit list' });
+    res.status(500).json({ error: 'Failed to fetch merit list: ' + error.message });
   }
 });
 
@@ -149,14 +208,21 @@ router.get('/student/my-position', async (req, res) => {
     }).populate('program_id', 'name department total_seats')
       .sort({ created_at: -1 });
 
-    const meritEntries = applications.map((app, index) => ({
-      id: app._id,
-      rank: index + 1,
-      student_id: app.user_id,
-      program_id: app.program_id,
-      status: app.status,
-      score: (app.matric_percentage + app.fsc_percentage) / 2
-    }));
+    const meritEntries = applications.map((app, index) => {
+      const fsc = app.fsc_percentage || 0;
+      const matric = app.matric_percentage || fsc;
+      const entry = app.entry_test_marks || 0;
+      const score = entry > 0 ? (fsc * 0.5 + entry * 0.3 + matric * 0.2) : (fsc * 0.7 + matric * 0.3);
+
+      return {
+        id: app._id,
+        rank: index + 1,
+        student_id: app.user_id,
+        program_id: app.program_id,
+        status: app.status === 'approved' ? 'selected' : app.status,
+        score: Math.round(score * 100) / 100
+      };
+    });
 
     res.json({ meritEntries });
   } catch (error) {
@@ -173,15 +239,23 @@ router.get('/all', requireRole(['admin']), async (req, res) => {
       .populate('program_id', 'name department')
       .sort({ created_at: -1 });
 
-    const meritLists = applications.map((app, index) => ({
-      id: app._id,
-      student_id: app.user_id,
-      program_id: app.program_id,
-      status: app.status,
-      rank: index + 1,
-      score: (app.matric_percentage + app.fsc_percentage) / 2,
-      generated_at: app.created_at
-    }));
+    const meritLists = applications.map((app, index) => {
+      const fsc = app.fsc_percentage || 0;
+      const matric = app.matric_percentage || fsc;
+      const entry = app.entry_test_marks || 0;
+      const score = entry > 0 ? (fsc * 0.5 + entry * 0.3 + matric * 0.2) : (fsc * 0.7 + matric * 0.3);
+
+      return {
+        id: app._id,
+        student: app.user_id,
+        student_id: app.user_id,
+        program_id: app.program_id,
+        status: app.status === 'approved' ? 'selected' : app.status,
+        rank: index + 1,
+        score: Math.round(score * 100) / 100,
+        generated_at: app.created_at
+      };
+    });
 
     res.json({ meritLists });
   } catch (error) {

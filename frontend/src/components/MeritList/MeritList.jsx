@@ -41,9 +41,11 @@ const MeritList = ({ admin = false }) => {
 
       if (response.ok) {
         const data = await response.json();
-        setPrograms(data.programs || []);
-        if (data.programs?.length > 0) {
-          setSelectedProgram(data.programs[0].id);
+        const progList = data.programs || [];
+        setPrograms(progList);
+        if (progList.length > 0) {
+          const defaultVal = progList[0]._id || progList[0].id || progList[0].name;
+          setSelectedProgram(defaultVal);
         }
       }
     } catch (error) {
@@ -185,9 +187,10 @@ const MeritList = ({ admin = false }) => {
               value={selectedProgram}
               onChange={(e) => setSelectedProgram(e.target.value)}
             >
-              {programs.map((program) => (
-                <option key={program.id} value={program.id}>{program.name}</option>
-              ))}
+              {programs.map((program) => {
+                const val = program._id || program.id || program.name;
+                return <option key={val} value={val}>{program.name}</option>;
+              })}
             </select>
           </div>
           {admin && (
