@@ -93,6 +93,39 @@ const runSeeder = async () => {
     }
     console.log(`✅ ${studentUsers.length} Student profiles ready.`);
 
+    // 2b. Find existing student "ABC" from database and include in merit list
+    console.log('🔍 Looking up existing student "ABC" from database...');
+    const abcUser = await User.findOne({ full_name: { $regex: /^ABC$/i } });
+    if (abcUser) {
+      console.log(`  ✅ Found student "ABC" (${abcUser.email}) — will include in merit list as SELECTED.`);
+
+      // Give ABC strong academic data if not already present, so they rank high
+      const abcUpdates = {};
+      if (!abcUser.matric_obtained_marks) abcUpdates.matric_obtained_marks = 1040;
+      if (!abcUser.matric_total_marks) abcUpdates.matric_total_marks = 1100;
+      if (!abcUser.inter_obtained_marks) abcUpdates.inter_obtained_marks = 1035;
+      if (!abcUser.inter_total_marks) abcUpdates.inter_total_marks = 1100;
+      if (!abcUser.matric_board) abcUpdates.matric_board = 'BISE Lahore';
+      if (!abcUser.inter_board) abcUpdates.inter_board = 'BISE Lahore';
+      if (!abcUser.matric_passing_year) abcUpdates.matric_passing_year = 2020;
+      if (!abcUser.inter_passing_year) abcUpdates.inter_passing_year = 2022;
+      if (!abcUser.cnic) abcUpdates.cnic = '35202-9876543-1';
+      if (!abcUser.phone) abcUpdates.phone = '+92-300-9876543';
+      if (!abcUser.address) abcUpdates.address = 'Test Address, Lahore';
+      if (!abcUser.father_name) abcUpdates.father_name = 'Father of ABC';
+
+      if (Object.keys(abcUpdates).length > 0) {
+        await User.findByIdAndUpdate(abcUser._id, abcUpdates);
+        Object.assign(abcUser, abcUpdates);
+        console.log('  📝 Updated ABC with academic data for merit scoring.');
+      }
+
+      // Add ABC to the email lookup with high entry test marks (94) so they rank near the top
+      studentUsers.push({ user: abcUser, entry_test_marks: 94 });
+    } else {
+      console.log('  ⚠️ Student "ABC" not found in database. Skipping. (Create a student named "ABC" first)');
+    }
+
     // 3. REALISTIC program-specific applications
     //    Each student applies to only 1-3 programs (not all of them)
     //    This mirrors real life where students pick their preferred programs
@@ -171,6 +204,19 @@ const runSeeder = async () => {
         'hina.parveen@teststudent.com'
       ]
     };
+
+    // Inject ABC student into program applications if found in database
+    if (abcUser) {
+      const abcEmail = abcUser.email;
+      // Add ABC to BS Computer Science (near top for high ranking) and BS Software Engineering
+      if (programApplications['BS Computer Science'] && !programApplications['BS Computer Science'].includes(abcEmail)) {
+        programApplications['BS Computer Science'].splice(1, 0, abcEmail); // Insert at position 2 (high rank)
+      }
+      if (programApplications['BS Software Engineering'] && !programApplications['BS Software Engineering'].includes(abcEmail)) {
+        programApplications['BS Software Engineering'].splice(1, 0, abcEmail);
+      }
+      console.log(`  📌 Added ABC (${abcEmail}) to BS Computer Science & BS Software Engineering applications.`);
+    }
 
     // Build a quick email->student lookup
     const emailToStudent = {};
