@@ -67,81 +67,82 @@ const CNIC_NOISE_WORDS = new Set([
   'sai', 'sam', 'nam', 'namo', 'nene', 'nal', 'fath', 'fathar', 'fathor', 'fathsr',
   'fatner', 'husb', 'father', 'husband', 'mother', 'date', 'birth', 'gender',
   'sex', 'country', 'stay', 'expiry', 'issue', 'address', 'nic', 'cnic', 'puck',
-  'name', 'narne', 'neme'
+  'name', 'narne', 'neme', 'nama', 'of', 'the', 'and', 'for', 'with',
+  'valid', 'from', 'till', 'renewal', 'fee', 'status', 'photo',
+  'thumb', 'impression', 'print', 'finger', 'left', 'right',
+  'registration', 'form', 'office', 'district', 'province', 'tehsil',
+  'holders', 'des', 'der', 'sur', 'soi', 'sor', 'so', 'do', 'wo',
+  'mr', 'mrs', 'ms', 'miss', 'dr', 'pk', 'pkr', 'id', 'no', 'num', 's/o', 'd/o', 'w/o'
 ]);
 
-const sanitizeNameString = (nameStr) => {
-  if (!nameStr) return null;
+/**
+ * Clean and format candidate name string by stripping CNIC noise words
+ */
+const cleanNameCandidate = (rawStr) => {
+  if (!rawStr) return null;
 
-  let cleaned = nameStr
+  let text = rawStr
+    .replace(/(?:Father|Husband|Mother|Name|Narne|Namo|Nene|Holder|Card|Nal|Neme|Nama|Fathor|Fathar|Falher|Fathsr|Fatner|Fathe|Fther|Feather|Fether|Husb|S\/O|D\/O|W\/O|Son\s+of|Daughter\s+of|Wife\s+of)\s*[:\-]?/gi, ' ')
     .replace(/[^A-Za-z\s]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 
-  if (!cleaned) return null;
+  if (!text) return null;
 
-  const words = cleaned.split(' ').filter(w => w.length > 0);
+  const words = text.split(' ').filter(w => w.length > 0);
 
-  const validWords = words.filter((word, idx) => {
+  const validWords = words.filter(word => {
     const lower = word.toLowerCase();
-
-    // 1. Strip known CNIC label & OCR noise words
     if (CNIC_NOISE_WORDS.has(lower)) return false;
-
-    // 2. Strip lowercase-only words at the start of the name (e.g., "gney" in "gney Muhammad Zahid")
-    if (idx === 0 && word === lower && words.length > 1) return false;
-
-    // 3. Strip trailing short noise (1-2 chars) at the end
-    if (idx === words.length - 1 && word.length <= 2 && words.length > 1) return false;
-
-    // 4. Strip single char words unless first word
-    if (word.length === 1 && idx !== 0) return false;
-
+    if (word.length < 2) return false;
     return true;
   });
 
-  if (validWords.length === 0) return null;
+  if (validWords.length < 1) return null;
 
-  const result = validWords.join(' ');
-  if (CNIC_NOISE_WORDS.has(result.toLowerCase()) || result.length < 3) return null;
-
-  return result;
-};
-
-const getCandidateScore = (nameStr) => {
-  const words = nameStr.split(/\s+/).filter(w => w.length > 0);
-  let score = nameStr.length;
-  if (words.length >= 2) score += 20;
-
-  const hasSingleCharWord = words.some(w => w.length === 1);
-  if (hasSingleCharWord) score -= 15;
-
-  if (words.length === 1 && nameStr.length <= 4) score -= 30;
-  if (/^(Nal|Nam|Nom|Nene|Namo)$/i.test(nameStr)) score -= 50;
-  return score;
-};
-
-const cleanAndScoreCandidates = (candidates) => {
-  if (!candidates || candidates.length === 0) return null;
-
-  const scored = candidates
-    .map(c => {
-      const clean = sanitizeNameString(c);
-      return {
-        original: c,
-        clean: clean || '',
-        score: clean ? getCandidateScore(clean) : -100
-      };
-    })
-    .filter(item => item.clean && item.clean.length >= 3);
-
-  if (scored.length === 0) return null;
-  scored.sort((a, b) => b.score - a.score);
-  return scored[0].clean;
+  return validWords
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
 };
 
 /**
- * Extract CNIC data using multiple strategies for robustness
+ * Extract all dates from OCR text with flexible separators and digit misread fixes
+ */
+const extractAllDatesFromText = (rawText) => {
+  if (!rawText) return [];
+  const clean = cleanOcrText(rawText);
+  const dates = [];
+
+  const regex = /([0-9OolISB]{1,2})[\s.\-\/,:]{1,3}([0-9OolISB]{1,2})[\s.\-\/,:]{1,3}([0-9OolISB]{4})/g;
+
+  let match;
+  while ((match = regex.exec(clean)) !== null) {
+    const dayVal = parseInt(fixOcrDigits(match[1]));
+    const monthVal = parseInt(fixOcrDigits(match[2]));
+    const yearVal = parseInt(fixOcrDigits(match[3]));
+
+    if (dayVal >= 1 && dayVal <= 31 && monthVal >= 1 && monthVal <= 12 && yearVal >= 1950 && yearVal <= 2035) {
+      const formattedDay = dayVal.toString().padStart(2, '0');
+      const formattedMonth = monthVal.toString().padStart(2, '0');
+      const matchIndex = match.index;
+
+      const start = Math.max(0, matchIndex - 30);
+      const end = Math.min(clean.length, matchIndex + match[0].length + 30);
+      const context = clean.substring(start, end);
+
+      dates.push({
+        dateStr: `${formattedDay}/${formattedMonth}/${yearVal}`,
+        year: yearVal,
+        context
+      });
+    }
+  }
+
+  return dates;
+};
+
+/**
+ * Extract CNIC data using robust strategies tailored for Pakistani CNICs
  */
 const extractCNICData = (rawText) => {
   const text = rawText || '';
@@ -150,12 +151,10 @@ const extractCNICData = (rawText) => {
 
   console.log('--- OCR Raw Text ---');
   console.log(rawText);
-  console.log('--- OCR Clean Text ---');
-  console.log(cleanText);
   console.log('--- OCR Lines ---');
   lines.forEach((l, i) => console.log(`  [${i}]: "${l}"`));
 
-  // ===== 1. CNIC Number (Robust) =====
+  // ===== 1. CNIC Number =====
   let cnic = null;
   const robustCnicPattern = /\b([0-9OolISB]{5})[-\s]?([0-9OolISB]{7})[-\s]?([0-9OolISB])\b/i;
   const cnicMatch = cleanText.match(robustCnicPattern);
@@ -166,105 +165,93 @@ const extractCNICData = (rawText) => {
     cnic = `${part1}-${part2}-${part3}`;
   }
 
-  // ===== 2. Name (Robust Unified) =====
+  // ===== 2. Holder Name =====
   let name = null;
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (/(?:Name|Narne|Namo|Nene|Holder|Card|Nal)/i.test(line) && !/(?:Father|Husband|Mother|Date|Birth|CNIC|Identity|Gender|Sex)/i.test(line)) {
-      const candidates = [];
-      const sameLineMatch = line.match(/(?:Name|Narne|Namo|Nene|Holder|Card|Nal)\s*[^A-Za-z]*(.+)$/i);
-      if (sameLineMatch && sameLineMatch[1]) {
-        candidates.push(sameLineMatch[1]);
-      }
-      for (let j = 1; j <= 3; j++) {
+    if (/(?:Name|Narne|Namo|Nene|Holder|Card|Nal|Neme|Nama)/i.test(line) && !/(?:Father|Husband|Mother|Date|Birth|CNIC|Identity|Gender|Sex|Fathor|Fathar|Falher|Fathsr|Fatner|Husb)/i.test(line)) {
+      name = cleanNameCandidate(line);
+      if (name && name.split(' ').length >= 2) break;
+
+      for (let j = 1; j <= 2; j++) {
         const nextLine = lines[i + j];
         if (!nextLine) break;
-        if (/(?:Father|Husband|Mother|Date|Birth|CNIC|Identity|Gender|Sex|Country|Expiry|Issue|Card|National)/i.test(nextLine)) {
-          break;
-        }
-        candidates.push(nextLine);
+        if (/(?:Father|Husband|Mother|Date|Birth|CNIC|Identity|Gender|Sex|Country|Expiry|Issue|Card|National)/i.test(nextLine)) break;
+        const cand = cleanNameCandidate(nextLine);
+        if (cand && cand.split(' ').length >= 2) { name = cand; break; }
       }
-      name = cleanAndScoreCandidates(candidates);
       if (name) break;
     }
   }
 
-  // ===== 3. Father / Husband Name (Robust Unified) =====
-  let fatherName = null;
-  let fatherLineIndex = -1;
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (/(?:Father|Husband|Fathor|Fathar|Falher|Fathsr|Fatner|Fathe|F[ao]th|Husb)/i.test(line) && !/(?:Date|Birth|CNIC|Identity|Gender|Sex)/i.test(line)) {
-      fatherLineIndex = i;
-      const candidates = [];
-      const sameLineMatch = line.match(/(?:Father|Husband|Fathor|Fathar|Falher|Fathsr|Fatner|Fathe|F[ao]th|Husb)(?:[\s']*(?:Name|Narne|Namo))?\s*[^A-Za-z]*(.+)$/i);
-      if (sameLineMatch && sameLineMatch[1]) {
-        candidates.push(sameLineMatch[1]);
-      }
-      for (let j = 1; j <= 3; j++) {
-        const nextLine = lines[i + j];
-        if (!nextLine) break;
-        if (/(?:Father|Husband|Mother|Date|Birth|CNIC|Identity|Gender|Sex|Country|Expiry|Issue|Card|National)/i.test(nextLine)) {
-          break;
-        }
-        candidates.push(nextLine);
-      }
-      fatherName = cleanAndScoreCandidates(candidates);
-      if (fatherName) break;
-    }
-  }
-
-  // Fallback: if father name not found, look for lines after the name section
-  // that contain a multi-word name-like string (common on Pakistani CNICs where
-  // the "Father" label is in Urdu and not recognized by OCR)
-  if (!fatherName && name) {
+  // Fallback for Name: scan top lines for any 2+ word candidate that isn't header noise
+  if (!name) {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      // Skip the line that contains the holder's name
-      if (line.includes(name)) continue;
-      // Skip lines that are clearly labels or contain known fields
-      if (/(?:Name|Narne|Namo|Nal|Date|Birth|Gender|Sex|CNIC|Identity|Country|Expiry|Issue|Card|National|Address|Republic)/i.test(line)) continue;
-      // Skip lines that look like CNIC numbers or dates
-      if (/\d{5}-\d{7}-\d/.test(line) || /\d{1,2}[.\-\/]\d{1,2}[.\-\/]\d{4}/.test(line)) continue;
-
-      const cleanLine = line.replace(/^[^A-Za-z]+|[^A-Za-z]+$/g, '').replace(/^[A-Za-z]{1,2}\s+(?=[A-Z])/, '').trim();
-      const words = cleanLine.split(/\s+/).filter(w => w.length > 1);
-      // A valid father name should have 2+ words, all starting with uppercase
-      if (words.length >= 2 && words.every(w => /^[A-Z]/.test(w)) && cleanLine !== name) {
-        fatherName = cleanLine;
+      if (/(?:Republic|Pakistan|National|Identity|Card|Islamic|Address|Expiry|Issue|Birth|Gender|Father|Husband)/i.test(line)) continue;
+      const cand = cleanNameCandidate(line);
+      if (cand && cand.split(' ').length >= 2) {
+        name = cand;
         break;
       }
     }
   }
 
-  // ===== 4. Date of Birth (Robust) =====
-  let dateOfBirth = null;
+  // ===== 3. Father / Husband Name =====
+  let fatherName = null;
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (/Date\s*(?:of)?\s*Birth|Birth\s*Date|D\.?O\.?B/i.test(line)) {
-      for (let j = 0; j <= 2; j++) {
-        const checkLine = lines[i + j];
-        if (!checkLine) continue;
-        const tokens = checkLine.split(/\s+/);
-        for (const token of tokens) {
-          const dateMatch = token.match(/\b([0-9OolISB]{1,2})[.\-\/]([0-9OolISB]{1,2})[.\-\/]([0-9OolISB]{4})\b/i);
-          if (dateMatch) {
-            const day = fixOcrDigits(dateMatch[1]).padStart(2, '0');
-            const month = fixOcrDigits(dateMatch[2]).padStart(2, '0');
-            const year = fixOcrDigits(dateMatch[3]);
-            if (parseInt(day) <= 31 && parseInt(month) <= 12 && parseInt(year) >= 1950 && parseInt(year) <= 2015) {
-              dateOfBirth = `${day}/${month}/${year}`;
-              break;
-            }
-          }
+    if (/(?:Father|Husband|Fathor|Fathar|Falher|Fathsr|Fatner|Fathe|Fther|Feather|Fether|Husb|S\/O|D\/O|W\/O|Son\s+of|Daughter\s+of|Wife\s+of)/i.test(line)) {
+      fatherName = cleanNameCandidate(line);
+      if (fatherName && fatherName.split(' ').length >= 2 && (!name || fatherName.toLowerCase() !== name.toLowerCase())) break;
+
+      for (let j = 1; j <= 2; j++) {
+        const nextLine = lines[i + j];
+        if (!nextLine) break;
+        if (/(?:Date|Birth|CNIC|Identity|Gender|Sex|Country|Expiry|Issue|Card|National)/i.test(nextLine)) break;
+        const cand = cleanNameCandidate(nextLine);
+        if (cand && cand.split(' ').length >= 2 && (!name || cand.toLowerCase() !== name.toLowerCase())) {
+          fatherName = cand;
+          break;
         }
-        if (dateOfBirth) break;
       }
+      if (fatherName) break;
     }
-    if (dateOfBirth) break;
   }
 
-  // ===== 5. Gender (Robust) =====
+  // Fallback for Father Name: scan lines after holder name for another 2+ word candidate
+  if (!fatherName) {
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (/(?:Republic|Pakistan|National|Identity|Card|Islamic|Address|Expiry|Issue|Birth|Gender|CNIC|Date|Name)/i.test(line)) continue;
+      const cand = cleanNameCandidate(line);
+      if (cand && cand.split(' ').length >= 2 && (!name || cand.toLowerCase() !== name.toLowerCase())) {
+        fatherName = cand;
+        break;
+      }
+    }
+  }
+
+  // ===== 4. Date of Birth =====
+  let dateOfBirth = null;
+  const allDates = extractAllDatesFromText(cleanText);
+
+  // Attempt A: Context contains "Birth", "DOB", etc.
+  const birthDateObj = allDates.find(d => /Birth|DOB|D\.O\.B|Bate|Dote|Dafe/i.test(d.context));
+  if (birthDateObj) {
+    dateOfBirth = birthDateObj.dateStr;
+  }
+
+  // Attempt B (Earliest Date Rule): DOB is ALWAYS the earliest date on a Pakistani CNIC (1950-2012)
+  if (!dateOfBirth && allDates.length > 0) {
+    const birthCandidates = allDates.filter(d => d.year <= 2012 && d.year >= 1950);
+    if (birthCandidates.length > 0) {
+      birthCandidates.sort((a, b) => a.year - b.year);
+      dateOfBirth = birthCandidates[0].dateStr;
+    }
+  }
+
+  // ===== 5. Gender =====
   let gender = null;
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -289,6 +276,27 @@ const extractCNICData = (rawText) => {
     if (gender) break;
   }
 
+  // Gender fallback: scan entire text for standalone Male/Female
+  if (!gender) {
+    for (const line of lines) {
+      const tokens = line.split(/[\s/,;:]+/);
+      for (const token of tokens) {
+        const t = token.trim().toUpperCase();
+        if (t === 'MALE') { gender = 'male'; break; }
+        if (t === 'FEMALE') { gender = 'female'; break; }
+      }
+      if (gender) break;
+    }
+  }
+
+  // Gender fallback: infer from CNIC last digit (Pakistani CNICs: odd = male, even = female)
+  if (!gender && cnic) {
+    const lastDigit = parseInt(cnic.replace(/-/g, '').slice(-1));
+    if (!isNaN(lastDigit)) {
+      gender = lastDigit % 2 !== 0 ? 'male' : 'female';
+    }
+  }
+
   // ===== 6. Address =====
   let address = null;
   const addressPatterns = [
@@ -303,13 +311,6 @@ const extractCNICData = (rawText) => {
       if (address.length < 10) address = null;
       else break;
     }
-  }
-
-  if (name) {
-    name = sanitizeNameString(name);
-  }
-  if (fatherName) {
-    fatherName = sanitizeNameString(fatherName);
   }
 
   const result = {

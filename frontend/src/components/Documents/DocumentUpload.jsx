@@ -50,76 +50,108 @@ const CNIC_NOISE_WORDS = new Set([
   'sai', 'sam', 'nam', 'namo', 'nene', 'nal', 'fath', 'fathar', 'fathor', 'fathsr',
   'fatner', 'husb', 'father', 'husband', 'mother', 'date', 'birth', 'gender',
   'sex', 'country', 'stay', 'expiry', 'issue', 'address', 'nic', 'cnic', 'puck',
-  'name', 'narne', 'neme'
+  'name', 'narne', 'neme', 'nama', 'of', 'the', 'and', 'for', 'with',
+  'valid', 'from', 'till', 'renewal', 'fee', 'status', 'photo',
+  'thumb', 'impression', 'print', 'finger', 'left', 'right',
+  'registration', 'form', 'office', 'district', 'province', 'tehsil',
+  'holders', 'des', 'der', 'sur', 'soi', 'sor', 'so', 'do', 'wo',
+  'mr', 'mrs', 'ms', 'miss', 'dr', 'pk', 'pkr', 'id', 'no', 'num', 's/o', 'd/o', 'w/o'
 ]);
 
-const sanitizeNameString = (nameStr) => {
-  if (!nameStr) return null;
+/**
+ * Normalize dates in OCR text (handling spaced dots, commas, dashes, colons, and month names)
+ */
+const normalizeDatesInText = (textStr) => {
+  if (!textStr) return '';
 
-  let cleaned = nameStr
+  let str = textStr;
+
+  const monthMap = {
+    jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
+    jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12'
+  };
+
+  // Convert month name dates e.g. "15 Aug 2001" or "15-AUG-2001"
+  str = str.replace(/\b([0-9]{1,2})\s*[\s.\-\/]\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s*[\s.\-\/]\s*([0-9]{4})\b/gi, (m, p1, p2, p3) => {
+    const d = fixOcrDigits(p1).padStart(2, '0');
+    const mo = monthMap[p2.toLowerCase().substring(0, 3)] || '01';
+    const y = fixOcrDigits(p3);
+    return `${d}/${mo}/${y}`;
+  });
+
+  // Convert spaced or punctuated dates e.g. "15 . 08 . 2001" or "15,08,2001" or "15-08-2001"
+  str = str.replace(/\b([0-9OolISB]{1,2})\s*[\.,:\-\/]\s*([0-9OolISB]{1,2})\s*[\.,:\-\/]\s*([0-9OolISB]{4})\b/gi, (m, p1, p2, p3) => {
+    const d = fixOcrDigits(p1).padStart(2, '0');
+    const mo = fixOcrDigits(p2).padStart(2, '0');
+    const y = fixOcrDigits(p3);
+    return `${d}/${mo}/${y}`;
+  });
+
+  return str;
+};
+
+/**
+ * Extract clean English name (Holder or Father) by strictly filtering out Urdu OCR misreads
+ */
+const extractEnglishNameFromLine = (line, isFather = false) => {
+  if (!line) return null;
+
+  // Remove labels & noisy characters
+  let text = line
+    .replace(/(?:Father|Husband|Mother|Name|Narne|Namo|Nene|Holder|Card|Nal|Neme|Nama|Fathor|Fathar|Falher|Fathsr|Fatner|Fathe|Fther|Feather|Fether|Husb|S\/O|D\/O|W\/O|Son\s+of|Daughter\s+of|Wife\s+of)\s*[:\-]?/gi, ' ')
     .replace(/[^A-Za-z\s]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 
-  if (!cleaned) return null;
+  if (!text) return null;
 
-  const words = cleaned.split(' ').filter(w => w.length > 0);
+  const words = text.split(' ').filter(w => w.length > 0);
 
-  const validWords = words.filter((word, idx) => {
+  // Filter words: MUST NOT be noise, MUST start with Uppercase A-Z, and MUST NOT be lowercase Urdu misread
+  const validWords = words.filter(word => {
     const lower = word.toLowerCase();
 
-    // 1. Strip known CNIC label & OCR noise words
     if (CNIC_NOISE_WORDS.has(lower)) return false;
+    if (word.length < 2) return false;
 
-    // 2. Strip lowercase-only words at the start of the name (e.g., "gney" in "gney Muhammad Zahid")
-    if (idx === 0 && word === lower && words.length > 1) return false;
+    // Crucial: Urdu text misread as English by Tesseract is lowercase/mixed-case gibberish (e.g., "gney", "attorney", "namo", "fathar")
+    // Official English names on Pakistani CNICs are ALWAYS printed in UPPERCASE (e.g. "MUHAMMAD", "ZAHID")
+    // If the word was entirely lowercase in the raw OCR output, reject it as Urdu misread!
+    if (word === lower) return false;
 
-    // 3. Strip trailing short noise (1-2 chars) at the end
-    if (idx === words.length - 1 && word.length <= 2 && words.length > 1) return false;
-
-    // 4. Strip single char words unless first word
-    if (word.length === 1 && idx !== 0) return false;
+    // Must start with Uppercase letter A-Z
+    if (!/^[A-Z]/.test(word)) return false;
 
     return true;
   });
 
   if (validWords.length === 0) return null;
 
-  const result = validWords.join(' ');
-  if (CNIC_NOISE_WORDS.has(result.toLowerCase()) || result.length < 3) return null;
+  // Format in Title Case (e.g., "Muhammad Zahid")
+  const formatted = validWords
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
 
-  return result;
+  if (formatted.length < 3 || CNIC_NOISE_WORDS.has(formatted.toLowerCase())) return null;
+
+  return formatted;
 };
 
-const getCandidateScore = (nameStr) => {
-  const words = nameStr.split(/\s+/).filter(w => w.length > 0);
-  let score = nameStr.length;
-  if (words.length >= 2) score += 20;
-  const hasSingleCharWord = words.some(w => w.length === 1);
-  if (hasSingleCharWord) score -= 15;
-  if (words.length === 1 && nameStr.length <= 4) score -= 30;
-  if (/^(Nal|Nam|Nom|Nene|Namo)$/i.test(nameStr)) score -= 50;
-  return score;
-};
+const preprocessCNICText = (rawText) => {
+  if (!rawText) return [];
+  let text = cleanOcrText(rawText);
 
-const cleanAndScoreCandidates = (candidates) => {
-  if (!candidates || candidates.length === 0) return null;
-  const scored = candidates
-    .map(c => {
-      const clean = sanitizeNameString(c);
-      return { original: c, clean: clean || '', score: clean ? getCandidateScore(clean) : -100 };
-    })
-    .filter(item => item.clean && item.clean.length >= 3);
+  // Insert line breaks before major CNIC field labels if they were merged onto one line by OCR
+  text = text.replace(/(?<=\s|^)(Father\s*Name|Husband\s*Name|Father|Husband|Fathor|Fathar|Falher|Fathsr|Fatner|Father's\s*Name|Date\s*of\s*Birth|Birth\s*Date|D\.?O\.?B|Gender|Sex|Identity\s*Number|CNIC|NIC|Country\s*of\s*Stay|Date\s*of\s*Issue|Date\s*of\s*Expiry)(?=[:\s]|$)/gi, '\n$1');
 
-  if (scored.length === 0) return null;
-  scored.sort((a, b) => b.score - a.score);
-  return scored[0].clean;
+  return text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
 };
 
 const extractCNICData = (rawText) => {
   const text = rawText || '';
   const cleanText = cleanOcrText(text);
-  const lines = cleanText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  const normalizedText = normalizeDatesInText(cleanText);
+  const lines = preprocessCNICText(normalizedText);
 
   // 1. CNIC Number
   let cnic = null;
@@ -133,18 +165,31 @@ const extractCNICData = (rawText) => {
   let name = null;
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (/(?:Name|Narne|Namo|Nene|Holder|Card|Nal)/i.test(line) && !/(?:Father|Husband|Mother|Date|Birth|CNIC|Identity|Gender|Sex)/i.test(line)) {
-      const candidates = [];
-      const sameLineMatch = line.match(/(?:Name|Narne|Namo|Nene|Holder|Card|Nal)\s*[^A-Za-z]*(.+)$/i);
-      if (sameLineMatch && sameLineMatch[1]) candidates.push(sameLineMatch[1]);
+    if (/(?:Name|Narne|Namo|Nene|Holder|Card|Nal|Neme|Nama)/i.test(line) && !/(?:Father|Husband|Mother|Date|Birth|CNIC|Identity|Gender|Sex|Fathor|Fathar|Falher|Fathsr|Fatner|Husb)/i.test(line)) {
+      name = extractEnglishNameFromLine(line);
+      if (name) break;
+
       for (let j = 1; j <= 3; j++) {
         const nextLine = lines[i + j];
         if (!nextLine) break;
         if (/(?:Father|Husband|Mother|Date|Birth|CNIC|Identity|Gender|Sex|Country|Expiry|Issue|Card|National)/i.test(nextLine)) break;
-        candidates.push(nextLine);
+        name = extractEnglishNameFromLine(nextLine);
+        if (name) break;
       }
-      name = cleanAndScoreCandidates(candidates);
       if (name) break;
+    }
+  }
+
+  // Fallback for Holder Name: Take the first multi-word English name line near top
+  if (!name) {
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (/(?:Republic|Pakistan|National|Identity|Card|Islamic|Address|Expiry|Issue|Birth|Gender)/i.test(line)) continue;
+      const candidate = extractEnglishNameFromLine(line);
+      if (candidate && candidate.split(' ').length >= 2) {
+        name = candidate;
+        break;
+      }
     }
   }
 
@@ -152,61 +197,70 @@ const extractCNICData = (rawText) => {
   let fatherName = null;
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (/(?:Father|Husband|Fathor|Fathar|Falher|Fathsr|Fatner|Fathe|F[ao]th|Husb)/i.test(line) && !/(?:Date|Birth|CNIC|Identity|Gender|Sex)/i.test(line)) {
-      const candidates = [];
-      const sameLineMatch = line.match(/(?:Father|Husband|Fathor|Fathar|Falher|Fathsr|Fatner|Fathe|F[ao]th|Husb)(?:[\s']*(?:Name|Narne|Namo))?\s*[^A-Za-z]*(.+)$/i);
-      if (sameLineMatch && sameLineMatch[1]) candidates.push(sameLineMatch[1]);
+    if (/(?:Father|Husband|Fathor|Fathar|Falher|Fathsr|Fatner|Fathe|Fther|Feather|Fether|Husb|S\/O|D\/O|W\/O|Son\s+of|Daughter\s+of|Wife\s+of)/i.test(line)) {
+      fatherName = extractEnglishNameFromLine(line, true);
+      if (fatherName && (!name || fatherName.toLowerCase() !== name.toLowerCase())) break;
+
       for (let j = 1; j <= 3; j++) {
         const nextLine = lines[i + j];
         if (!nextLine) break;
-        if (/(?:Father|Husband|Mother|Date|Birth|CNIC|Identity|Gender|Sex|Country|Expiry|Issue|Card|National)/i.test(nextLine)) break;
-        candidates.push(nextLine);
+        if (/(?:Date|Birth|CNIC|Identity|Gender|Sex|Country|Expiry|Issue|Card|National)/i.test(nextLine)) break;
+        fatherName = extractEnglishNameFromLine(nextLine, true);
+        if (fatherName && (!name || fatherName.toLowerCase() !== name.toLowerCase())) break;
       }
-      fatherName = cleanAndScoreCandidates(candidates);
       if (fatherName) break;
     }
   }
-  // Fallback father name: scan for name-like lines that aren't the holder's name
-  if (!fatherName && name) {
+
+  // Fallback for Father Name: scan lines after holder's name for another valid English name line
+  if (!fatherName) {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      if (line.includes(name)) continue;
-      if (/(?:Name|Narne|Namo|Nal|Date|Birth|Gender|Sex|CNIC|Identity|Country|Expiry|Issue|Card|National|Address|Republic)/i.test(line)) continue;
-      if (/\d{5}-\d{7}-\d/.test(line) || /\d{1,2}[.\-\/]\d{1,2}[.\-\/]\d{4}/.test(line)) continue;
-      const cleanLine = line.replace(/^[^A-Za-z]+|[^A-Za-z]+$/g, '').replace(/^[A-Za-z]{1,2}\s+(?=[A-Z])/, '').trim();
-      const words = cleanLine.split(/\s+/).filter(w => w.length >= 3);
-      // Accept lines with 2+ real words (each 3+ chars), first word capitalized
-      if (words.length >= 2 && /^[A-Z]/.test(words[0]) && cleanLine.length >= 6 && cleanLine !== name) {
-        fatherName = words.join(' ');
-        break;
+      if (/(?:Republic|Pakistan|National|Identity|Card|Islamic|Address|Expiry|Issue|Birth|Gender|CNIC|Date)/i.test(line)) continue;
+      const candidate = extractEnglishNameFromLine(line, true);
+      if (candidate && candidate.split(' ').length >= 2) {
+        if (!name || candidate.toLowerCase() !== name.toLowerCase()) {
+          fatherName = candidate;
+          break;
+        }
       }
     }
   }
 
   // 4. Date of Birth
   let dateOfBirth = null;
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (/Date\s*(?:of)?\s*Birth|Birth\s*Date|D\.?O\.?B/i.test(line)) {
-      for (let j = 0; j <= 2; j++) {
-        const checkLine = lines[i + j];
-        if (!checkLine) continue;
-        for (const token of checkLine.split(/\s+/)) {
-          const dateMatch = token.match(/\b([0-9OolISB]{1,2})[.\-\/]([0-9OolISB]{1,2})[.\-\/]([0-9OolISB]{4})\b/i);
-          if (dateMatch) {
-            const day = fixOcrDigits(dateMatch[1]).padStart(2, '0');
-            const month = fixOcrDigits(dateMatch[2]).padStart(2, '0');
-            const year = fixOcrDigits(dateMatch[3]);
-            if (parseInt(day) <= 31 && parseInt(month) <= 12 && parseInt(year) >= 1950 && parseInt(year) <= 2015) {
-              dateOfBirth = `${day}/${month}/${year}`;
-              break;
-            }
-          }
-        }
-        if (dateOfBirth) break;
+  const allDates = [];
+
+  for (const line of lines) {
+    const matches = [...line.matchAll(/\b(\d{2})\/(\d{2})\/(\d{4})\b/g)];
+    for (const match of matches) {
+      const dayVal = parseInt(match[1]);
+      const monthVal = parseInt(match[2]);
+      const yearVal = parseInt(match[3]);
+
+      if (dayVal >= 1 && dayVal <= 31 && monthVal >= 1 && monthVal <= 12 && yearVal >= 1950 && yearVal <= 2035) {
+        allDates.push({
+          dateStr: `${match[1]}/${match[2]}/${match[3]}`,
+          year: yearVal,
+          line
+        });
       }
     }
-    if (dateOfBirth) break;
+  }
+
+  // Attempt A: Date line explicitly contains "Birth" / "DOB" / "Date of Birth"
+  const birthDateObj = allDates.find(d => /Birth|DOB|D\.O\.B|Bate|Dote|Dafe/i.test(d.line));
+  if (birthDateObj) {
+    dateOfBirth = birthDateObj.dateStr;
+  }
+
+  // Attempt B (Earliest Date Rule): DOB is ALWAYS the earliest date on a Pakistani CNIC (1950-2012)!
+  if (!dateOfBirth && allDates.length > 0) {
+    const birthCandidates = allDates.filter(d => d.year <= 2012 && d.year >= 1950);
+    if (birthCandidates.length > 0) {
+      birthCandidates.sort((a, b) => a.year - b.year);
+      dateOfBirth = birthCandidates[0].dateStr;
+    }
   }
 
   // 5. Gender
@@ -262,13 +316,6 @@ const extractCNICData = (rawText) => {
       if (address.length < 10) address = null;
       else break;
     }
-  }
-
-  if (name) {
-    name = sanitizeNameString(name);
-  }
-  if (fatherName) {
-    fatherName = sanitizeNameString(fatherName);
   }
 
   return { cnic, name, father_name: fatherName, date_of_birth: dateOfBirth, gender, address };
@@ -1070,6 +1117,11 @@ const DocumentUpload = () => {
       } else {
         extractedData = { ...extractCNICData(extractedText), ...extractAcademicData(extractedText) };
       }
+
+      console.log('--- OCR Extracted Text ---');
+      console.log(extractedText);
+      console.log('--- Extracted Data ---');
+      console.log(extractedData);
 
       // Cross-document identity verification before adding to list
       const { warnings: nameWarnings, rejectCurrentDoc, removeIndices } = crossDocumentVerification(documentType, extractedData, uploadedFiles, user);
