@@ -29,26 +29,18 @@ const runSeeder = async () => {
       console.log(`  Removed ${deletedApps.deletedCount} old test applications.`);
     }
 
-    // 1. Ensure Programs exist
-    const defaultPrograms = [
-      { name: 'BS Computer Science', description: 'Bachelor of Science in Computer Science', department: 'Computer Science', duration_years: 4, total_seats: 8, min_percentage: 60, required_subjects: ['Mathematics', 'Physics'], is_active: true },
-      { name: 'BE Electrical Engineering', description: 'Bachelor of Engineering in Electrical Engineering', department: 'Engineering', duration_years: 4, total_seats: 6, min_percentage: 65, required_subjects: ['Mathematics', 'Physics', 'Chemistry'], is_active: true },
-      { name: 'BBA', description: 'Bachelor of Business Administration', department: 'Business', duration_years: 4, total_seats: 10, min_percentage: 50, required_subjects: ['Mathematics', 'English'], is_active: true },
-      { name: 'BBIT', description: 'Bachelor of Business & Information Technology', department: 'Business', duration_years: 4, total_seats: 6, min_percentage: 55, required_subjects: ['Mathematics', 'Computer Science'], is_active: true },
-      { name: 'BS Software Engineering', description: 'Bachelor of Science in Software Engineering', department: 'Computer Science', duration_years: 4, total_seats: 8, min_percentage: 60, required_subjects: ['Mathematics', 'Computer Science'], is_active: true },
-      { name: 'BS Data Science', description: 'Bachelor of Science in Data Science', department: 'Computer Science', duration_years: 4, total_seats: 6, min_percentage: 60, required_subjects: ['Mathematics', 'Statistics'], is_active: true }
-    ];
-
-    console.log('📚 Syncing Programs...');
-    for (const progData of defaultPrograms) {
-      await Program.findOneAndUpdate({ name: progData.name }, progData, { upsert: true, new: true });
-    }
+    // 1. Load existing programs (admin must add them manually)
+    console.log('📚 Loading Programs from database...');
     const allPrograms = await Program.find({ is_active: true });
+    if (allPrograms.length === 0) {
+      console.log('⚠️ No programs found in the database. Please add programs via the Admin dashboard first.');
+      process.exit(0);
+    }
     const programMap = {};
     for (const p of allPrograms) {
       programMap[p.name] = p;
     }
-    console.log(`✅ ${allPrograms.length} Programs active.`);
+    console.log(`✅ ${allPrograms.length} Programs found.`);
 
     // 2. Student dataset
     const hashedPassword = await bcrypt.hash('Student123!', 10);
