@@ -692,6 +692,26 @@ router.post('/extract', upload.single('document'), async (req, res) => {
       };
     }
 
+    // Auto-Reject Blurry / Unreadable Documents
+    const cleanLen = (extractedText || '').trim().length;
+    if (cleanLen < 20) {
+      return res.status(400).json({
+        error: 'Document Rejected: The uploaded image is too blurry or low resolution. Please upload a clear, focused photo.'
+      });
+    }
+
+    if (confidence > 0 && confidence < 35) {
+      return res.status(400).json({
+        error: `Document Rejected: Image clarity is too low (OCR Confidence: ${Math.round(confidence)}%). Please upload a clearer image.`
+      });
+    }
+
+    if (document_type === 'cnic' && !extractedData?.cnic && !extractedData?.name) {
+      return res.status(400).json({
+        error: 'Document Rejected: Could not read key CNIC details (CNIC Number or Name) from this image. Please upload a clearer photo of your CNIC/B-Form.'
+      });
+    }
+
     res.json({
       message: 'Document processed successfully',
       extracted_data: extractedData,
