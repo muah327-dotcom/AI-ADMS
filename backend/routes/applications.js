@@ -4,6 +4,7 @@ import { body, validationResult } from 'express-validator';
 import { authenticateToken, requireRole } from '../middleware/auth.js';
 import Application from '../models/Application.js';
 import Program from '../models/Program.js';
+import User from '../models/User.js';
 
 const router = express.Router();
 
@@ -38,6 +39,18 @@ router.post('/', [
 
     const { program_id, academic_records, documents, priority, extracurriculars, personal_statement } = req.body;
     const userId = req.user.id;
+
+    // Enforce profile verification & mandatory non-optional documents upload
+    const user = await User.findById(userId);
+    const requiredDocTypes = ['cnic', 'photograph', 'matric', 'intermediate'];
+    const userDocs = user?.uploaded_documents || [];
+    const missingDocs = requiredDocTypes.filter(type => !userDocs.includes(type));
+
+    if (!user?.is_verified && missingDocs.length > 0) {
+      return res.status(400).json({
+        error: 'Application submission blocked: All non-optional mandatory documents (CNIC, Photograph, Matric Certificate, Intermediate Certificate) must be uploaded and profile verified first.'
+      });
+    }
 
     const existingApp = await Application.findOne({
       user_id: userId,

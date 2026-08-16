@@ -100,6 +100,14 @@ const userSchema = new mongoose.Schema({
   is_active: {
     type: Boolean,
     default: true
+  },
+  is_verified: {
+    type: Boolean,
+    default: false
+  },
+  uploaded_documents: {
+    type: [String],
+    default: []
   }
 }, {
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }

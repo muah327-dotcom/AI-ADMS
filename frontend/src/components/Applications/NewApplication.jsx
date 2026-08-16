@@ -147,6 +147,16 @@ const NewApplication = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Mandatory documents & profile verification guard
+    const mandatoryDocTypes = ['cnic', 'photograph', 'matric', 'intermediate'];
+    const userDocs = user?.uploaded_documents || [];
+    const hasAllMandatory = mandatoryDocTypes.every(t => userDocs.includes(t));
+
+    if (!user?.is_verified && !hasAllMandatory) {
+      toast.error('Application Submission Blocked: All non-optional mandatory documents (CNIC, Photograph, Matric Certificate, Intermediate Certificate) must be uploaded and profile verified first.', { duration: 7000 });
+      return;
+    }
+
     // Frontend eligibility guard
     const enteredPct = parseFloat(formData.academic_records.percentage);
     const minPct = selectedProgram?.min_percentage ?? 0;
@@ -225,6 +235,27 @@ const NewApplication = () => {
           <p className="text-gray-400 mt-1">Apply for your desired program</p>
         </div>
       </div>
+
+      {/* Mandatory Document & Profile Verification Advisory Banner */}
+      {(!user?.is_verified && !['cnic', 'photograph', 'matric', 'intermediate'].every(t => (user?.uploaded_documents || []).includes(t))) && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-6 w-6 text-amber-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <h4 className="text-sm font-bold text-amber-200">Mandatory Document Upload & Profile Verification Required</h4>
+              <p className="text-xs text-amber-300/80 mt-1 leading-relaxed">
+                All non-optional documents (CNIC / B-Form, Recent Photograph, Matric Certificate, Intermediate Certificate) are mandatory. You must upload them and verify your profile before submitting admission applications.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => navigate('/dashboard/documents')}
+            className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs transition-colors whitespace-nowrap flex-shrink-0 shadow-md"
+          >
+            Upload Non-Optional Documents
+          </button>
+        </div>
+      )}
 
       {/* Progress Steps */}
       <div className="flex items-center gap-4">

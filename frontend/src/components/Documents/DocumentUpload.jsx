@@ -20,7 +20,9 @@ import {
   User,
   Phone,
   Mail,
-  Save
+  Save,
+  ShieldAlert,
+  Info
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -678,13 +680,13 @@ const crossDocumentVerification = (currentDocType, currentExtractedData, uploade
   // 1. Compare against user profile (if profile details are present)
   if (userProfile?.full_name && currentName) {
     if (!namesMatch(currentName, userProfile.full_name)) {
-      warnings.push(`Candidate name on ${currentLabel} ("${currentName}") does not match your account name ("${userProfile.full_name}").`);
+      warnings.push(`Candidate name detected as "${currentName}" on ${currentLabel}, which differs from your account profile ("${userProfile.full_name}"). Image blur, camera glare, or dark lighting usually causes OCR to misread printed text.`);
       if (currentDocType !== 'cnic') rejectCurrentDoc = true;
     }
   }
   if (userProfile?.father_name && currentFatherName) {
     if (!namesMatch(currentFatherName, userProfile.father_name)) {
-      warnings.push(`Father's name on ${currentLabel} ("${currentFatherName}") does not match your registered father's name ("${userProfile.father_name}").`);
+      warnings.push(`Father's name detected as "${currentFatherName}" on ${currentLabel}, which differs from your registered father's name ("${userProfile.father_name}"). If the document picture is blurry, printed text may be misread.`);
       if (currentDocType !== 'cnic') rejectCurrentDoc = true;
     }
   }
@@ -698,7 +700,7 @@ const crossDocumentVerification = (currentDocType, currentExtractedData, uploade
     // Candidate Name Check
     if (currentName && existingData.name) {
       if (!namesMatch(currentName, existingData.name)) {
-        warnings.push(`Candidate name on ${currentLabel} ("${currentName}") does not match ${existingLabel} ("${existingData.name}").`);
+        warnings.push(`Candidate name extracted from ${currentLabel} ("${currentName}") differs from ${existingLabel} ("${existingData.name}"). Ensure images are clear and readable.`);
         if (currentDocType === 'cnic') {
           warnings.push(`${existingLabel} has been removed because candidate name does not match your CNIC.`);
           removeIndices.push(index);
@@ -711,7 +713,7 @@ const crossDocumentVerification = (currentDocType, currentExtractedData, uploade
     // Father Name Check
     if (currentFatherName && existingData.father_name) {
       if (!namesMatch(currentFatherName, existingData.father_name)) {
-        warnings.push(`Father's name on ${currentLabel} ("${currentFatherName}") does not match ${existingLabel} ("${existingData.father_name}").`);
+        warnings.push(`Father's name extracted from ${currentLabel} ("${currentFatherName}") differs from ${existingLabel} ("${existingData.father_name}"). Please verify image clarity.`);
         if (currentDocType === 'cnic') {
           warnings.push(`${existingLabel} has been removed because father's name does not match your CNIC.`);
           removeIndices.push(index);
@@ -1192,7 +1194,8 @@ const DocumentUpload = () => {
         const docLabel = documentTypes.find(d => d.id === documentType)?.name || 'Document';
         setRejectionModal({
           isOpen: true,
-          title: 'Document Image Unreadable',
+          badge: 'Quality & Clarity Advisory',
+          title: 'Document Image Unclear',
           reason: clarityCheck.reason,
           docTypeLabel: docLabel
         });
@@ -1204,16 +1207,17 @@ const DocumentUpload = () => {
       // Cross-document identity verification before adding to list
       const { warnings: nameWarnings, rejectCurrentDoc, removeIndices } = crossDocumentVerification(documentType, extractedData, uploadedFiles, user);
 
-      // If document fails identity verification against previously uploaded documents or user profile, reject it with Modal
+      // If document fails identity verification against previously uploaded documents or user profile, show advisory Modal
       if (rejectCurrentDoc) {
         const docLabel = documentTypes.find(d => d.id === documentType)?.name || 'Document';
         const mismatchReason = nameWarnings.length > 0
           ? nameWarnings.join(' ')
-          : 'Candidate name or Father\'s name on this document does not match your previously uploaded documents. All documents must belong to the same applicant.';
+          : 'Candidate name or Father\'s name on this document could not be matched with your applicant profile.';
 
         setRejectionModal({
           isOpen: true,
-          title: 'Identity Mismatch Detected',
+          badge: 'Document Verification Advisory',
+          title: 'Document Unclear or Name Misread',
           reason: mismatchReason,
           docTypeLabel: docLabel
         });
@@ -1324,7 +1328,7 @@ const DocumentUpload = () => {
     const missingDocs = requiredDocs.filter(d => !uploadedFiles.some(f => f.type === d.id));
     if (missingDocs.length > 0) {
       const docNames = missingDocs.map(d => d.name).join(', ');
-      toast.error(`Please upload all required documents: ${docNames}`, { duration: 6000 });
+      toast.error(`Verification Blocked: All non-optional documents (${docNames}) are mandatory. You must upload them before your profile can be verified and applications submitted.`, { duration: 7000 });
       return;
     }
 
@@ -1354,7 +1358,9 @@ const DocumentUpload = () => {
         inter_board: formData.inter_board,
         inter_passing_year: formData.inter_passing_year ? parseInt(formData.inter_passing_year) : undefined,
         inter_obtained_marks: formData.inter_obtained_marks ? parseInt(formData.inter_obtained_marks) : undefined,
-        inter_total_marks: formData.inter_total_marks ? parseInt(formData.inter_total_marks) : undefined
+        inter_total_marks: formData.inter_total_marks ? parseInt(formData.inter_total_marks) : undefined,
+        is_verified: true,
+        uploaded_documents: uploadedFiles.map(f => f.type)
       };
 
       const response = await fetch('/api/auth/profile', {
@@ -1369,8 +1375,8 @@ const DocumentUpload = () => {
       const data = await response.json();
 
       if (response.ok) {
-        setUser({ ...user, ...data.user });
-        toast.success('Profile verified and saved successfully!');
+        setUser({ ...user, ...data.user, is_verified: true });
+        toast.success('Profile & all mandatory documents verified successfully!');
       } else {
         toast.error(data.error || 'Failed to save profile');
       }
@@ -1434,6 +1440,35 @@ const DocumentUpload = () => {
         <h1 className="text-2xl lg:text-3xl font-bold text-white">Document Upload & Verification</h1>
         <p className="text-gray-400 mt-1">Upload your documents for automatic data extraction and verify your admission information</p>
       </div>
+
+      {/* Verification Status Card */}
+      {user?.is_verified ? (
+        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 flex items-center justify-between gap-3 shadow-md">
+          <div className="flex items-center gap-3">
+            <CheckCircle className="h-6 w-6 text-emerald-400 flex-shrink-0" />
+            <div>
+              <h4 className="text-sm font-bold text-emerald-300">Profile & Mandatory Documents Verified</h4>
+              <p className="text-xs text-emerald-200/80 mt-0.5">All required non-optional documents have been verified. You can now submit program applications.</p>
+            </div>
+          </div>
+          <span className="px-3 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-full text-xs font-semibold whitespace-nowrap">
+            Verified
+          </span>
+        </div>
+      ) : (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex items-center justify-between gap-3 shadow-md">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="h-6 w-6 text-amber-400 flex-shrink-0" />
+            <div>
+              <h4 className="text-sm font-bold text-amber-300">Verification Mandatory Notice</h4>
+              <p className="text-xs text-amber-200/80 mt-0.5">All non-optional documents (CNIC, Photograph, Matric Certificate, Intermediate Certificate) must be uploaded to verify your profile and enable application submission.</p>
+            </div>
+          </div>
+          <span className="px-3 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-full text-xs font-semibold whitespace-nowrap">
+            Verification Pending
+          </span>
+        </div>
+      )}
 
       {/* Step Indicator */}
       <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-4">
@@ -1750,19 +1785,19 @@ const DocumentUpload = () => {
         </div>
       </div>
 
-      {/* Formal Centered Rejection Modal */}
+      {/* Formal Centered Educational Verification Advisory Modal */}
       {rejectionModal.isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
-          <div className="relative w-full max-w-lg bg-[#121620] border border-rose-500/30 rounded-2xl shadow-2xl shadow-rose-950/60 overflow-hidden transform transition-all animate-scaleUp">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
+          <div className="relative w-full max-w-lg bg-[#0f172a] border border-indigo-500/20 rounded-2xl shadow-2xl shadow-indigo-950/50 overflow-hidden transform transition-all animate-scaleUp">
 
-            {/* Top Glowing Gradient Accent Bar */}
-            <div className="h-2 w-full bg-gradient-to-r from-rose-500 via-red-500 to-amber-500" />
+            {/* Top Academic Gradient Bar */}
+            <div className="h-1.5 w-full bg-gradient-to-r from-indigo-500 via-sky-500 to-amber-500" />
 
             <div className="p-6">
               {/* Close Icon Button */}
               <button
                 onClick={() => setRejectionModal(prev => ({ ...prev, isOpen: false }))}
-                className="absolute top-4 right-4 p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-gray-800 transition-colors"
+                className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
                 title="Close"
               >
                 <X className="h-5 w-5" />
@@ -1770,51 +1805,59 @@ const DocumentUpload = () => {
 
               {/* Modal Header */}
               <div className="flex items-start gap-4 mb-5">
-                <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex-shrink-0">
-                  <AlertCircle className="h-8 w-8 text-rose-500 animate-pulse" />
+                <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex-shrink-0">
+                  <ShieldAlert className="h-7 w-7 text-amber-400" />
                 </div>
                 <div>
-                  <span className="inline-block px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider text-rose-400 bg-rose-500/10 rounded-full border border-rose-500/20 mb-1">
-                    Quality Verification Failed
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider text-amber-300 bg-amber-500/10 rounded-full border border-amber-500/20 mb-1.5">
+                    <Sparkles className="h-3 w-3 text-amber-400" />
+                    {rejectionModal.badge || 'Document Verification Advisory'}
                   </span>
-                  <h3 className="text-xl font-bold text-white tracking-tight">
-                    {rejectionModal.title}
+                  <h3 className="text-xl font-bold text-slate-100 tracking-tight">
+                    {rejectionModal.title || 'Document Unclear or Name Misread'}
                   </h3>
-                  <p className="text-sm text-gray-400 mt-0.5">
-                    Target Document: <span className="text-gray-200 font-medium">{rejectionModal.docTypeLabel}</span>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Target Document: <span className="text-slate-200 font-semibold">{rejectionModal.docTypeLabel}</span>
                   </p>
                 </div>
               </div>
 
-              {/* Rejection Reason Callout */}
-              <div className="p-4 bg-rose-950/30 border border-rose-500/20 rounded-xl mb-5">
-                <h4 className="text-xs font-semibold text-rose-300 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                  <AlertCircle className="h-3.5 w-3.5 text-rose-400" />
-                  Reason for Rejection
+              {/* Verification Detail Callout */}
+              <div className="p-4 bg-slate-900/90 border border-slate-800 rounded-xl mb-5 space-y-1.5">
+                <h4 className="text-xs font-semibold text-indigo-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <Info className="h-3.5 w-3.5 text-indigo-400" />
+                  Verification Detail
                 </h4>
-                <p className="text-sm text-rose-100 leading-relaxed">
+                <p className="text-sm text-slate-200 leading-relaxed">
                   {rejectionModal.reason}
                 </p>
               </div>
 
               {/* Image Guidelines Box */}
-              <div className="p-4 bg-[#0a0d14] border border-gray-800 rounded-xl mb-6 space-y-2">
-                <h4 className="text-xs font-semibold text-gray-300 uppercase tracking-wider mb-2">
-                  Guidelines for a Successful Upload:
+              <div className="p-4 bg-indigo-950/20 border border-indigo-500/10 rounded-xl mb-6 space-y-2">
+                <h4 className="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <CheckCircle className="h-3.5 w-3.5 text-indigo-400" />
+                  Recommendations for Successful Verification:
                 </h4>
-                <ul className="text-xs text-gray-400 space-y-1.5 list-disc pl-4">
-                  <li>Ensure the document is well-lit and placed on a flat, contrasting background.</li>
-                  <li>Avoid camera flash glare, reflections, or blurry movement.</li>
-                  <li>Ensure all text, numbers, seal marks, and borders are in sharp focus.</li>
-                  <li>Upload a clear high-resolution image file (JPG/PNG) or PDF.</li>
+                <ul className="text-xs text-slate-400 space-y-1.5 list-disc pl-4 leading-relaxed">
+                  <li>Ensure the document is laid flat under bright, uniform lighting.</li>
+                  <li>Avoid camera flash glare, reflections, dark shadows, or motion blur.</li>
+                  <li>Verify all text, name fields, roll numbers, and board seals are in sharp focus.</li>
+                  <li>For best OCR accuracy, upload a high-resolution image (JPG/PNG) or original digital PDF.</li>
                 </ul>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-3 pt-2 border-t border-gray-800/80">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
                 <button
                   onClick={() => setRejectionModal(prev => ({ ...prev, isOpen: false }))}
-                  className="px-6 py-2.5 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white rounded-xl font-semibold shadow-lg shadow-rose-600/20 hover:shadow-rose-600/30 transition-all text-sm flex items-center gap-2"
+                  className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl font-medium text-xs transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => setRejectionModal(prev => ({ ...prev, isOpen: false }))}
+                  className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white rounded-xl font-semibold shadow-md shadow-indigo-600/20 hover:shadow-indigo-600/30 transition-all text-xs flex items-center gap-2"
                 >
                   <Upload className="h-4 w-4" />
                   Upload Clear Image Again

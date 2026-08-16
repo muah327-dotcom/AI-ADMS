@@ -209,7 +209,8 @@ router.put('/profile', authenticateToken, [
       full_name, phone, address, avatar_url, cnic,
       father_name, date_of_birth, gender, alternate_phone, father_phone, permanent_address,
       matric_board, matric_passing_year, matric_obtained_marks, matric_total_marks,
-      inter_board, inter_passing_year, inter_obtained_marks, inter_total_marks
+      inter_board, inter_passing_year, inter_obtained_marks, inter_total_marks,
+      is_verified, uploaded_documents
     } = req.body;
     const updates = {};
 
@@ -232,6 +233,8 @@ router.put('/profile', authenticateToken, [
     if (inter_passing_year !== undefined) updates.inter_passing_year = inter_passing_year || null;
     if (inter_obtained_marks !== undefined) updates.inter_obtained_marks = inter_obtained_marks || null;
     if (inter_total_marks !== undefined) updates.inter_total_marks = inter_total_marks || null;
+    if (is_verified !== undefined) updates.is_verified = is_verified;
+    if (uploaded_documents !== undefined) updates.uploaded_documents = uploaded_documents;
     updates.updated_at = new Date().toISOString();
 
     const user = await User.findByIdAndUpdate(

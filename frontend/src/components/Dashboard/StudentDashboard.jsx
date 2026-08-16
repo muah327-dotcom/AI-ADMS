@@ -138,11 +138,11 @@ const StudentDashboard = () => {
         <div className="mt-4 flex items-center gap-2 bg-white/15 backdrop-blur-sm rounded-lg px-4 py-2.5 border border-white/20">
           <Upload className="h-4 w-4 text-yellow-300 flex-shrink-0" />
           <p className="text-sm text-white">
-            <span className="font-semibold text-yellow-300">Important:</span> Please{' '}
+            <span className="font-semibold text-yellow-300">Verification Required:</span> Non-optional documents (CNIC, Photograph, Matric & Intermediate certificates) are mandatory.{' '}
             <Link to="/dashboard/documents" className="underline font-semibold hover:text-yellow-200 transition-colors">
-              upload your documents
+              Upload all mandatory documents
             </Link>{' '}
-            (CNIC, Matric & Intermediate certificates) first to auto-fill your application details.
+            to verify your profile and enable application submission.
           </p>
         </div>
         <div className="mt-4 flex flex-wrap gap-3">
