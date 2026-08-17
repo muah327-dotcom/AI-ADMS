@@ -1,11 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { useDropzone } from 'react-dropzone';
 import {
   ArrowLeft,
-  Upload,
-  FileText,
   CheckCircle,
   AlertCircle,
   Loader2,
@@ -152,7 +149,7 @@ const NewApplication = () => {
     const userDocs = user?.uploaded_documents || [];
     const hasAllMandatory = mandatoryDocTypes.every(t => userDocs.includes(t));
 
-    if (!user?.is_verified && !hasAllMandatory) {
+    if (!user?.is_verified || !hasAllMandatory) {
       toast.error('Application Submission Blocked: All non-optional mandatory documents (CNIC, Photograph, Matric Certificate, Intermediate Certificate) must be uploaded and profile verified first.', { duration: 7000 });
       return;
     }
@@ -193,25 +190,6 @@ const NewApplication = () => {
     }
   };
 
-  const onDrop = (acceptedFiles) => {
-    const newDocuments = acceptedFiles.map(file => ({
-      name: file.name,
-      type: file.type,
-      size: file.size,
-      file
-    }));
-    setFormData({ ...formData, documents: [...formData.documents, ...newDocuments] });
-    toast.success(`${acceptedFiles.length} file(s) added`);
-  };
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: {
-      'application/pdf': ['.pdf'],
-      'image/*': ['.png', '.jpg', '.jpeg']
-    }
-  });
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -237,7 +215,7 @@ const NewApplication = () => {
       </div>
 
       {/* Mandatory Document & Profile Verification Advisory Banner */}
-      {(!user?.is_verified && !['cnic', 'photograph', 'matric', 'intermediate'].every(t => (user?.uploaded_documents || []).includes(t))) && (
+      {(!user?.is_verified || !['cnic', 'photograph', 'matric', 'intermediate'].every(t => (user?.uploaded_documents || []).includes(t))) && (
         <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg">
           <div className="flex items-start gap-3">
             <AlertCircle className="h-6 w-6 text-amber-400 flex-shrink-0 mt-0.5" />
@@ -358,26 +336,32 @@ const NewApplication = () => {
               </button>
             </div>
             
-            {eligibility && (
-              <div className="mt-4 p-4 bg-[#1a1a1a] rounded-lg border border-gray-700">
-                <div className="flex items-center gap-2 mb-2">
-                  {eligibility.eligible ? (
-                    <>
-                      <CheckCircle className="h-5 w-5 text-green-500" />
-                      <span className="font-medium text-green-400">You are eligible</span>
-                    </>
-                  ) : (
-                    <>
-                      <AlertCircle className="h-5 w-5 text-red-500" />
-                      <span className="font-medium text-red-400">You may not meet all requirements</span>
-                    </>
-                  )}
+            {eligibility && (() => {
+              const currentPercentage = parseFloat(formData.academic_records.percentage) || parseFloat(eligibility.percentage?.obtained) || 0;
+              const requiredPercentage = eligibility.percentage?.required ?? selectedProgram?.min_percentage ?? 0;
+              const isEligible = currentPercentage >= requiredPercentage;
+
+              return (
+                <div className="mt-4 p-4 bg-[#1a1a1a] rounded-lg border border-gray-700">
+                  <div className="flex items-center gap-2 mb-2">
+                    {isEligible ? (
+                      <>
+                        <CheckCircle className="h-5 w-5 text-green-500" />
+                        <span className="font-medium text-green-400">You are eligible</span>
+                      </>
+                    ) : (
+                      <>
+                        <AlertCircle className="h-5 w-5 text-red-500" />
+                        <span className="font-medium text-red-400">You do not meet minimum percentage requirements</span>
+                      </>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-400">
+                    Required: {requiredPercentage}% | Your percentage: {currentPercentage}%
+                  </p>
                 </div>
-                <p className="text-sm text-gray-400">
-                  Required: {eligibility.percentage.required}% | Your percentage: {eligibility.percentage.obtained}%
-                </p>
-              </div>
-            )}
+              );
+            })()}
           </div>
 
           {/* Academic Records */}
@@ -465,71 +449,6 @@ const NewApplication = () => {
                     Priority {usedPriorities.sort().join(', ')} already used in your other applications.
                   </p>
                 )}
-              </div>
-            </div>
-          </div>
-
-          {/* Document Upload */}
-          <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Supporting Documents</h3>
-            <div
-              {...getRootProps()}
-              className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-                isDragActive ? 'border-cyan-500 bg-cyan-500/10' : 'border-gray-700 hover:border-gray-600 bg-[#0f0f0f]'
-              }`}
-            >
-              <input {...getInputProps()} />
-              <Upload className="h-12 w-12 text-gray-500 mx-auto mb-4" />
-              <p className="text-gray-300">
-                {isDragActive ? 'Drop files here...' : 'Drag & drop files here, or click to select'}
-              </p>
-              <p className="text-sm text-gray-500 mt-2">PDF, PNG, JPG up to 10MB</p>
-            </div>
-            {formData.documents.length > 0 && (
-              <div className="mt-4 space-y-2">
-                {formData.documents.map((doc, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-[#0f0f0f] rounded-lg border border-gray-700">
-                    <div className="flex items-center gap-3">
-                      <FileText className="h-5 w-5 text-gray-400" />
-                      <span className="text-sm text-gray-300">{doc.name}</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setFormData({
-                        ...formData,
-                        documents: formData.documents.filter((_, i) => i !== index)
-                      })}
-                      className="text-red-400 hover:text-red-300 text-sm"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Additional Information */}
-          <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Additional Information</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Extracurricular Activities</label>
-                <textarea
-                  className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white placeholder-gray-500 h-24 resize-none"
-                  placeholder="Describe your extracurricular activities, achievements, etc."
-                  value={formData.extracurriculars}
-                  onChange={(e) => setFormData({ ...formData, extracurriculars: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Personal Statement</label>
-                <textarea
-                  className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white placeholder-gray-500 h-32 resize-none"
-                  placeholder="Why do you want to join this program?"
-                  value={formData.personal_statement}
-                  onChange={(e) => setFormData({ ...formData, personal_statement: e.target.value })}
-                />
               </div>
             </div>
           </div>

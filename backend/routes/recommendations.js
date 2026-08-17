@@ -12,9 +12,9 @@ const calculateEligibilityScore = (studentProfile, program) => {
   const academicRecords = studentProfile.academic_records || {};
   const percentage = academicRecords.percentage || 0;
   const subjectScores = academicRecords.subject_scores || {};
-  
+
   let score = 0;
-  
+
   if (percentage >= program.min_percentage) {
     score += 40;
   } else if (percentage >= program.min_percentage - 5) {
@@ -22,24 +22,24 @@ const calculateEligibilityScore = (studentProfile, program) => {
   } else if (percentage >= program.min_percentage - 10) {
     score += 10;
   }
-  
+
   const requiredSubjects = program.required_subjects || [];
   const studentSubjects = Object.keys(subjectScores);
-  
-  const matchingSubjects = requiredSubjects.filter(reqSub => 
-    studentSubjects.some(studSub => 
-      studSub.toLowerCase().includes(reqSub.toLowerCase()) || 
+
+  const matchingSubjects = requiredSubjects.filter(reqSub =>
+    studentSubjects.some(studSub =>
+      studSub.toLowerCase().includes(reqSub.toLowerCase()) ||
       reqSub.toLowerCase().includes(studSub.toLowerCase())
     )
   );
-  
+
   const subjectMatchPercentage = (matchingSubjects.length / requiredSubjects.length) * 100;
   score += (subjectMatchPercentage / 100) * 40;
-  
-  const avgSubjectScore = Object.values(subjectScores).reduce((a, b) => a + b, 0) / 
+
+  const avgSubjectScore = Object.values(subjectScores).reduce((a, b) => a + b, 0) /
     (Object.values(subjectScores).length || 1);
   score += (avgSubjectScore / 100) * 20;
-  
+
   return Math.min(Math.round(score), 100);
 };
 
@@ -50,8 +50,8 @@ router.get('/programs', async (req, res) => {
     const user = await User.findById(userId).select('academic_records preferences');
 
     if (!user?.academic_records) {
-      return res.status(400).json({ 
-        error: 'Academic records not found. Please upload your academic documents first.' 
+      return res.status(400).json({
+        error: 'Academic records not found. Please upload your academic documents first.'
       });
     }
 
@@ -59,16 +59,16 @@ router.get('/programs', async (req, res) => {
 
     const recommendations = programs.map(program => {
       const eligibilityScore = calculateEligibilityScore(user, program);
-      
+
       const academicRecords = user.academic_records || {};
       const percentage = academicRecords.percentage || 0;
       const subjectScores = academicRecords.subject_scores || {};
       const studentSubjects = Object.keys(subjectScores);
-      
+
       const requiredSubjects = program.required_subjects || [];
-      const missingSubjects = requiredSubjects.filter(reqSub => 
-        !studentSubjects.some(studSub => 
-          studSub.toLowerCase().includes(reqSub.toLowerCase()) || 
+      const missingSubjects = requiredSubjects.filter(reqSub =>
+        !studentSubjects.some(studSub =>
+          studSub.toLowerCase().includes(reqSub.toLowerCase()) ||
           reqSub.toLowerCase().includes(studSub.toLowerCase())
         )
       );
@@ -95,7 +95,7 @@ router.get('/programs', async (req, res) => {
 
     recommendations.sort((a, b) => b.eligibility_score - a.eligibility_score);
 
-    res.json({ 
+    res.json({
       recommendations,
       total_programs: programs.length,
       high_matches: recommendations.filter(r => r.match_level === 'high').length
@@ -141,9 +141,9 @@ router.post('/explain-match', async (req, res) => {
     if (!program) {
       return res.status(404).json({ error: 'Program not found' });
     }
-    
+
     const explanations = [];
-    
+
     // Simplified explanation without user academic records
     explanations.push(`This program requires a minimum percentage of ${program.min_percentage}%`);
 

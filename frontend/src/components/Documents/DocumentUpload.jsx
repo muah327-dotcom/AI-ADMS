@@ -1341,7 +1341,31 @@ const DocumentUpload = () => {
             clearOCRFieldsForDocType(removedFile.type);
           }
         });
-        setUploadedFiles(prev => prev.filter((_, i) => !removeIndices.includes(i)));
+        const remainingFiles = uploadedFiles.filter((_, i) => !removeIndices.includes(i));
+        const remainingDocTypes = remainingFiles.map(f => f.type);
+
+        // Invalidate verification
+        setUser(prev => prev ? ({ ...prev, is_verified: false, uploaded_documents: remainingDocTypes }) : prev);
+        try {
+          const token = localStorage.getItem('token');
+          if (token) {
+            fetch('/api/auth/profile', {
+              method: 'PUT',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                is_verified: false,
+                uploaded_documents: remainingDocTypes
+              })
+            }).catch(console.error);
+          }
+        } catch (err) {
+          console.error(err);
+        }
+
+        setUploadedFiles(remainingFiles);
         nameWarnings.forEach(warning => {
           toast.error(warning, { duration: 8000, icon: '⚠️' });
         });
@@ -1366,7 +1390,7 @@ const DocumentUpload = () => {
       setProcessingFile(null);
       setUploadingDocType(null);
     }
-  }, [documentType, ocrFilledFields]);
+  }, [documentType, ocrFilledFields, uploadedFiles, user]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -1405,13 +1429,44 @@ const DocumentUpload = () => {
     onDrop([file], []);
   };
 
-  const removeFile = (index) => {
+  const removeFile = async (index) => {
     // Clear auto-extracted form data for the removed document type
     const removedFile = uploadedFiles[index];
     if (removedFile) {
       clearOCRFieldsForDocType(removedFile.type);
     }
-    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+    const updatedFiles = uploadedFiles.filter((_, i) => i !== index);
+    setUploadedFiles(updatedFiles);
+
+    const updatedDocTypeIds = updatedFiles.map(f => f.type);
+    const mandatoryTypes = documentTypes.filter(d => d.required);
+    const stillHasAllMandatory = mandatoryTypes.every(d => updatedDocTypeIds.includes(d.id));
+
+    // If documents are removed or not all mandatory documents are present, invalidate verification
+    if (!stillHasAllMandatory || updatedFiles.length === 0) {
+      setUser(prev => prev ? ({ ...prev, is_verified: false, uploaded_documents: updatedDocTypeIds }) : prev);
+
+      try {
+        const token = localStorage.getItem('token');
+        if (token) {
+          await fetch('/api/auth/profile', {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              is_verified: false,
+              uploaded_documents: updatedDocTypeIds
+            })
+          });
+        }
+      } catch (err) {
+        console.error('Error updating verification status on backend:', err);
+      }
+
+      toast.error('Document removed. Profile is no longer verified. Please upload all required documents to verify your profile.', { duration: 5000 });
+    }
   };
 
   const handleFormChange = (field, value) => {
@@ -1509,7 +1564,7 @@ const DocumentUpload = () => {
       const data = await response.json();
 
       if (response.ok) {
-        setUser({ ...user, ...data.user, is_verified: true });
+        setUser({ ...user, ...data.user, is_verified: true, uploaded_documents: uploadedFiles.map(f => f.type) });
         toast.success('Profile & all mandatory documents verified successfully!');
       } else {
         toast.error(data.error || 'Failed to save profile');
@@ -1524,6 +1579,16 @@ const DocumentUpload = () => {
 
   // Check if a document type is already uploaded
   const isDocUploaded = (typeId) => uploadedFiles.some(f => f.type === typeId);
+
+  // Mandatory document verification computation
+  const mandatoryDocTypes = documentTypes.filter(d => d.required);
+  const uploadedDocTypeIds = uploadedFiles.map(f => f.type);
+  const missingMandatoryDocs = mandatoryDocTypes.filter(d => !uploadedDocTypeIds.includes(d.id));
+  const isFullyVerified = Boolean(
+    user?.is_verified &&
+    missingMandatoryDocs.length === 0 &&
+    uploadedFiles.length >= mandatoryDocTypes.length
+  );
 
   // Input field helper with OCR indicator
   const renderField = (label, field, type = 'text', options = {}) => {
@@ -1576,7 +1641,7 @@ const DocumentUpload = () => {
       </div>
 
       {/* Verification Status Card */}
-      {user?.is_verified ? (
+      {isFullyVerified ? (
         <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 flex items-center justify-between gap-3 shadow-md">
           <div className="flex items-center gap-3">
             <CheckCircle className="h-6 w-6 text-emerald-400 flex-shrink-0" />
@@ -1590,12 +1655,28 @@ const DocumentUpload = () => {
           </span>
         </div>
       ) : (
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex items-center justify-between gap-3 shadow-md">
-          <div className="flex items-center gap-3">
-            <AlertCircle className="h-6 w-6 text-amber-400 flex-shrink-0" />
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-6 w-6 text-amber-400 flex-shrink-0 mt-0.5" />
             <div>
-              <h4 className="text-sm font-bold text-amber-300">Verification Mandatory Notice</h4>
-              <p className="text-xs text-amber-200/80 mt-0.5">All non-optional documents (CNIC, Photograph, Matric Certificate, Intermediate Certificate) must be uploaded to verify your profile and enable application submission.</p>
+              <h4 className="text-sm font-bold text-amber-300">
+                {missingMandatoryDocs.length > 0
+                  ? `Verification Pending — ${missingMandatoryDocs.length} Mandatory Document(s) Missing`
+                  : 'Verification Pending — Review & Submit Profile'}
+              </h4>
+              <p className="text-xs text-amber-200/80 mt-1 leading-relaxed">
+                {missingMandatoryDocs.length > 0 ? (
+                  <>
+                    Please upload the missing mandatory documents:{' '}
+                    <span className="font-semibold text-amber-100">
+                      {missingMandatoryDocs.map(d => d.name).join(', ')}
+                    </span>
+                    . Your profile cannot be verified until all non-optional documents are uploaded.
+                  </>
+                ) : (
+                  'All mandatory documents are uploaded. Please review the auto-filled information below and click "Submit Verified Profile" to complete verification.'
+                )}
+              </p>
             </div>
           </div>
           <span className="px-3 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-full text-xs font-semibold whitespace-nowrap">

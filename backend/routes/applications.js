@@ -28,7 +28,7 @@ const findProgram = async (identifier) => {
 router.post('/', [
   body('program_id').isMongoId(),
   body('academic_records').isObject(),
-  body('documents').isArray(),
+  body('documents').optional().isArray(),
   body('priority').isInt({ min: 1, max: 5 })
 ], async (req, res) => {
   try {
@@ -46,7 +46,7 @@ router.post('/', [
     const userDocs = user?.uploaded_documents || [];
     const missingDocs = requiredDocTypes.filter(type => !userDocs.includes(type));
 
-    if (!user?.is_verified && missingDocs.length > 0) {
+    if (!user?.is_verified || missingDocs.length > 0) {
       return res.status(400).json({
         error: 'Application submission blocked: All non-optional mandatory documents (CNIC, Photograph, Matric Certificate, Intermediate Certificate) must be uploaded and profile verified first.'
       });
@@ -175,21 +175,46 @@ router.get('/programs/:id/eligibility', async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
 
-    const program = await findProgram(id);
+    const [program, user] = await Promise.all([
+      findProgram(id),
+      User.findById(userId)
+    ]);
 
     if (!program) {
       return res.status(404).json({ error: 'Program not found' });
     }
 
+    // Calculate actual student percentage from academic records (matric & inter)
+    let studentPercentage = 0;
+    if (user) {
+      const interObt = parseFloat(user.inter_obtained_marks);
+      const interTot = parseFloat(user.inter_total_marks);
+      const matricObt = parseFloat(user.matric_obtained_marks);
+      const matricTot = parseFloat(user.matric_total_marks);
+
+      const interPct = (!isNaN(interObt) && !isNaN(interTot) && interTot > 0) ? (interObt / interTot) * 100 : null;
+      const matricPct = (!isNaN(matricObt) && !isNaN(matricTot) && matricTot > 0) ? (matricObt / matricTot) * 100 : null;
+
+      if (interPct !== null && matricPct !== null) {
+        studentPercentage = parseFloat(((interPct + matricPct) / 2).toFixed(2));
+      } else if (interPct !== null) {
+        studentPercentage = parseFloat(interPct.toFixed(2));
+      } else if (matricPct !== null) {
+        studentPercentage = parseFloat(matricPct.toFixed(2));
+      }
+    }
+
+    const meetsPercentage = studentPercentage >= program.min_percentage;
+
     const eligibility = {
-      eligible: true, // Simplified eligibility check
+      eligible: meetsPercentage,
       percentage: {
         required: program.min_percentage,
-        obtained: 0, // Would need user's actual percentage
-        meets: true
+        obtained: studentPercentage,
+        meets: meetsPercentage
       },
       subjects: {
-        required: program.required_subjects,
+        required: program.required_subjects || [],
         obtained: [],
         meets: true
       },

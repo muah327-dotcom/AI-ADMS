@@ -10,7 +10,10 @@ import {
   Loader2,
   Info,
   ThumbsUp,
-  ThumbsDown
+  ThumbsDown,
+  X,
+  Upload,
+  GraduationCap
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -20,6 +23,7 @@ const ProgramRecommendations = () => {
   const [selectedProgram, setSelectedProgram] = useState(null);
   const [explanation, setExplanation] = useState(null);
   const [loadingExplanation, setLoadingExplanation] = useState(false);
+  const [showMissingDocsModal, setShowMissingDocsModal] = useState(false);
 
   useEffect(() => {
     fetchRecommendations();
@@ -34,16 +38,19 @@ const ProgramRecommendations = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setRecommendations(data.recommendations || []);
+        const recs = data.recommendations || [];
+        setRecommendations(recs);
+        if (recs.length === 0) {
+          setShowMissingDocsModal(true);
+        }
       } else {
         const error = await response.json();
-        if (error.error?.includes('Academic records')) {
-          toast.error('Please upload your academic documents first');
+        if (error.error?.includes('Academic records') || response.status === 400) {
+          setShowMissingDocsModal(true);
         }
       }
     } catch (error) {
       console.error('Fetch recommendations error:', error);
-      toast.error('Failed to load recommendations');
     } finally {
       setLoading(false);
     }
@@ -316,6 +323,86 @@ const ProgramRecommendations = () => {
             </div>
           )}
         </>
+      )}
+
+      {/* Attractive Centered Academic Documents Required Modal */}
+      {showMissingDocsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
+          <div className="relative w-full max-w-lg bg-[#0f172a] border border-purple-500/30 rounded-2xl shadow-2xl shadow-purple-950/60 overflow-hidden transform transition-all animate-scale-in">
+            {/* Top Accent Gradient Bar */}
+            <div className="h-1.5 w-full bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-400" />
+
+            <div className="p-6 sm:p-7">
+              {/* Close Button */}
+              <button
+                onClick={() => setShowMissingDocsModal(false)}
+                className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+                title="Close"
+              >
+                <X className="h-5 w-5" />
+              </button>
+
+              {/* Modal Header */}
+              <div className="flex items-start gap-4 mb-5">
+                <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-2xl flex-shrink-0">
+                  <GraduationCap className="h-7 w-7 text-purple-400" />
+                </div>
+                <div>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider text-purple-300 bg-purple-500/10 rounded-full border border-purple-500/20 mb-1.5">
+                    <Sparkles className="h-3 w-3 text-purple-400" />
+                    AI Intelligence Advisory
+                  </span>
+                  <h3 className="text-xl font-bold text-slate-100 tracking-tight">
+                    Academic Documents Required
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Complete your profile to generate personalized matches
+                  </p>
+                </div>
+              </div>
+
+              {/* Detail Callout */}
+              <div className="p-4 bg-slate-900/90 border border-slate-800 rounded-xl mb-5 space-y-2">
+                <p className="text-sm text-slate-200 leading-relaxed">
+                  Our AI recommendation engine needs your academic records (Matric & Intermediate certificates) to analyze eligibility criteria, evaluate subject combinations, and recommend programs where you have the highest chance of admission.
+                </p>
+              </div>
+
+              {/* Feature Checklist */}
+              <div className="space-y-2.5 mb-6 text-xs text-slate-300">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                  <span>Instant OCR extraction from Matric & Intermediate result cards</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                  <span>AI-powered percentage & eligibility score calculation</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                  <span>Personalized program match analysis and explanations</span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+                <button
+                  onClick={() => setShowMissingDocsModal(false)}
+                  className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl font-medium text-xs transition-colors"
+                >
+                  Dismiss
+                </button>
+                <a
+                  href="/dashboard/documents"
+                  className="px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white rounded-xl font-semibold shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/30 transition-all text-xs flex items-center gap-2"
+                >
+                  <Upload className="h-4 w-4" />
+                  Upload Documents Now
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
