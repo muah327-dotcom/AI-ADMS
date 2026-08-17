@@ -184,3 +184,9 @@ body {
 .btn-ghost {
   @apply btn text-gray-600 hover:bg-gray-100 focus:ring-gray-500;
 }
+
+/* Global single-line center toast notifications */
+div[role="status"] {
+  white-space: nowrap !important;
+  max-width: none !important;
+}

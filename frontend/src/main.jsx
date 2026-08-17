@@ -48,25 +48,47 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <App />
       <Toaster 
-        position="top-right"
+        position="top-center"
         toastOptions={{
           duration: 4000,
           style: {
-            background: '#363636',
-            color: '#fff',
+            background: '#0f172a',
+            color: '#f8fafc',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
+            padding: '12px 24px',
+            borderRadius: '12px',
+            fontSize: '14px',
+            fontWeight: '500',
+            whiteSpace: 'nowrap',
+            maxWidth: 'none',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.5)',
           },
           success: {
-            duration: 3000,
+            duration: 3500,
+            style: {
+              border: '1px solid rgba(16, 185, 129, 0.35)',
+              background: '#022c22',
+              color: '#6ee7b7',
+              whiteSpace: 'nowrap',
+              maxWidth: 'none',
+            },
             iconTheme: {
               primary: '#10B981',
-              secondary: 'white',
+              secondary: '#022c22',
             },
           },
           error: {
-            duration: 4000,
+            duration: 4500,
+            style: {
+              border: '1px solid rgba(239, 68, 68, 0.35)',
+              background: '#450a0a',
+              color: '#fca5a5',
+              whiteSpace: 'nowrap',
+              maxWidth: 'none',
+            },
             iconTheme: {
               primary: '#EF4444',
-              secondary: 'white',
+              secondary: '#450a0a',
             },
           },
         }}

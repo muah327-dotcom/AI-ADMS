@@ -1183,32 +1183,96 @@ const DocumentUpload = () => {
     setOcrFilledFields(newFilledFields);
   };
 
-  // Clear auto-filled form fields for a given document type (used when a document is rejected or removed)
-  const clearOCRFieldsForDocType = (docType) => {
-    const fieldsToClear = [];
-    if (docType === 'cnic') {
-      fieldsToClear.push('full_name', 'father_name', 'date_of_birth', 'gender', 'cnic', 'address', 'permanent_address');
-    } else if (docType === 'matric') {
-      fieldsToClear.push('matric_board', 'matric_passing_year', 'matric_obtained_marks', 'matric_total_marks');
-    } else if (docType === 'intermediate' || docType === 'transcript') {
-      fieldsToClear.push('inter_board', 'inter_passing_year', 'inter_obtained_marks', 'inter_total_marks');
-    }
+// ===== Pakistani Phone & CNIC Formatters & Validators =====
+const formatPakistaniPhone = (value) => {
+  if (!value) return '';
+  let digits = value.replace(/\D/g, '');
+  if (digits.startsWith('92') && digits.length >= 12) {
+    digits = '0' + digits.slice(2);
+  }
+  digits = digits.slice(0, 11);
+  if (digits.length <= 4) {
+    return digits;
+  }
+  return `${digits.slice(0, 4)}-${digits.slice(4)}`;
+};
 
-    if (fieldsToClear.length > 0) {
+const formatPakistaniCnic = (value) => {
+  if (!value) return '';
+  let digits = value.replace(/\D/g, '').slice(0, 13);
+  if (digits.length <= 5) {
+    return digits;
+  } else if (digits.length <= 12) {
+    return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+  } else {
+    return `${digits.slice(0, 5)}-${digits.slice(5, 12)}-${digits.slice(12)}`;
+  }
+};
+
+const isValidPakistaniPhone = (value, isOptional = false) => {
+  if (!value || value.trim() === '') {
+    return isOptional;
+  }
+  const cleaned = value.trim();
+  return /^03[0-9]{2}-[0-9]{7}$/.test(cleaned) || /^03[0-9]{9}$/.test(cleaned);
+};
+
+// Returns exact form fields and database null fields associated with each document type
+const getDocTypeFieldsToClear = (docType) => {
+  if (docType === 'cnic') {
+    return {
+      formFields: ['father_name', 'date_of_birth', 'gender', 'cnic', 'address', 'permanent_address'],
+      dbFields: {
+        father_name: null,
+        date_of_birth: null,
+        gender: null,
+        cnic: null,
+        address: null,
+        permanent_address: null
+      }
+    };
+  }
+  if (docType === 'matric') {
+    return {
+      formFields: ['matric_board', 'matric_passing_year', 'matric_obtained_marks', 'matric_total_marks'],
+      dbFields: {
+        matric_board: null,
+        matric_passing_year: null,
+        matric_obtained_marks: null,
+        matric_total_marks: null
+      }
+    };
+  }
+  if (docType === 'intermediate' || docType === 'transcript') {
+    return {
+      formFields: ['inter_board', 'inter_passing_year', 'inter_obtained_marks', 'inter_total_marks'],
+      dbFields: {
+        inter_board: null,
+        inter_passing_year: null,
+        inter_obtained_marks: null,
+        inter_total_marks: null
+      }
+    };
+  }
+  return { formFields: [], dbFields: {} };
+};
+
+  // Clear auto-filled form fields for a given document type
+  const clearOCRFieldsForDocType = (docType) => {
+    const { formFields } = getDocTypeFieldsToClear(docType);
+
+    if (formFields.length > 0) {
       setFormData(prev => {
         const updated = { ...prev };
-        fieldsToClear.forEach(field => {
-          // Only clear fields that were auto-filled by OCR, not user-entered ones
-          if (ocrFilledFields.has(field)) {
-            updated[field] = '';
-          }
+        formFields.forEach(field => {
+          updated[field] = '';
         });
         return updated;
       });
 
       setOcrFilledFields(prev => {
         const next = new Set(prev);
-        fieldsToClear.forEach(field => next.delete(field));
+        formFields.forEach(field => next.delete(field));
         return next;
       });
     }
@@ -1332,20 +1396,48 @@ const DocumentUpload = () => {
         return;
       }
 
-      // If CNIC was uploaded and existing documents don't match, remove conflicting docs and clear their form data
+      // If CNIC was uploaded and existing documents don't match, remove conflicting docs and clear their form and database data
       if (removeIndices.length > 0) {
-        // Clear auto-filled form data for each removed document
+        let combinedDbFields = {};
+        let combinedFormFields = [];
+
         removeIndices.forEach(idx => {
           const removedFile = uploadedFiles[idx];
           if (removedFile) {
-            clearOCRFieldsForDocType(removedFile.type);
+            const { formFields, dbFields } = getDocTypeFieldsToClear(removedFile.type);
+            combinedFormFields = [...combinedFormFields, ...formFields];
+            combinedDbFields = { ...combinedDbFields, ...dbFields };
           }
         });
+
         const remainingFiles = uploadedFiles.filter((_, i) => !removeIndices.includes(i));
         const remainingDocTypes = remainingFiles.map(f => f.type);
 
-        // Invalidate verification
-        setUser(prev => prev ? ({ ...prev, is_verified: false, uploaded_documents: remainingDocTypes }) : prev);
+        // Clear in local form state
+        setFormData(prev => {
+          const updated = { ...prev };
+          combinedFormFields.forEach(f => {
+            updated[f] = '';
+          });
+          return updated;
+        });
+
+        // Remove from OCR filled fields
+        setOcrFilledFields(prev => {
+          const next = new Set(prev);
+          combinedFormFields.forEach(f => next.delete(f));
+          return next;
+        });
+
+        const dbPayload = {
+          ...combinedDbFields,
+          is_verified: false,
+          uploaded_documents: remainingDocTypes
+        };
+
+        // Invalidate verification & update context state
+        setUser(prev => prev ? ({ ...prev, ...dbPayload }) : prev);
+
         try {
           const token = localStorage.getItem('token');
           if (token) {
@@ -1355,10 +1447,7 @@ const DocumentUpload = () => {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
               },
-              body: JSON.stringify({
-                is_verified: false,
-                uploaded_documents: remainingDocTypes
-              })
+              body: JSON.stringify(dbPayload)
             }).catch(console.error);
           }
         } catch (err) {
@@ -1430,11 +1519,10 @@ const DocumentUpload = () => {
   };
 
   const removeFile = async (index) => {
-    // Clear auto-extracted form data for the removed document type
     const removedFile = uploadedFiles[index];
-    if (removedFile) {
-      clearOCRFieldsForDocType(removedFile.type);
-    }
+    if (!removedFile) return;
+
+    const docTypeToRemove = removedFile.type;
     const updatedFiles = uploadedFiles.filter((_, i) => i !== index);
     setUploadedFiles(updatedFiles);
 
@@ -1442,35 +1530,75 @@ const DocumentUpload = () => {
     const mandatoryTypes = documentTypes.filter(d => d.required);
     const stillHasAllMandatory = mandatoryTypes.every(d => updatedDocTypeIds.includes(d.id));
 
-    // If documents are removed or not all mandatory documents are present, invalidate verification
-    if (!stillHasAllMandatory || updatedFiles.length === 0) {
-      setUser(prev => prev ? ({ ...prev, is_verified: false, uploaded_documents: updatedDocTypeIds }) : prev);
+    const { formFields, dbFields } = getDocTypeFieldsToClear(docTypeToRemove);
 
-      try {
-        const token = localStorage.getItem('token');
-        if (token) {
-          await fetch('/api/auth/profile', {
-            method: 'PUT',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              is_verified: false,
-              uploaded_documents: updatedDocTypeIds
-            })
-          });
+    // 1. Clear fields from form state
+    setFormData(prev => {
+      const updated = { ...prev };
+      formFields.forEach(f => {
+        updated[f] = '';
+      });
+      return updated;
+    });
+
+    // 2. Remove from OCR filled fields
+    setOcrFilledFields(prev => {
+      const next = new Set(prev);
+      formFields.forEach(f => next.delete(f));
+      return next;
+    });
+
+    // 3. Prepare payload for DB to clear fields and reset verification
+    const dbPayload = {
+      ...dbFields,
+      is_verified: false,
+      uploaded_documents: updatedDocTypeIds
+    };
+
+    // 4. Update user in AuthContext immediately
+    setUser(prev => prev ? ({ ...prev, ...dbPayload }) : prev);
+
+    // 5. Update backend database to wipe removed document data from MongoDB
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        const response = await fetch('/api/auth/profile', {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(dbPayload)
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.user) {
+            setUser(prev => ({ ...prev, ...data.user }));
+          }
         }
-      } catch (err) {
-        console.error('Error updating verification status on backend:', err);
       }
+    } catch (err) {
+      console.error('Error clearing document data from database:', err);
+    }
 
-      toast.error('Document removed. Profile is no longer verified. Please upload all required documents to verify your profile.', { duration: 5000 });
+    const docLabel = documentTypes.find(d => d.id === docTypeToRemove)?.name || 'Document';
+    toast.success(`${docLabel} and its extracted data removed from form and database.`);
+    if (!stillHasAllMandatory) {
+      toast.error('Profile is no longer verified. Please upload all required documents to verify your profile.', { duration: 5000 });
     }
   };
 
   const handleFormChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    let processedValue = value;
+
+    // Apply strict Pakistani phone & CNIC formatting
+    if (field === 'phone' || field === 'father_phone' || field === 'alternate_phone') {
+      processedValue = formatPakistaniPhone(value);
+    } else if (field === 'cnic') {
+      processedValue = formatPakistaniCnic(value);
+    }
+
+    setFormData(prev => ({ ...prev, [field]: processedValue }));
     // If user manually changes an OCR-filled field, remove the OCR indicator
     if (ocrFilledFields.has(field)) {
       setOcrFilledFields(prev => {
@@ -1509,6 +1637,28 @@ const DocumentUpload = () => {
       const fieldNames = missingFields.slice(0, 3).map(f => f.label).join(', ');
       const extra = missingFields.length > 3 ? ` and ${missingFields.length - 3} more` : '';
       toast.error(`Please fill all required fields: ${fieldNames}${extra}`, { duration: 6000 });
+      return;
+    }
+
+    // Validate Pakistani Phone Numbers
+    if (!isValidPakistaniPhone(formData.phone)) {
+      toast.error('Please enter a valid Pakistani Mobile Number (format: 03XX-XXXXXXX)', { duration: 5000 });
+      return;
+    }
+
+    if (!isValidPakistaniPhone(formData.father_phone)) {
+      toast.error("Please enter a valid Father's / Guardian Mobile Number (format: 03XX-XXXXXXX)", { duration: 5000 });
+      return;
+    }
+
+    if (formData.alternate_phone && !isValidPakistaniPhone(formData.alternate_phone, true)) {
+      toast.error('Please enter a valid Alternate Mobile Number in Pakistani format (03XX-XXXXXXX)', { duration: 5000 });
+      return;
+    }
+
+    // Validate CNIC format
+    if (!/^\d{5}-\d{7}-\d{1}$/.test(formData.cnic.trim())) {
+      toast.error('Please enter a valid CNIC / B-Form Number in format XXXXX-XXXXXXX-X', { duration: 5000 });
       return;
     }
 
@@ -1623,6 +1773,7 @@ const DocumentUpload = () => {
             value={formData[field] || ''}
             onChange={(e) => handleFormChange(field, e.target.value)}
             placeholder={options.placeholder || ''}
+            maxLength={options.maxLength}
             disabled={options.disabled}
             className={`w-full px-4 py-2.5 bg-[#0f0f0f] border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white placeholder-gray-500 transition-all ${isOcrFilled ? 'border-purple-500/50' : 'border-gray-700'
               } ${options.disabled ? 'text-gray-500 cursor-not-allowed' : ''}`}
@@ -1855,7 +2006,7 @@ const DocumentUpload = () => {
                     { value: 'other', label: 'Other' }
                   ]
                 })}
-                {renderField('CNIC / B-Form Number', 'cnic', 'text', { placeholder: 'XXXXX-XXXXXXX-X' })}
+                {renderField('CNIC / B-Form Number', 'cnic', 'text', { placeholder: 'XXXXX-XXXXXXX-X', maxLength: 15 })}
               </div>
             </div>
 
@@ -1871,9 +2022,9 @@ const DocumentUpload = () => {
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
                 {renderField('Email Address', 'email', 'email', { placeholder: 'student@example.com', disabled: true })}
-                {renderField('Mobile Number', 'phone', 'tel', { placeholder: '03XX-XXXXXXX' })}
-                {renderField("Father's / Guardian Phone Number", 'father_phone', 'tel', { placeholder: '03XX-XXXXXXX' })}
-                {renderField('Alternate Mobile Number', 'alternate_phone', 'tel', { placeholder: '03XX-XXXXXXX (Optional)' })}
+                {renderField('Mobile Number (Pakistani format)', 'phone', 'tel', { placeholder: '03XX-XXXXXXX', maxLength: 12 })}
+                {renderField("Father's / Guardian Mobile Number", 'father_phone', 'tel', { placeholder: '03XX-XXXXXXX', maxLength: 12 })}
+                {renderField('Alternate Mobile Number', 'alternate_phone', 'tel', { placeholder: '03XX-XXXXXXX (Optional)', maxLength: 12 })}
                 {renderField('Current Address', 'address', 'text', { placeholder: 'Enter current address', colSpan2: true })}
                 {renderField('Permanent Address', 'permanent_address', 'text', { placeholder: 'Enter permanent address', colSpan2: true })}
               </div>

@@ -59,8 +59,21 @@ const Settings = () => {
     }
   }, [user]);
 
+  const formatPakistaniPhone = (value) => {
+    if (!value) return '';
+    let digits = value.replace(/\D/g, '');
+    if (digits.startsWith('92') && digits.length >= 12) {
+      digits = '0' + digits.slice(2);
+    }
+    digits = digits.slice(0, 11);
+    if (digits.length <= 4) return digits;
+    return `${digits.slice(0, 4)}-${digits.slice(4)}`;
+  };
+
   const handleProfileChange = (e) => {
-    setProfileForm({ ...profileForm, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    const processedValue = name === 'phone' ? formatPakistaniPhone(value) : value;
+    setProfileForm({ ...profileForm, [name]: processedValue });
   };
 
   const handlePasswordChange = (e) => {
@@ -138,6 +151,14 @@ const Settings = () => {
   };
 
   const updateProfile = async () => {
+    if (profileForm.phone && profileForm.phone.trim() !== '') {
+      const isPakPhone = /^03[0-9]{2}-[0-9]{7}$/.test(profileForm.phone.trim()) || /^03[0-9]{9}$/.test(profileForm.phone.trim());
+      if (!isPakPhone) {
+        toast.error('Phone number must be a valid Pakistani mobile number (format: 03XX-XXXXXXX)');
+        return;
+      }
+    }
+
     setIsLoading(true);
     try {
       const token = localStorage.getItem('token');
@@ -344,9 +365,10 @@ const Settings = () => {
                     <input
                       type="tel"
                       name="phone"
+                      maxLength={12}
                       value={profileForm.phone}
                       onChange={handleProfileChange}
-                      placeholder="Enter phone number"
+                      placeholder="03XX-XXXXXXX"
                       className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white placeholder-gray-500"
                     />
                   </div>

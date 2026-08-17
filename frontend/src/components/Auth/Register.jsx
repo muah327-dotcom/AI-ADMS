@@ -19,8 +19,34 @@ const Register = () => {
   const { register } = useAuth();
   const navigate = useNavigate();
 
+  const formatPakistaniPhone = (value) => {
+    if (!value) return '';
+    let digits = value.replace(/\D/g, '');
+    if (digits.startsWith('92') && digits.length >= 12) {
+      digits = '0' + digits.slice(2);
+    }
+    digits = digits.slice(0, 11);
+    if (digits.length <= 4) return digits;
+    return `${digits.slice(0, 4)}-${digits.slice(4)}`;
+  };
+
+  const formatPakistaniCnic = (value) => {
+    if (!value) return '';
+    let digits = value.replace(/\D/g, '').slice(0, 13);
+    if (digits.length <= 5) return digits;
+    if (digits.length <= 12) return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+    return `${digits.slice(0, 5)}-${digits.slice(5, 12)}-${digits.slice(12)}`;
+  };
+
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    let processedValue = value;
+    if (name === 'phone') {
+      processedValue = formatPakistaniPhone(value);
+    } else if (name === 'cnic') {
+      processedValue = formatPakistaniCnic(value);
+    }
+    setFormData({ ...formData, [name]: processedValue });
   };
 
   const validateForm = () => {
@@ -36,6 +62,13 @@ const Register = () => {
     if (!cnicPattern.test(formData.cnic)) {
       toast.error('CNIC must be in format: 12345-1234567-1');
       return false;
+    }
+    if (formData.phone && formData.phone.trim() !== '') {
+      const isPakPhone = /^03[0-9]{2}-[0-9]{7}$/.test(formData.phone.trim()) || /^03[0-9]{9}$/.test(formData.phone.trim());
+      if (!isPakPhone) {
+        toast.error('Phone number must be a valid Pakistani mobile number (format: 03XX-XXXXXXX)');
+        return false;
+      }
     }
     return true;
   };
@@ -166,6 +199,7 @@ const Register = () => {
                 name="cnic"
                 type="text"
                 required
+                maxLength={15}
                 className="form-input"
                 placeholder="12345-1234567-1"
                 value={formData.cnic}
@@ -182,8 +216,9 @@ const Register = () => {
                 id="phone"
                 name="phone"
                 type="tel"
+                maxLength={12}
                 className="form-input"
-                placeholder="03xx-xxxxxxx"
+                placeholder="03XX-XXXXXXX"
                 value={formData.phone}
                 onChange={handleChange}
               />

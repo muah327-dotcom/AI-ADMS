@@ -181,8 +181,8 @@ router.get('/me', async (req, res) => {
 
 router.put('/profile', authenticateToken, [
   body('full_name').optional().trim().notEmpty(),
-  body('phone').optional().trim(),
-  body('address').optional().trim(),
+  body('phone').optional({ checkFalsy: true }).trim(),
+  body('address').optional({ checkFalsy: true }).trim(),
   body('cnic').optional({ checkFalsy: true }).trim(),
   body('father_name').optional({ checkFalsy: true }).trim(),
   body('date_of_birth').optional({ checkFalsy: true }).trim(),
