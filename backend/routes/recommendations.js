@@ -2,16 +2,52 @@ import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import User from '../models/User.js';
 import Program from '../models/Program.js';
+import College from '../models/College.js';
 import Application from '../models/Application.js';
+import {
+  generateLowMeritRecommendations,
+  predictAdmissionProbability,
+  getMatchCategory,
+  generateAIExplanation
+} from '../utils/recommendation_ml.js';
 
 const router = express.Router();
 
 router.use(authenticateToken);
 
-const calculateEligibilityScore = (studentProfile, program) => {
-  const academicRecords = studentProfile.academic_records || {};
-  const percentage = academicRecords.percentage || 0;
-  const subjectScores = academicRecords.subject_scores || {};
+/**
+ * Helper to compute student's actual percentage from user profile
+ */
+const getStudentPercentage = (user) => {
+  if (!user) return 0;
+
+  // Check direct academic_records percentage
+  if (user.academic_records?.percentage && user.academic_records.percentage > 0) {
+    return parseFloat(user.academic_records.percentage);
+  }
+
+  const interObt = parseFloat(user.inter_obtained_marks);
+  const interTot = parseFloat(user.inter_total_marks);
+  const matricObt = parseFloat(user.matric_obtained_marks);
+  const matricTot = parseFloat(user.matric_total_marks);
+
+  const interPct = (!isNaN(interObt) && !isNaN(interTot) && interTot > 0) ? (interObt / interTot) * 100 : null;
+  const matricPct = (!isNaN(matricObt) && !isNaN(matricTot) && matricTot > 0) ? (matricObt / matricTot) * 100 : null;
+
+  if (interPct !== null && matricPct !== null) {
+    return parseFloat(((interPct + matricPct) / 2).toFixed(2));
+  } else if (interPct !== null) {
+    return parseFloat(interPct.toFixed(2));
+  } else if (matricPct !== null) {
+    return parseFloat(matricPct.toFixed(2));
+  }
+
+  return 0;
+};
+
+const calculateEligibilityScore = (studentProfile, program, studentPercentage) => {
+  const percentage = studentPercentage || getStudentPercentage(studentProfile);
+  const subjectScores = studentProfile.academic_records?.subject_scores || {};
 
   let score = 0;
 
@@ -33,23 +69,31 @@ const calculateEligibilityScore = (studentProfile, program) => {
     )
   );
 
-  const subjectMatchPercentage = (matchingSubjects.length / requiredSubjects.length) * 100;
+  const subjectMatchPercentage = requiredSubjects.length > 0
+    ? (matchingSubjects.length / requiredSubjects.length) * 100
+    : 100;
   score += (subjectMatchPercentage / 100) * 40;
 
-  const avgSubjectScore = Object.values(subjectScores).reduce((a, b) => a + b, 0) /
-    (Object.values(subjectScores).length || 1);
+  const avgSubjectScore = Object.values(subjectScores).length > 0
+    ? Object.values(subjectScores).reduce((a, b) => a + b, 0) / Object.values(subjectScores).length
+    : percentage;
   score += (avgSubjectScore / 100) * 20;
 
   return Math.min(Math.round(score), 100);
 };
 
+/**
+ * Standard Programs Recommendation Route
+ */
 router.get('/programs', async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const user = await User.findById(userId).select('academic_records preferences');
+    const user = await User.findById(userId);
 
-    if (!user?.academic_records) {
+    const studentPercentage = getStudentPercentage(user);
+
+    if (!studentPercentage || studentPercentage === 0) {
       return res.status(400).json({
         error: 'Academic records not found. Please upload your academic documents first.'
       });
@@ -58,11 +102,9 @@ router.get('/programs', async (req, res) => {
     const programs = await Program.find({ is_active: true });
 
     const recommendations = programs.map(program => {
-      const eligibilityScore = calculateEligibilityScore(user, program);
+      const eligibilityScore = calculateEligibilityScore(user, program, studentPercentage);
 
-      const academicRecords = user.academic_records || {};
-      const percentage = academicRecords.percentage || 0;
-      const subjectScores = academicRecords.subject_scores || {};
+      const subjectScores = user.academic_records?.subject_scores || {};
       const studentSubjects = Object.keys(subjectScores);
 
       const requiredSubjects = program.required_subjects || [];
@@ -83,8 +125,8 @@ router.get('/programs', async (req, res) => {
         eligibility_score: eligibilityScore,
         match_level: matchLevel,
         details: {
-          meets_percentage: percentage >= program.min_percentage,
-          student_percentage: percentage,
+          meets_percentage: studentPercentage >= program.min_percentage,
+          student_percentage: studentPercentage,
           required_percentage: program.min_percentage,
           matching_subjects: requiredSubjects.length - missingSubjects.length,
           total_required_subjects: requiredSubjects.length,
@@ -97,6 +139,7 @@ router.get('/programs', async (req, res) => {
 
     res.json({
       recommendations,
+      student_percentage: studentPercentage,
       total_programs: programs.length,
       high_matches: recommendations.filter(r => r.match_level === 'high').length
     });
@@ -106,16 +149,73 @@ router.get('/programs', async (req, res) => {
   }
 });
 
+/**
+ * AI Low-Merit Recommendation Engine Route
+ * Evaluates student merit against cutoffs and returns in-house alternatives + external partner colleges
+ */
+router.get('/low-merit-options', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { target_program_id } = req.query;
+
+    const [user, internalPrograms, partnerColleges] = await Promise.all([
+      User.findById(userId),
+      Program.find({ is_active: true }),
+      College.find({ is_active: true })
+    ]);
+
+    const studentMerit = getStudentPercentage(user);
+
+    if (!studentMerit || studentMerit === 0) {
+      return res.status(400).json({
+        error: 'Academic records not found. Please upload your academic documents first.'
+      });
+    }
+
+    let targetProgram = null;
+    if (target_program_id) {
+      targetProgram = await Program.findById(target_program_id);
+    }
+
+    const interObt = parseFloat(user.inter_obtained_marks || 0);
+    const interTot = parseFloat(user.inter_total_marks || 1);
+    const matricObt = parseFloat(user.matric_obtained_marks || 0);
+    const matricTot = parseFloat(user.matric_total_marks || 1);
+
+    const interPct = interTot > 0 ? (interObt / interTot) * 100 : studentMerit;
+    const matricPct = matricTot > 0 ? (matricObt / matricTot) * 100 : studentMerit;
+
+    const result = generateLowMeritRecommendations({
+      studentMerit,
+      matricPercentage: matricPct,
+      interPercentage: interPct,
+      targetProgram,
+      internalPrograms,
+      partnerColleges
+    });
+
+    res.json(result);
+  } catch (error) {
+    console.error('Low-merit recommendations error:', error);
+    res.status(500).json({ error: 'Failed to generate low-merit options' });
+  }
+});
+
 router.get('/best-fit', async (req, res) => {
   try {
     const { limit = 3 } = req.query;
+    const userId = req.user.id;
 
-    const programs = await Program.find({ is_active: true });
+    const [user, programs] = await Promise.all([
+      User.findById(userId),
+      Program.find({ is_active: true })
+    ]);
 
-    // Simplified scoring without user academic records
+    const studentPercentage = getStudentPercentage(user);
+
     const scoredPrograms = programs.map(program => ({
       program,
-      score: program.min_percentage || 75
+      score: studentPercentage ? calculateEligibilityScore(user, program, studentPercentage) : (program.min_percentage || 75)
     }));
 
     scoredPrograms.sort((a, b) => b.score - a.score);
@@ -134,28 +234,40 @@ router.get('/best-fit', async (req, res) => {
 
 router.post('/explain-match', async (req, res) => {
   try {
-    const { program_id } = req.body;
+    const { program_id, college_name, shift, is_external, student_merit, cutoff } = req.body;
+    const userId = req.user.id;
 
-    const program = await Program.findById(program_id);
+    const user = await User.findById(userId);
+    const actualMerit = student_merit || getStudentPercentage(user);
 
-    if (!program) {
-      return res.status(404).json({ error: 'Program not found' });
+    let programName = 'Target Program';
+    let minCutoff = cutoff || 65;
+
+    if (program_id) {
+      const program = await Program.findById(program_id);
+      if (program) {
+        programName = program.name;
+        minCutoff = program.historical_cutoff || program.min_percentage || 65;
+      }
     }
 
-    const explanations = [];
+    const explanations = generateAIExplanation(
+      actualMerit,
+      minCutoff,
+      programName,
+      college_name || 'Our University',
+      shift || 'Morning',
+      Boolean(is_external)
+    );
 
-    // Simplified explanation without user academic records
-    explanations.push(`This program requires a minimum percentage of ${program.min_percentage}%`);
-
-    const requiredSubjects = program.required_subjects || [];
-    if (requiredSubjects.length > 0) {
-      explanations.push(`Required subjects: ${requiredSubjects.join(', ')}`);
-    }
+    const probability = predictAdmissionProbability(actualMerit, minCutoff);
 
     res.json({
-      program: program.name,
+      program: programName,
       explanations,
-      eligibility_score: 75
+      eligibility_score: probability,
+      student_merit: actualMerit,
+      cutoff: minCutoff
     });
   } catch (error) {
     console.error('Explain match error:', error);

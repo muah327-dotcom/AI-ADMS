@@ -60,6 +60,22 @@ const programSchema = new mongoose.Schema({
     type: Number,
     default: 1
   },
+  field_category: {
+    type: String,
+    enum: ['Computer Science', 'Information Technology', 'Software Engineering', 'Engineering', 'Business', 'Medical', 'Arts & Humanities', 'Basic Sciences', 'Other'],
+    default: 'Computer Science'
+  },
+  shift: {
+    type: String,
+    enum: ['Morning', 'Evening', 'Self Finance'],
+    default: 'Morning'
+  },
+  historical_cutoff: {
+    type: Number,
+    default: function() {
+      return this.min_percentage || 60;
+    }
+  },
   is_active: {
     type: Boolean,
     default: true
