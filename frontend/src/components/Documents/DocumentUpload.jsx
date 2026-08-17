@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Tesseract from 'tesseract.js';
 import { useDropzone } from 'react-dropzone';
 import { useAuth } from '../../hooks/useAuth';
@@ -46,19 +46,112 @@ const fixOcrDigits = (str) => {
 };
 
 const CNIC_NOISE_WORDS = new Set([
+  // CNIC labels & header text
   'gney', 'attorney', 'sign', 'signature', 'sig', 'specimen', 'card', 'holder',
   'national', 'republic', 'pakistan', 'islamic', 'identity', 'number', 'reg',
   'general', 'registrar', 'head', 'authority', 'nadra', 'govt', 'gov', 'pak',
-  'sai', 'sam', 'nam', 'namo', 'nene', 'nal', 'fath', 'fathar', 'fathor', 'fathsr',
-  'fatner', 'husb', 'father', 'husband', 'mother', 'date', 'birth', 'gender',
-  'sex', 'country', 'stay', 'expiry', 'issue', 'address', 'nic', 'cnic', 'puck',
-  'name', 'narne', 'neme', 'nama', 'of', 'the', 'and', 'for', 'with',
+  'holders', 'registration', 'form', 'office', 'district', 'province', 'tehsil',
   'valid', 'from', 'till', 'renewal', 'fee', 'status', 'photo',
   'thumb', 'impression', 'print', 'finger', 'left', 'right',
-  'registration', 'form', 'office', 'district', 'province', 'tehsil',
-  'holders', 'des', 'der', 'sur', 'soi', 'sor', 'so', 'do', 'wo',
-  'mr', 'mrs', 'ms', 'miss', 'dr', 'pk', 'pkr', 'id', 'no', 'num', 's/o', 'd/o', 'w/o'
+  'country', 'stay', 'expiry', 'issue', 'address', 'nic', 'cnic',
+  // Name / Father field labels & OCR misreads
+  'name', 'narne', 'neme', 'nama', 'namo', 'nene', 'nal', 'nam',
+  'father', 'husband', 'mother', 'fath', 'fathar', 'fathor', 'fathsr',
+  'fatner', 'fathe', 'fther', 'feather', 'fether', 'falher', 'husb',
+  'date', 'birth', 'gender', 'sex',
+  // Common short prepositions / conjunctions / titles
+  'of', 'the', 'and', 'for', 'with', 'son', 'daughter', 'wife',
+  'mr', 'mrs', 'ms', 'miss', 'dr', 'pk', 'pkr', 'id', 'no', 'num',
+  'des', 'der', 'sur', 'soi', 'sor', 'so', 'do', 'wo',
+  'sai', 'sam', 'puck',
+  // Common Urdu OCR misreads that appear as mixed-case English gibberish
+  'ath', 'aih', 'aith', 'uch', 'akh', 'oth', 'uth', 'asi', 'isi', 'usi',
+  'gir', 'gar', 'ger', 'gur', 'ghr', 'ghi', 'gha', 'ghu',
+  'sak', 'sek', 'sik', 'sok', 'suk', 'sal', 'sel', 'sil', 'sol', 'sul',
+  'puk', 'pek', 'pik', 'pak', 'por', 'pur', 'par', 'per', 'pir', 'pul',
+  'dal', 'dil', 'dul', 'dar', 'dir', 'dur', 'dak', 'dik', 'duk',
+  'bal', 'bil', 'bul', 'bar', 'bir', 'bur', 'bak', 'bik', 'buk',
+  'kal', 'kil', 'kul', 'kar', 'kir', 'kur', 'kha', 'khi', 'khu',
+  'hal', 'hil', 'hul', 'har', 'hir', 'hur',
+  'tal', 'til', 'tul', 'tar', 'tir', 'tur', 'tha', 'thi', 'thu',
+  'mal', 'mil', 'mul', 'mar', 'mir', 'mur',
+  'wal', 'wil', 'wul', 'war', 'wir', 'wur',
+  'nal', 'nil', 'nul', 'nar', 'nir', 'nur',
+  'ral', 'ril', 'rul', 'rar', 'rir', 'rur',
+  'jal', 'jil', 'jul', 'jar', 'jir', 'jur',
+  'zal', 'zil', 'zul', 'zar', 'zir', 'zur',
+  'ain', 'ein', 'oin', 'aen', 'een', 'oen',
+  'che', 'chi', 'cha', 'chu', 'cho',
+  'sha', 'shi', 'shu', 'sho', 'she',
+  'aye', 'ays', 'ayn', 'aan', 'aab', 'aam', 'aas', 'aal',
+  'lam', 'mim', 'nun', 'waw', 'yaa', 'raa', 'zaa', 'taa', 'haa', 'kaf',
+  'daal', 'jeem', 'sheen', 'ghain', 'kaaf',
+  'bin', 'bint', 'ibn',
+  // Misc single-syllable gibberish from watermarks/card elements
+  'cae', 'cai', 'cay', 'ceo', 'cie', 'cio', 'coe', 'coi', 'coy',
+  'dae', 'dai', 'day', 'dei', 'die', 'doe', 'doi', 'doy', 'due', 'dui',
+  'fae', 'fai', 'fay', 'fie', 'foe', 'foi', 'foy', 'fue', 'fui',
+  'gae', 'gai', 'gay', 'gie', 'goe', 'goi', 'goy', 'gue', 'gui',
+  'hae', 'hai', 'hay', 'hie', 'hoe', 'hoi', 'hoy', 'hue', 'hui',
+  'jae', 'jai', 'jay', 'jie', 'joe', 'joi', 'joy', 'jue', 'jui',
+  'kai', 'kay', 'kie', 'koe', 'koi', 'koy', 'kue', 'kui',
+  'lai', 'lay', 'lei', 'lie', 'loi', 'loy', 'lue', 'lui',
+  'mae', 'mai', 'may', 'mei', 'mie', 'moe', 'moi', 'moy', 'mue', 'mui',
+  'nae', 'nai', 'nay', 'nie', 'noe', 'noi', 'noy', 'nue', 'nui',
+  'pai', 'pay', 'pie', 'poi', 'poy', 'pue', 'pui',
+  'rae', 'rai', 'ray', 'rei', 'rie', 'roe', 'roi', 'roy', 'rue', 'rui',
+  'sae', 'say', 'sei', 'sie', 'soe', 'soy', 'sue', 'sui',
+  'tae', 'tai', 'tay', 'tie', 'toe', 'toi', 'toy', 'tue', 'tui',
+  'vai', 'vay', 'vie', 'voe', 'voi', 'voy', 'vue', 'vui',
+  'wae', 'wai', 'way', 'wie', 'woe', 'woi', 'woy', 'wue', 'wui',
+  'yae', 'yai', 'yay', 'yie', 'yoe', 'yoi', 'yoy', 'yue', 'yui',
+  'zae', 'zai', 'zay', 'zie', 'zoe', 'zoi', 'zoy', 'zue', 'zui',
+  // Two-letter fragments
+  'ab', 'ac', 'ad', 'ae', 'af', 'ag', 'ah', 'ai', 'aj', 'ak', 'al', 'am', 'an', 'ao', 'ap', 'aq', 'ar', 'as', 'at', 'au', 'av', 'aw', 'ax', 'ay', 'az',
+  'ba', 'be', 'bi', 'bo', 'bu', 'ca', 'ce', 'ci', 'co', 'cu',
+  'da', 'de', 'di', 'du', 'ea', 'eb', 'ec', 'ed', 'ee', 'ef', 'eg', 'eh', 'ei', 'ej', 'ek', 'el', 'em', 'en', 'eo', 'ep', 'eq', 'er', 'es', 'et', 'eu', 'ev', 'ew', 'ex', 'ey', 'ez',
+  'fa', 'fe', 'fi', 'fo', 'fu', 'ga', 'ge', 'gi', 'go', 'gu',
+  'ha', 'he', 'hi', 'ho', 'hu', 'ia', 'ib', 'ic', 'ie', 'ig', 'ih', 'ii', 'ij', 'ik', 'il', 'im', 'in', 'io', 'ip', 'iq', 'ir', 'is', 'it', 'iu', 'iv', 'iw', 'ix', 'iy', 'iz',
+  'ja', 'je', 'ji', 'jo', 'ju', 'ka', 'ke', 'ki', 'ko', 'ku',
+  'la', 'le', 'li', 'lo', 'lu', 'ma', 'me', 'mi', 'mo', 'mu',
+  'na', 'ne', 'ni', 'nu', 'oa', 'ob', 'oc', 'od', 'oe', 'og', 'oh', 'oi', 'oj', 'ok', 'ol', 'om', 'on', 'oo', 'op', 'oq', 'or', 'os', 'ot', 'ou', 'ov', 'ow', 'ox', 'oy', 'oz',
+  'pa', 'pe', 'pi', 'po', 'pu', 'qa', 'qe', 'qi', 'qo', 'qu',
+  'ra', 're', 'ri', 'ro', 'ru', 'sa', 'se', 'si', 'ta', 'te', 'ti', 'to', 'tu',
+  'ua', 'ub', 'uc', 'ud', 'ue', 'uf', 'ug', 'uh', 'ui', 'uj', 'uk', 'ul', 'um', 'un', 'uo', 'up', 'uq', 'ur', 'us', 'ut', 'uu', 'uv', 'uw', 'ux', 'uy', 'uz',
+  'va', 've', 'vi', 'vo', 'vu', 'wa', 'we', 'wi', 'xu', 'ya', 'ye', 'yi', 'yo', 'yu',
+  'za', 'ze', 'zi', 'zo', 'zu'
 ]);
+
+/**
+ * Detect gibberish/nonsense words from OCR misreads.
+ * Pakistani CNIC names are real English transliterations of Urdu names (e.g. MUHAMMAD, AHMED, ZAHID, BIBI).
+ * OCR misreads of Urdu script produce nonsense like "Gney", "Athiy", "Pukr", "Skhr" etc.
+ */
+const isLikelyGibberish = (word) => {
+  if (!word || word.length < 2) return true;
+  const w = word.toLowerCase();
+
+  // 3+ consecutive consonants (very rare in valid Pakistani names transliterated to English)
+  if (/[bcdfghjklmnpqrstvwxyz]{4,}/i.test(w)) return true;
+
+  // Word of 4+ characters with zero vowels
+  const vowelCount = (w.match(/[aeiouy]/g) || []).length;
+  if (w.length >= 4 && vowelCount === 0) return true;
+
+  // Very high consonant ratio for 5+ char words (e.g. "pukrn" has 4 consonants, 1 vowel)
+  if (w.length >= 5 && (w.length - vowelCount) / Math.max(vowelCount, 1) > 4) return true;
+
+  // Ends with unusual double consonants that don't appear in Pakistani names
+  if (/[bcfgjkpqvwxz]{2}$/.test(w)) return true;
+
+  // Starts with unusual consonant clusters not found in Urdu/Arabic transliterations
+  if (/^[bcdfghjklmnpqrstvwxyz]{3,}/i.test(w)) return true;
+
+  // Very short word (2 chars) — already handled by noise list, but double-check
+  if (w.length === 2) return true;
+
+  return false;
+};
 
 /**
  * Normalize dates in OCR text (handling spaced dots, commas, dashes, colons, and month names)
@@ -93,14 +186,15 @@ const normalizeDatesInText = (textStr) => {
 };
 
 /**
- * Extract clean English name (Holder or Father) by strictly filtering out Urdu OCR misreads
+ * Extract clean English name (Holder or Father) by strictly filtering out Urdu OCR misreads.
+ * Pakistani CNICs print English names in UPPERCASE. Urdu text below gets misread as gibberish.
  */
 const extractEnglishNameFromLine = (line, isFather = false) => {
   if (!line) return null;
 
-  // Remove labels & noisy characters
+  // Remove all known label text and OCR variations of labels
   let text = line
-    .replace(/(?:Father|Husband|Mother|Name|Narne|Namo|Nene|Holder|Card|Nal|Neme|Nama|Fathor|Fathar|Falher|Fathsr|Fatner|Fathe|Fther|Feather|Fether|Husb|S\/O|D\/O|W\/O|Son\s+of|Daughter\s+of|Wife\s+of)\s*[:\-]?/gi, ' ')
+    .replace(/(?:Father'?s?|Husband'?s?|Mother'?s?|Guardian'?s?|Name|Narne|Namo|Nene|Holder'?s?|Card|Nal|Neme|Nama|Fathor|Fathar|Falher|Fathsr|Fatner|Fathe|Fther|Feather|Fether|Husb|S\/O|D\/O|W\/O|Son\s+of|Daughter\s+of|Wife\s+of|Identity|National|Republic|Islamic|Pakistan|NADRA|Signature|Specimen|Attorney|Registration|Authority|Registrar|General|Head|Country|Stay|Address|Gender|Birth|Date|Expiry|Issue|Valid|Renewal|Photo|Thumb|Impression|Print|Finger|Number|CNIC|NIC|Govt|Gov|Office|District|Province|Tehsil|Form|Status|Fee)\s*[:\-]?/gi, ' ')
     .replace(/[^A-Za-z\s]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
@@ -109,28 +203,37 @@ const extractEnglishNameFromLine = (line, isFather = false) => {
 
   const words = text.split(' ').filter(w => w.length > 0);
 
-  // Filter words: MUST NOT be noise, MUST start with Uppercase A-Z, and MUST NOT be lowercase Urdu misread
+  // Strict word filtering for Pakistani CNIC names
   const validWords = words.filter(word => {
     const lower = word.toLowerCase();
 
+    // Reject noise words
     if (CNIC_NOISE_WORDS.has(lower)) return false;
-    if (word.length < 2) return false;
 
-    // Crucial: Urdu text misread as English by Tesseract is lowercase/mixed-case gibberish (e.g., "gney", "attorney", "namo", "fathar")
-    // Official English names on Pakistani CNICs are ALWAYS printed in UPPERCASE (e.g. "MUHAMMAD", "ZAHID")
-    // If the word was entirely lowercase in the raw OCR output, reject it as Urdu misread!
+    // Reject very short words (less than 3 chars) — valid Pakistani names are 3+ chars
+    // Exception: common real name parts like "Al" are too risky to keep (noise overlap)
+    if (word.length < 3) return false;
+
+    // Reject entirely lowercase words (Urdu misreads)
     if (word === lower) return false;
 
     // Must start with Uppercase letter A-Z
     if (!/^[A-Z]/.test(word)) return false;
+
+    // Reject gibberish patterns
+    if (isLikelyGibberish(word)) return false;
 
     return true;
   });
 
   if (validWords.length === 0) return null;
 
+  // Pakistani CNIC names are typically 2-4 words max (e.g. "Muhammad Ahmed Khan")
+  // Trim to max 4 words to drop any trailing OCR artifacts
+  const trimmedWords = validWords.slice(0, 4);
+
   // Format in Title Case (e.g., "Muhammad Zahid")
-  const formatted = validWords
+  const formatted = trimmedWords
     .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
     .join(' ');
 
@@ -916,6 +1019,8 @@ const DocumentUpload = () => {
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [processingFile, setProcessingFile] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [uploadingDocType, setUploadingDocType] = useState(null);
+  const fileInputRef = useRef(null);
 
   // Formal Document Rejection Modal state
   const [rejectionModal, setRejectionModal] = useState({
@@ -1128,6 +1233,7 @@ const DocumentUpload = () => {
 
     setProcessingFile(file);
     setUploading(true);
+    setUploadingDocType(documentType);
 
     try {
       // Photograph doesn't need OCR but still must be a valid format (PDF or image)
@@ -1258,6 +1364,7 @@ const DocumentUpload = () => {
     } finally {
       setUploading(false);
       setProcessingFile(null);
+      setUploadingDocType(null);
     }
   }, [documentType, ocrFilledFields]);
 
@@ -1270,6 +1377,33 @@ const DocumentUpload = () => {
     maxFiles: 1,
     disabled: uploading
   });
+
+  // Handle clicking a document type card: set the type and open file browser
+  const handleCardClick = (typeId) => {
+    if (uploading) return;
+    setDocumentType(typeId);
+    // Use a microtask to ensure documentType state is set before triggering file input
+    setTimeout(() => {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''; // Reset so same file can be re-selected
+        fileInputRef.current.click();
+      }
+    }, 0);
+  };
+
+  // Handle file input change (convert to same flow as onDrop)
+  const handleFileInputChange = (e) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    const isImage = file.type.startsWith('image/') || /\.(png|jpe?g)$/i.test(file.name);
+    if (!isPdf && !isImage) {
+      toast.error('Only PDF, PNG, or JPG/JPEG documents are allowed.');
+      return;
+    }
+    onDrop([file], []);
+  };
 
   const removeFile = (index) => {
     // Clear auto-extracted form data for the removed document type
@@ -1494,73 +1628,62 @@ const DocumentUpload = () => {
         </div>
       </div>
 
-      {/* Document Type Selection */}
+      {/* Hidden file input for card-click uploads */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf,.png,.jpg,.jpeg"
+        className="hidden"
+        onChange={handleFileInputChange}
+      />
+
+      {/* Document Type Selection — click a card to upload */}
       <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-6">
-        <h3 className="text-lg font-semibold text-white mb-4">Select Document Type</h3>
+        <h3 className="text-lg font-semibold text-white mb-1">Upload Documents</h3>
+        <p className="text-sm text-gray-500 mb-4">Click on a document type to upload &bull; Supported: PDF, PNG, JPG (max 10MB)</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {documentTypes.map((type) => {
             const Icon = type.icon;
             const uploaded = isDocUploaded(type.id);
+            const isProcessing = uploading && uploadingDocType === type.id;
             return (
               <button
                 key={type.id}
-                onClick={() => setDocumentType(type.id)}
-                className={`p-4 rounded-xl border-2 text-left transition-all relative ${documentType === type.id
-                  ? 'border-cyan-500 bg-cyan-500/10'
+                onClick={() => handleCardClick(type.id)}
+                disabled={uploading}
+                className={`p-4 rounded-xl border-2 text-left transition-all relative group ${isProcessing
+                  ? 'border-cyan-500 bg-cyan-500/10 animate-pulse'
                   : uploaded
-                    ? 'border-green-500/30 bg-green-500/5'
-                    : 'border-gray-700 hover:border-gray-600'
-                  }`}
+                    ? 'border-green-500/30 bg-green-500/5 hover:border-green-500/50'
+                    : 'border-gray-700 hover:border-cyan-500/50 hover:bg-cyan-500/5'
+                  } ${uploading && !isProcessing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
               >
-                {uploaded && (
+                {uploaded && !isProcessing && (
                   <div className="absolute top-2 right-2">
                     <CheckCircle className="h-4 w-4 text-green-400" />
                   </div>
                 )}
-                <Icon className={`h-7 w-7 mb-2 ${documentType === type.id ? 'text-cyan-400' : uploaded ? 'text-green-400' : 'text-gray-500'}`} />
-                <h4 className={`font-medium text-sm ${documentType === type.id ? 'text-white' : 'text-gray-300'}`}>
-                  {type.name}
+                {isProcessing ? (
+                  <Loader2 className="h-7 w-7 mb-2 text-cyan-400 animate-spin" />
+                ) : (
+                  <Icon className={`h-7 w-7 mb-2 transition-colors ${uploaded ? 'text-green-400' : 'text-gray-500 group-hover:text-cyan-400'}`} />
+                )}
+                <h4 className={`font-medium text-sm ${isProcessing ? 'text-white' : uploaded ? 'text-green-300' : 'text-gray-300 group-hover:text-white'}`}>
+                  {isProcessing ? 'Processing...' : type.name}
                 </h4>
-                <p className="text-xs text-gray-500 mt-0.5">{type.desc}</p>
-                {!type.required && <span className="text-xs text-gray-600 mt-1 block">Optional</span>}
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {isProcessing && processingFile ? processingFile.name : type.desc}
+                </p>
+                {!type.required && !isProcessing && <span className="text-xs text-gray-600 mt-1 block">Optional</span>}
+                {!uploaded && !isProcessing && (
+                  <div className="mt-2 flex items-center gap-1 text-xs text-gray-600 group-hover:text-cyan-400/70 transition-colors">
+                    <Upload className="h-3 w-3" />
+                    <span>Click to upload</span>
+                  </div>
+                )}
               </button>
             );
           })}
-        </div>
-      </div>
-
-      {/* Upload Area */}
-      <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-6">
-        <h3 className="text-lg font-semibold text-white mb-4">
-          Upload {documentTypes.find(t => t.id === documentType)?.name}
-        </h3>
-        <div
-          {...getRootProps()}
-          className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${isDragActive
-            ? 'border-cyan-500 bg-cyan-500/10'
-            : 'border-gray-700 hover:border-gray-600 bg-[#0f0f0f]'
-            } ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
-        >
-          <input {...getInputProps()} />
-          <div className="mx-auto w-16 h-16 bg-cyan-500/10 rounded-full flex items-center justify-center mb-4">
-            {uploading ? (
-              <Loader2 className="h-8 w-8 text-cyan-400 animate-spin" />
-            ) : (
-              <Scan className="h-8 w-8 text-cyan-400" />
-            )}
-          </div>
-          <p className="text-lg font-medium text-white">
-            {uploading ? 'Processing document...' : 'Drop your document here'}
-          </p>
-          <p className="text-gray-400 mt-2">or click to browse</p>
-          <p className="text-sm text-gray-500 mt-4">
-            Supported formats: PDF, PNG, JPG (max 10MB)
-          </p>
-          {processingFile && (
-            <p className="text-sm text-cyan-400 mt-2">
-              Processing: {processingFile.name}
-            </p>
-          )}
         </div>
       </div>
 
