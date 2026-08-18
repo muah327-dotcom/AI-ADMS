@@ -372,6 +372,7 @@ const NewApplication = () => {
                 <label className="block text-sm font-medium text-gray-300 mb-2">Overall Percentage</label>
                 <input
                   type="number"
+                  step="any"
                   min="0"
                   max="100"
                   className={`w-full px-4 py-2 bg-[#0f0f0f] border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white placeholder-gray-500 ${

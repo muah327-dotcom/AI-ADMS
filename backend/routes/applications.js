@@ -5,6 +5,7 @@ import { authenticateToken, requireRole } from '../middleware/auth.js';
 import Application from '../models/Application.js';
 import Program from '../models/Program.js';
 import User from '../models/User.js';
+import Document from '../models/Document.js';
 
 const router = express.Router();
 
@@ -83,7 +84,7 @@ router.post('/', [
         error: `Your percentage (${submittedPercentage}%) is below the minimum required percentage (${program.min_percentage}%) for ${program.name}. Application cannot be submitted.`
       });
     }
-    const sanitizedDocuments = (documents || []).map(doc => {
+    let sanitizedDocuments = (documents || []).map(doc => {
       const allowedTypes = ['cnic', 'matric', 'fsc', 'entry_test', 'other'];
       let docType = doc.type;
       if (!allowedTypes.includes(docType)) {
@@ -92,9 +93,20 @@ router.post('/', [
       return {
         type: docType,
         filename: doc.filename || doc.name || 'document',
-        url: doc.url || ''
+        url: doc.url || doc.file_url || ''
       };
     });
+
+    if (sanitizedDocuments.length === 0) {
+      const userStoredDocs = await Document.find({ user_id: userId });
+      if (userStoredDocs && userStoredDocs.length > 0) {
+        sanitizedDocuments = userStoredDocs.map(doc => ({
+          type: doc.type === 'intermediate' ? 'fsc' : (doc.type || 'other'),
+          filename: doc.name,
+          url: doc.file_url || ''
+        }));
+      }
+    }
 
     const application = await Application.create({
       user_id: userId,

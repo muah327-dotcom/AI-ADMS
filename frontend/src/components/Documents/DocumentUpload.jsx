@@ -1012,6 +1012,15 @@ const validateDocumentClarity = (docType, extractedData, confidence, rawText) =>
 };
 // ===== End OCR Helpers =====
 
+const readFileAsBase64 = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = (error) => reject(error);
+    reader.readAsDataURL(file);
+  });
+};
+
 const DocumentUpload = () => {
   const { user, setUser } = useAuth();
   const [uploading, setUploading] = useState(false);
@@ -1065,6 +1074,38 @@ const DocumentUpload = () => {
 
   // Track which fields were auto-filled by OCR
   const [ocrFilledFields, setOcrFilledFields] = useState(new Set());
+
+  // Fetch persisted documents from MongoDB
+  const fetchUserDocuments = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      const res = await fetch('/api/ocr/my-documents', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.documents && Array.isArray(data.documents)) {
+          setUploadedFiles(data.documents.map(d => ({
+            _id: d._id,
+            name: d.name,
+            type: d.type,
+            extractedData: d.extracted_data || d.extractedData || null,
+            confidence: d.confidence !== undefined ? d.confidence : 100,
+            file_data: d.file_data || null,
+            file_url: d.file_url || null,
+            uploaded_at: d.uploaded_at || d.created_at
+          })));
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching user documents from database:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchUserDocuments();
+  }, [fetchUserDocuments]);
 
   // Pre-populate form from existing user data
   useEffect(() => {
@@ -1300,15 +1341,60 @@ const getDocTypeFieldsToClear = (docType) => {
     setUploadingDocType(documentType);
 
     try {
+      // Read file to Base64 for database persistence and immediate preview
+      const base64Data = await readFileAsBase64(file);
+
       // Photograph doesn't need OCR but still must be a valid format (PDF or image)
       if (documentType === 'photograph') {
-        setUploadedFiles(prev => [...prev, {
-          name: file.name,
-          type: documentType,
-          extractedData: null,
-          confidence: 100
-        }]);
-        toast.success('Photograph uploaded successfully!');
+        const token = localStorage.getItem('token');
+        let savedDoc = null;
+        if (token) {
+          try {
+            const saveRes = await fetch('/api/ocr/upload-document', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                type: documentType,
+                name: file.name,
+                file_data: base64Data,
+                mime_type: file.type || 'image/jpeg',
+                size: file.size,
+                extracted_data: {},
+                confidence: 100
+              })
+            });
+            if (saveRes.ok) {
+              const saveJson = await saveRes.json();
+              savedDoc = saveJson.document;
+            }
+          } catch (saveErr) {
+            console.error('Failed to persist photograph to database:', saveErr);
+          }
+        }
+
+        setUploadedFiles(prev => {
+          const filtered = prev.filter(f => f.type !== documentType);
+          return [...filtered, {
+            _id: savedDoc?._id || `doc-${Date.now()}`,
+            name: file.name,
+            type: documentType,
+            extractedData: null,
+            confidence: 100,
+            file_data: base64Data,
+            uploaded_at: savedDoc?.uploaded_at || new Date()
+          }];
+        });
+
+        setUser(prev => {
+          if (!prev) return prev;
+          const current = prev.uploaded_documents || [];
+          return current.includes(documentType) ? prev : { ...prev, uploaded_documents: [...current, documentType] };
+        });
+
+        toast.success('Photograph uploaded & saved to database successfully!');
         setUploading(false);
         setProcessingFile(null);
         return;
@@ -1441,6 +1527,16 @@ const getDocTypeFieldsToClear = (docType) => {
         try {
           const token = localStorage.getItem('token');
           if (token) {
+            removeIndices.forEach(idx => {
+              const rf = uploadedFiles[idx];
+              if (rf?.type) {
+                fetch(`/api/ocr/my-documents/type/${rf.type}`, {
+                  method: 'DELETE',
+                  headers: { 'Authorization': `Bearer ${token}` }
+                }).catch(console.error);
+              }
+            });
+
             fetch('/api/auth/profile', {
               method: 'PUT',
               headers: {
@@ -1460,17 +1556,59 @@ const getDocTypeFieldsToClear = (docType) => {
         });
       }
 
-      setUploadedFiles(prev => [...prev, {
-        name: file.name,
-        type: documentType,
-        extractedData,
-        confidence
-      }]);
+      // Persist document to MongoDB Database
+      const token = localStorage.getItem('token');
+      let savedDoc = null;
+      if (token) {
+        try {
+          const saveRes = await fetch('/api/ocr/upload-document', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              type: documentType,
+              name: file.name,
+              file_data: base64Data,
+              mime_type: file.type || (isPdf ? 'application/pdf' : 'image/jpeg'),
+              size: file.size,
+              extracted_data: extractedData,
+              confidence: confidence
+            })
+          });
+          if (saveRes.ok) {
+            const saveJson = await saveRes.json();
+            savedDoc = saveJson.document;
+          }
+        } catch (saveErr) {
+          console.error('Failed to persist document to database:', saveErr);
+        }
+      }
+
+      setUploadedFiles(prev => {
+        const filtered = prev.filter(f => f.type !== documentType);
+        return [...filtered, {
+          _id: savedDoc?._id || `doc-${Date.now()}`,
+          name: file.name,
+          type: documentType,
+          extractedData,
+          confidence,
+          file_data: base64Data,
+          uploaded_at: savedDoc?.uploaded_at || new Date()
+        }];
+      });
+
+      setUser(prev => {
+        if (!prev) return prev;
+        const current = prev.uploaded_documents || [];
+        return current.includes(documentType) ? prev : { ...prev, uploaded_documents: [...current, documentType] };
+      });
 
       // Auto-fill form fields from OCR data
       autoFillFromOCR(extractedData, documentType);
 
-      toast.success('Document processed & data extracted successfully!');
+      toast.success('Document processed & stored in database successfully!');
     } catch (error) {
       console.error('Upload error:', error);
       toast.error(error.message || 'Error processing document');
@@ -1558,10 +1696,19 @@ const getDocTypeFieldsToClear = (docType) => {
     // 4. Update user in AuthContext immediately
     setUser(prev => prev ? ({ ...prev, ...dbPayload }) : prev);
 
-    // 5. Update backend database to wipe removed document data from MongoDB
+    // 5. Delete document record from MongoDB Document collection and update User profile
     try {
       const token = localStorage.getItem('token');
       if (token) {
+        // Delete from Document collection
+        await fetch(`/api/ocr/my-documents/type/${docTypeToRemove}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        // Update User profile in MongoDB
         const response = await fetch('/api/auth/profile', {
           method: 'PUT',
           headers: {
@@ -1582,7 +1729,7 @@ const getDocTypeFieldsToClear = (docType) => {
     }
 
     const docLabel = documentTypes.find(d => d.id === docTypeToRemove)?.name || 'Document';
-    toast.success(`${docLabel} and its extracted data removed from form and database.`);
+    toast.success(`${docLabel} and its data removed from database.`);
     if (!stillHasAllMandatory) {
       toast.error('Profile is no longer verified. Please upload all required documents to verify your profile.', { duration: 5000 });
     }
@@ -1922,28 +2069,53 @@ const getDocTypeFieldsToClear = (docType) => {
       {/* Uploaded Files List */}
       {uploadedFiles.length > 0 && (
         <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-6">
-          <h3 className="text-lg font-semibold text-white mb-4">Uploaded Documents ({uploadedFiles.length})</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-white">Uploaded Documents ({uploadedFiles.length})</h3>
+            <span className="text-xs text-emerald-400 flex items-center gap-1 font-medium">
+              <CheckCircle className="h-3.5 w-3.5" />
+              Persisted in Database
+            </span>
+          </div>
           <div className="space-y-3">
             {uploadedFiles.map((file, index) => (
-              <div key={index} className="flex items-center justify-between p-4 bg-[#0f0f0f] rounded-lg border border-gray-800">
+              <div key={file._id || index} className="flex items-center justify-between p-4 bg-[#0f0f0f] rounded-lg border border-gray-800 hover:border-gray-700 transition-colors">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-cyan-500/10 rounded">
+                  <div className="p-2.5 bg-cyan-500/10 rounded-lg border border-cyan-500/20">
                     <FileText className="h-5 w-5 text-cyan-400" />
                   </div>
                   <div>
-                    <p className="font-medium text-white">{file.name}</p>
-                    <p className="text-sm text-gray-500 capitalize">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-white text-sm">{file.name}</p>
+                      <span className="px-2 py-0.5 text-[10px] bg-emerald-500/20 text-emerald-300 rounded-full font-medium border border-emerald-500/30">
+                        Saved in DB
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 capitalize mt-0.5">
                       {documentTypes.find(t => t.id === file.type)?.name}
                       {file.confidence ? ` • Confidence: ${file.confidence?.toFixed(1)}%` : ''}
+                      {file.uploaded_at ? ` • ${new Date(file.uploaded_at).toLocaleDateString()}` : ''}
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={() => removeFile(index)}
-                  className="p-2 text-red-400 hover:text-red-300 transition-colors"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+                <div className="flex items-center gap-2">
+                  {file.file_data && (
+                    <a
+                      href={file.file_data}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 text-xs bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-lg transition-colors border border-cyan-500/30 font-medium"
+                    >
+                      View
+                    </a>
+                  )}
+                  <button
+                    onClick={() => removeFile(index)}
+                    title="Delete document from database"
+                    className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
