@@ -41,7 +41,10 @@ const Register = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     let processedValue = value;
-    if (name === 'phone') {
+    if (name === 'full_name') {
+      // Strictly allow English letters, spaces, dots, and hyphens
+      processedValue = value.replace(/[^A-Za-z\s.\-']/g, '');
+    } else if (name === 'phone') {
       processedValue = formatPakistaniPhone(value);
     } else if (name === 'cnic') {
       processedValue = formatPakistaniCnic(value);
@@ -50,6 +53,14 @@ const Register = () => {
   };
 
   const validateForm = () => {
+    if (!formData.full_name || formData.full_name.trim().length < 2) {
+      toast.error('Please enter your full name in English');
+      return false;
+    }
+    if (!/^[A-Za-z\s.\-']+$/.test(formData.full_name.trim())) {
+      toast.error('Full Name must only contain English letters');
+      return false;
+    }
     if (formData.password !== formData.confirm_password) {
       toast.error('Passwords do not match');
       return false;

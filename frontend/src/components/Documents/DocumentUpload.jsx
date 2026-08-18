@@ -1012,6 +1012,122 @@ const validateDocumentClarity = (docType, extractedData, confidence, rawText) =>
 };
 // ===== End OCR Helpers =====
 
+// Dictionary of common Urdu names to standard English spelling
+const URDU_TO_ENGLISH_NAMES = {
+  'محمد': 'Muhammad',
+  'احمد': 'Ahmed',
+  'علی': 'Ali',
+  'حسن': 'Hassan',
+  'حسین': 'Hussain',
+  'خان': 'Khan',
+  'زاہد': 'Zahid',
+  'عمر': 'Umar',
+  'عثمان': 'Usman',
+  'ابوبکر': 'Abu Bakr',
+  'بلال': 'Bilal',
+  'حمزہ': 'Hamza',
+  'طارق': 'Tariq',
+  'طاہر': 'Tahir',
+  'راشد': 'Rashid',
+  'ساجد': 'Sajid',
+  'ماجد': 'Majid',
+  'ناصر': 'Nasir',
+  'عامر': 'Aamir',
+  'فاروق': 'Farooq',
+  'سلمان': 'Salman',
+  'عمران': 'Imran',
+  'عرفان': 'Irfan',
+  'کامران': 'Kamran',
+  'ریحان': 'Rehan',
+  'فیصل': 'Faisal',
+  'رضوان': 'Rizwan',
+  'عدنان': 'Adnan',
+  'ارسلان': 'Arslan',
+  'وقاص': 'Waqas',
+  'وقار': 'Waqar',
+  'یاسر': 'Yasir',
+  'شاہ': 'Shah',
+  'شاہ زیب': 'Shahzaib',
+  'شہزاد': 'Shehzad',
+  'خالد': 'Khalid',
+  'شاہد': 'Shahid',
+  'نوید': 'Naveed',
+  'ندیم': 'Nadeem',
+  'وسیم': 'Waseem',
+  'نعیم': 'Naeem',
+  'سلیم': 'Saleem',
+  'کلیم': 'Kaleem',
+  'رحمان': 'Rehman',
+  'عبدالرحمان': 'Abdul Rehman',
+  'عبداللہ': 'Abdullah',
+  'عبدالعزیز': 'Abdul Aziz',
+  'غلام': 'Ghulam',
+  'ضیاء': 'Zia',
+  'محبوب': 'Mehboob',
+  'افتخار': 'Iftikhar',
+  'اصغر': 'Asghar',
+  'اکبر': 'Akbar',
+  'انور': 'Anwar',
+  'اقبال': 'Iqbal',
+  'اسلم': 'Aslam',
+  'اکرم': 'Akram',
+  'امجد': 'Amjad',
+  'اشرف': 'Ashraf',
+  'افضل': 'Afzal',
+  'اعجاز': 'Aijaz',
+  'فاطمہ': 'Fatima',
+  'عائشہ': 'Ayesha',
+  'مریم': 'Maryam',
+  'زینب': 'Zainab',
+  'خدیجہ': 'Khadija',
+  'حفصہ': 'Hafsa',
+  'صائمہ': 'Saima',
+  'نائلہ': 'Naila',
+  'بی بی': 'Bibi',
+  'بیگم': 'Begum',
+  'سعدیہ': 'Sadia',
+  'شازیہ': 'Shazia',
+  'نادیہ': 'Nadia',
+  'روبینہ': 'Rubina',
+  'فرزانہ': 'Farzana',
+  'شبانہ': 'Shabana',
+  'طاہرہ': 'Tahira',
+  'عاصمہ': 'Asma',
+  'ثمینہ': 'Samina',
+  'کلثوم': 'Kulsoom',
+  'رضیہ': 'Razia',
+  'پروین': 'Parveen',
+  'نسرین': 'Nasreen',
+  'سلمیٰ': 'Salma',
+  'عظمیٰ': 'Uzma',
+  'بشریٰ': 'Bushra',
+  'صغریٰ': 'Sughra',
+  'کبریٰ': 'Kubra',
+  'طیبہ': 'Tayyaba',
+  'حرا': 'Hira',
+  'اقراء': 'Iqra',
+  'سدرہ': 'Sidra',
+  'کومل': 'Komal',
+  'ثناء': 'Sana',
+  'حنا': 'Hina',
+  'ماہ نور': 'Mahnoor',
+  'ایمن': 'Aiman',
+  'مصباح': 'Misbah'
+};
+
+const sanitizeToEnglishName = (name) => {
+  if (!name) return '';
+  let str = String(name).trim();
+  if (/[\u0600-\u06FF]/.test(str)) {
+    const parts = str.split(/\s+/).map(p => {
+      const clean = p.replace(/[^\u0600-\u06FF]/g, '');
+      return URDU_TO_ENGLISH_NAMES[clean] || clean;
+    });
+    str = parts.join(' ').replace(/[\u0600-\u06FF]/g, '').trim();
+  }
+  return str.replace(/[^A-Za-z\s.\-']/g, '').replace(/\s+/g, ' ').trim();
+};
+
 const readFileAsBase64 = (file) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -1107,13 +1223,15 @@ const DocumentUpload = () => {
     fetchUserDocuments();
   }, [fetchUserDocuments]);
 
-  // Pre-populate form from existing user data
+  // Pre-populate form from existing user data (strictly sanitized to English letters)
   useEffect(() => {
     if (user) {
+      const cleanFullName = sanitizeToEnglishName(user.full_name);
+      const cleanFatherName = sanitizeToEnglishName(user.father_name);
       setFormData(prev => ({
         ...prev,
-        full_name: user.full_name || prev.full_name,
-        father_name: user.father_name || prev.father_name,
+        full_name: cleanFullName || prev.full_name,
+        father_name: cleanFatherName || prev.father_name,
         date_of_birth: user.date_of_birth || prev.date_of_birth,
         gender: user.gender || prev.gender,
         cnic: user.cnic || prev.cnic,
@@ -1144,7 +1262,7 @@ const DocumentUpload = () => {
     { id: 'domicile', name: 'Domicile Certificate', icon: MapPin, desc: 'Optional', required: false }
   ];
 
-  // Auto-fill form fields based on OCR extracted data and document type
+  // Auto-fill form fields based on OCR extracted data and document type (strictly English)
   const autoFillFromOCR = (extractedData, docType) => {
     const newFilledFields = new Set(ocrFilledFields);
 
@@ -1153,11 +1271,11 @@ const DocumentUpload = () => {
 
       if (docType === 'cnic') {
         if (extractedData.name) {
-          updated.full_name = extractedData.name;
+          updated.full_name = sanitizeToEnglishName(extractedData.name);
           newFilledFields.add('full_name');
         }
         if (extractedData.father_name) {
-          updated.father_name = extractedData.father_name;
+          updated.father_name = sanitizeToEnglishName(extractedData.father_name);
           newFilledFields.add('father_name');
         }
         if (extractedData.date_of_birth) {
@@ -1738,8 +1856,10 @@ const getDocTypeFieldsToClear = (docType) => {
   const handleFormChange = (field, value) => {
     let processedValue = value;
 
-    // Apply strict Pakistani phone & CNIC formatting
-    if (field === 'phone' || field === 'father_phone' || field === 'alternate_phone') {
+    // Strictly enforce English letters for Full Name & Father Name
+    if (field === 'full_name' || field === 'father_name') {
+      processedValue = sanitizeToEnglishName(value);
+    } else if (field === 'phone' || field === 'father_phone' || field === 'alternate_phone') {
       processedValue = formatPakistaniPhone(value);
     } else if (field === 'cnic') {
       processedValue = formatPakistaniCnic(value);
@@ -1827,11 +1947,11 @@ const getDocTypeFieldsToClear = (docType) => {
     try {
       const token = localStorage.getItem('token');
       const payload = {
-        full_name: formData.full_name,
+        full_name: sanitizeToEnglishName(formData.full_name),
         phone: formData.phone,
         address: formData.address,
         cnic: formData.cnic,
-        father_name: formData.father_name,
+        father_name: sanitizeToEnglishName(formData.father_name),
         date_of_birth: formData.date_of_birth,
         gender: formData.gender,
         alternate_phone: formData.alternate_phone,

@@ -14,13 +14,128 @@ const router = express.Router();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-here';
 
+const URDU_TO_ENGLISH_NAMES = {
+  'محمد': 'Muhammad',
+  'احمد': 'Ahmed',
+  'علی': 'Ali',
+  'حسن': 'Hassan',
+  'حسین': 'Hussain',
+  'خان': 'Khan',
+  'زاہد': 'Zahid',
+  'عمر': 'Umar',
+  'عثمان': 'Usman',
+  'ابوبکر': 'Abu Bakr',
+  'بلال': 'Bilal',
+  'حمزہ': 'Hamza',
+  'طارق': 'Tariq',
+  'طاہر': 'Tahir',
+  'راشد': 'Rashid',
+  'ساجد': 'Sajid',
+  'ماجد': 'Majid',
+  'ناصر': 'Nasir',
+  'عامر': 'Aamir',
+  'فاروق': 'Farooq',
+  'سلمان': 'Salman',
+  'عمران': 'Imran',
+  'عرفان': 'Irfan',
+  'کامران': 'Kamran',
+  'ریحان': 'Rehan',
+  'فیصل': 'Faisal',
+  'رضوان': 'Rizwan',
+  'عدنان': 'Adnan',
+  'ارسلان': 'Arslan',
+  'وقاص': 'Waqas',
+  'وقار': 'Waqar',
+  'یاسر': 'Yasir',
+  'شاہ': 'Shah',
+  'شاہ زیب': 'Shahzaib',
+  'شہزاد': 'Shehzad',
+  'خالد': 'Khalid',
+  'شاہد': 'Shahid',
+  'نوید': 'Naveed',
+  'ندیم': 'Nadeem',
+  'وسیم': 'Waseem',
+  'نعیم': 'Naeem',
+  'سلیم': 'Saleem',
+  'کلیم': 'Kaleem',
+  'رحمان': 'Rehman',
+  'عبدالرحمان': 'Abdul Rehman',
+  'عبداللہ': 'Abdullah',
+  'عبدالعزیز': 'Abdul Aziz',
+  'غلام': 'Ghulam',
+  'ضیاء': 'Zia',
+  'محبوب': 'Mehboob',
+  'افتخار': 'Iftikhar',
+  'اصغر': 'Asghar',
+  'اکبر': 'Akbar',
+  'انور': 'Anwar',
+  'اقبال': 'Iqbal',
+  'اسلم': 'Aslam',
+  'اکرم': 'Akram',
+  'امجد': 'Amjad',
+  'اشرف': 'Ashraf',
+  'افضل': 'Afzal',
+  'اعجاز': 'Aijaz',
+  'فاطمہ': 'Fatima',
+  'عائشہ': 'Ayesha',
+  'مریم': 'Maryam',
+  'زینب': 'Zainab',
+  'خدیجہ': 'Khadija',
+  'حفصہ': 'Hafsa',
+  'صائمہ': 'Saima',
+  'نائلہ': 'Naila',
+  'بی بی': 'Bibi',
+  'بیگم': 'Begum',
+  'سعدیہ': 'Sadia',
+  'شازیہ': 'Shazia',
+  'نادیہ': 'Nadia',
+  'روبینہ': 'Rubina',
+  'فرزانہ': 'Farzana',
+  'شبانہ': 'Shabana',
+  'طاہرہ': 'Tahira',
+  'عاصمہ': 'Asma',
+  'ثمینہ': 'Samina',
+  'کلثوم': 'Kulsoom',
+  'رضیہ': 'Razia',
+  'پروین': 'Parveen',
+  'نسرین': 'Nasreen',
+  'سلمیٰ': 'Salma',
+  'عظمیٰ': 'Uzma',
+  'بشریٰ': 'Bushra',
+  'صغریٰ': 'Sughra',
+  'کبریٰ': 'Kubra',
+  'طیبہ': 'Tayyaba',
+  'حرا': 'Hira',
+  'اقراء': 'Iqra',
+  'سدرہ': 'Sidra',
+  'کومل': 'Komal',
+  'ثناء': 'Sana',
+  'حنا': 'Hina',
+  'ماہ نور': 'Mahnoor',
+  'ایمن': 'Aiman',
+  'مصباح': 'Misbah'
+};
+
+const sanitizeToEnglishName = (name) => {
+  if (!name) return '';
+  let str = String(name).trim();
+  if (/[\u0600-\u06FF]/.test(str)) {
+    const parts = str.split(/\s+/).map(p => {
+      const clean = p.replace(/[^\u0600-\u06FF]/g, '');
+      return URDU_TO_ENGLISH_NAMES[clean] || clean;
+    });
+    str = parts.join(' ').replace(/[\u0600-\u06FF]/g, '').trim();
+  }
+  return str.replace(/[^A-Za-z\s.\-']/g, '').replace(/\s+/g, ' ').trim();
+};
+
 const generateToken = (user) => {
   return jwt.sign(
     {
       id: user.id,
       email: user.email,
       role: user.role,
-      full_name: user.full_name
+      full_name: sanitizeToEnglishName(user.full_name)
     },
     JWT_SECRET,
     { expiresIn: '24h' }
@@ -40,6 +155,7 @@ router.post('/register', [
     }
 
     const { email, password, full_name, cnic, phone, address } = req.body;
+    const englishFullName = sanitizeToEnglishName(full_name) || full_name;
 
     // Force role to always be student - admin registration not allowed
     const role = 'student';
@@ -55,7 +171,7 @@ router.post('/register', [
     const user = await User.create({
       email,
       password: hashedPassword,
-      full_name,
+      full_name: englishFullName,
       role,
       cnic,
       phone,
@@ -124,6 +240,14 @@ router.post('/login', [
       console.error('Failed to update last_login:', updateError);
     }
 
+    if (user && (/[\u0600-\u06FF]/.test(user.full_name || '') || /[\u0600-\u06FF]/.test(user.father_name || ''))) {
+      user.full_name = sanitizeToEnglishName(user.full_name) || user.full_name;
+      if (user.father_name) {
+        user.father_name = sanitizeToEnglishName(user.father_name);
+      }
+      await user.save();
+    }
+
     console.log('Generating token...');
     let token;
     try {
@@ -140,7 +264,7 @@ router.post('/login', [
       user: {
         id: user.id,
         email: user.email,
-        full_name: user.full_name,
+        full_name: sanitizeToEnglishName(user.full_name) || user.full_name,
         role: user.role,
         cnic: user.cnic,
         phone: user.phone,
@@ -170,6 +294,14 @@ router.get('/me', async (req, res) => {
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (user && (/[\u0600-\u06FF]/.test(user.full_name || '') || /[\u0600-\u06FF]/.test(user.father_name || ''))) {
+      user.full_name = sanitizeToEnglishName(user.full_name) || user.full_name;
+      if (user.father_name) {
+        user.father_name = sanitizeToEnglishName(user.father_name);
+      }
+      await user.save();
     }
 
     res.json({ user });
@@ -214,12 +346,12 @@ router.put('/profile', authenticateToken, [
     } = req.body;
     const updates = {};
 
-    if (full_name) updates.full_name = full_name;
+    if (full_name) updates.full_name = sanitizeToEnglishName(full_name) || full_name;
     if (phone !== undefined) updates.phone = phone || null;
     if (address !== undefined) updates.address = address || null;
     if (avatar_url !== undefined) updates.avatar_url = avatar_url;
     if (cnic !== undefined) updates.cnic = cnic || null;
-    if (father_name !== undefined) updates.father_name = father_name || null;
+    if (father_name !== undefined) updates.father_name = father_name ? sanitizeToEnglishName(father_name) : null;
     if (date_of_birth !== undefined) updates.date_of_birth = date_of_birth || null;
     if (gender !== undefined) updates.gender = gender || null;
     if (alternate_phone !== undefined) updates.alternate_phone = alternate_phone || null;
