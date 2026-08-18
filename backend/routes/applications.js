@@ -29,8 +29,7 @@ const findProgram = async (identifier) => {
 router.post('/', [
   body('program_id').isMongoId(),
   body('academic_records').isObject(),
-  body('documents').optional().isArray(),
-  body('priority').isInt({ min: 1, max: 5 })
+  body('documents').optional().isArray()
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -38,7 +37,7 @@ router.post('/', [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { program_id, academic_records, documents, priority, extracurriculars, personal_statement } = req.body;
+    const { program_id, academic_records, documents, extracurriculars, personal_statement } = req.body;
     const userId = req.user.id;
 
     // Enforce profile verification & mandatory non-optional documents upload
@@ -60,15 +59,6 @@ router.post('/', [
 
     if (existingApp) {
       return res.status(400).json({ error: 'Application already exists for this program' });
-    }
-
-    const existingPriorityApp = await Application.findOne({
-      user_id: userId,
-      priority: priority
-    });
-
-    if (existingPriorityApp) {
-      return res.status(400).json({ error: `You have already selected priority ${priority} for another program.` });
     }
     // Fetch program and enforce eligibility
     const program = await findProgram(program_id);
@@ -115,7 +105,9 @@ router.post('/', [
       fsc_percentage: parseFloat(academic_records.fsc_percentage || academic_records.percentage || 0),
       entry_test_marks: parseFloat(academic_records.entry_test_marks || 0),
       documents: sanitizedDocuments,
-      priority,
+      priority: 1,
+      personal_statement: personal_statement || '',
+      extracurriculars: extracurriculars || '',
       status: 'pending'
     });
 

@@ -4,6 +4,7 @@ import { authenticateToken, requireRole } from '../middleware/auth.js';
 import Application from '../models/Application.js';
 import User from '../models/User.js';
 import Program from '../models/Program.js';
+import Document from '../models/Document.js';
 
 const router = express.Router();
 
@@ -82,29 +83,37 @@ router.get('/all-applications', async (req, res) => {
     
     let query = Application.find();
     
-    if (status) {
+    if (status && status !== 'all') {
       query = query.where('status').equals(status);
     }
 
-    if (program) {
+    if (program && program !== 'all') {
       query = query.where('program_id').equals(program);
     }
 
     const applications = await query
-      .populate('user_id', 'full_name email cnic phone')
-      .populate('program_id', 'name department')
+      .populate('user_id', 'full_name email cnic phone father_name father_phone alternate_phone date_of_birth gender address permanent_address matric_board matric_passing_year matric_obtained_marks matric_total_marks inter_board inter_passing_year inter_obtained_marks inter_total_marks is_verified uploaded_documents avatar_url')
+      .populate('program_id', 'name department min_percentage required_subjects total_seats admission_fee tuition_fee total_fee')
       .sort({ application_date: -1 })
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
 
     const count = await Application.countDocuments(query.getFilter());
 
+    // Fetch all documents for students in these applications
+    const userIds = [...new Set(applications.map(app => app.user_id?._id || app.user_id).filter(Boolean))];
+    const documents = await Document.find({ user_id: { $in: userIds } }).sort({ uploaded_at: 1 });
+
     const mappedApplications = applications.map(app => {
       const appObj = app.toObject();
+      const studentId = (appObj.user_id?._id || appObj.user_id)?.toString();
+      const userDocs = documents.filter(d => d.user_id?.toString() === studentId);
+
       appObj.student = appObj.user_id;
       appObj.program = appObj.program_id;
       appObj.programs = appObj.program_id;
       appObj.id = appObj._id;
+      appObj.student_documents = userDocs;
       return appObj;
     });
 
@@ -117,6 +126,50 @@ router.get('/all-applications', async (req, res) => {
   } catch (error) {
     console.error('Fetch all applications error:', error);
     res.status(500).json({ error: 'Failed to fetch applications' });
+  }
+});
+
+router.get('/applications/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const application = await Application.findById(id)
+      .populate('user_id', 'full_name email cnic phone father_name father_phone alternate_phone date_of_birth gender address permanent_address matric_board matric_passing_year matric_obtained_marks matric_total_marks inter_board inter_passing_year inter_obtained_marks inter_total_marks is_verified uploaded_documents avatar_url')
+      .populate('program_id', 'name department min_percentage required_subjects total_seats admission_fee tuition_fee total_fee');
+
+    if (!application) {
+      return res.status(404).json({ error: 'Application not found' });
+    }
+
+    const appObj = application.toObject();
+    const studentId = (appObj.user_id?._id || appObj.user_id)?.toString();
+    const studentDocs = await Document.find({ user_id: studentId }).sort({ uploaded_at: 1 });
+
+    appObj.student = appObj.user_id;
+    appObj.program = appObj.program_id;
+    appObj.programs = appObj.program_id;
+    appObj.id = appObj._id;
+    appObj.student_documents = studentDocs;
+
+    res.json({ application: appObj });
+  } catch (error) {
+    console.error('Fetch application detail error:', error);
+    res.status(500).json({ error: 'Failed to fetch application details' });
+  }
+});
+
+router.get('/student/:userId/documents', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const documents = await Document.find({ user_id: userId }).sort({ uploaded_at: 1 });
+    const user = await User.findById(userId).select('-password');
+
+    res.json({
+      student: user,
+      documents
+    });
+  } catch (error) {
+    console.error('Fetch student documents error:', error);
+    res.status(500).json({ error: 'Failed to fetch student documents' });
   }
 });
 
@@ -135,9 +188,17 @@ router.patch('/applications/:id/status', [
 
     const application = await Application.findByIdAndUpdate(
       id,
-      { status, updated_at: new Date() },
+      { 
+        status, 
+        remarks: notes ? notes : undefined,
+        reviewed_by: req.user.id,
+        reviewed_at: new Date(),
+        updated_at: new Date() 
+      },
       { new: true }
-    );
+    )
+      .populate('user_id', 'full_name email cnic phone father_name date_of_birth gender address matric_board matric_passing_year matric_obtained_marks matric_total_marks inter_board inter_passing_year inter_obtained_marks inter_total_marks')
+      .populate('program_id', 'name department');
 
     if (!application) {
       return res.status(404).json({ error: 'Application not found' });
@@ -188,20 +249,33 @@ router.get('/students', async (req, res) => {
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
 
-    if (category) {
+    if (category && category !== 'all') {
       query = query.where('admission_category').equals(category);
     }
 
-    if (program) {
+    if (program && program !== 'all') {
       query = query.where('program_id').equals(program);
     }
 
     const students = await query;
+    const count = await User.countDocuments(query.getFilter());
 
-    const count = await User.countDocuments({ role: 'student' });
+    const studentIds = students.map(s => s._id);
+    const [documents, userApplications] = await Promise.all([
+      Document.find({ user_id: { $in: studentIds } }).sort({ uploaded_at: 1 }),
+      Application.find({ user_id: { $in: studentIds } }).populate('program_id', 'name department')
+    ]);
+
+    const mappedStudents = students.map(student => {
+      const sObj = student.toObject();
+      sObj.id = sObj._id;
+      sObj.documents = documents.filter(d => d.user_id.toString() === sObj._id.toString());
+      sObj.applications = userApplications.filter(a => a.user_id.toString() === sObj._id.toString());
+      return sObj;
+    });
 
     res.json({ 
-      students, 
+      students: mappedStudents, 
       total: count,
       page: parseInt(page),
       totalPages: Math.ceil(count / limit)

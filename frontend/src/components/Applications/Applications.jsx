@@ -190,18 +190,10 @@ const Applications = () => {
                       <FileText className="h-6 w-6 text-cyan-500" />
                     </div>
                     <div>
-                      <div className="flex items-center gap-2">
-                        {app.priority && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/40">
-                            P{app.priority}
-                          </span>
-                        )}
-                        <h3 className="text-lg font-medium text-white">{app.programs?.name}</h3>
-                      </div>
+                      <h3 className="text-lg font-medium text-white">{app.programs?.name}</h3>
                       <p className="text-sm text-gray-400">{app.programs?.department}</p>
                       <div className="flex items-center gap-4 mt-2 text-sm text-gray-400">
                         <span>Applied: {new Date(app.application_date).toLocaleDateString()}</span>
-                        <span>Priority: {app.priority ?? '—'}</span>
                         {app.merit_rank && (
                           <span className="text-cyan-400 font-medium">Merit Rank: #{app.merit_rank}</span>
                         )}

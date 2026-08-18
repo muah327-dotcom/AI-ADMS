@@ -11,7 +11,19 @@ import {
   ChevronRight,
   Crown,
   Star,
-  GraduationCap
+  GraduationCap,
+  Eye,
+  CreditCard,
+  Camera,
+  ScrollText,
+  MapPin,
+  FileCheck,
+  Sparkles,
+  ZoomIn,
+  ZoomOut,
+  RotateCw,
+  AlertCircle,
+  X
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -24,6 +36,11 @@ const StudentManagement = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [showModal, setShowModal] = useState(false);
+
+  // Document Viewer State
+  const [previewDoc, setPreviewDoc] = useState(null);
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [rotation, setRotation] = useState(0);
 
   useEffect(() => {
     fetchStudents();
@@ -66,6 +83,48 @@ const StudentManagement = () => {
       default:
         return null;
     }
+  };
+
+  const getDocIcon = (type) => {
+    switch (type) {
+      case 'cnic': return <CreditCard className="h-5 w-5 text-cyan-400" />;
+      case 'photograph': return <Camera className="h-5 w-5 text-emerald-400" />;
+      case 'matric': return <Award className="h-5 w-5 text-yellow-400" />;
+      case 'intermediate': case 'fsc': return <GraduationCap className="h-5 w-5 text-indigo-400" />;
+      case 'transcript': return <ScrollText className="h-5 w-5 text-purple-400" />;
+      case 'domicile': return <MapPin className="h-5 w-5 text-rose-400" />;
+      case 'fee_challan': case 'fee_receipt': return <FileCheck className="h-5 w-5 text-amber-400" />;
+      default: return <FileText className="h-5 w-5 text-gray-400" />;
+    }
+  };
+
+  const getDocTypeLabel = (type) => {
+    const map = {
+      cnic: 'CNIC / B-Form', photograph: 'Photograph', matric: 'Matric Certificate',
+      intermediate: 'Intermediate Certificate', fsc: 'Intermediate Certificate',
+      transcript: 'Transcript / Mark Sheet', domicile: 'Domicile Certificate',
+      fee_challan: 'Fee Challan Receipt', fee_receipt: 'Fee Challan Receipt', other: 'Document'
+    };
+    return map[type] || (type ? type.toUpperCase() : 'Document');
+  };
+
+  const handleOpenDocViewer = (doc) => {
+    setPreviewDoc(doc);
+    setZoomLevel(1);
+    setRotation(0);
+  };
+
+  const handleDownloadDoc = (doc) => {
+    if (!doc) return;
+    const src = doc.file_data || doc.file_url || doc.url;
+    if (!src) { toast.error('No downloadable content'); return; }
+    const link = document.createElement('a');
+    link.href = src;
+    link.download = doc.name || doc.filename || `${doc.type || 'document'}_${Date.now()}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Download started');
   };
 
   const getCategoryColor = (category) => {
@@ -292,21 +351,20 @@ const StudentManagement = () => {
 
       {/* Student Detail Modal */}
       {showModal && selectedStudent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-70">
-          <div className="bg-[#1a1a1a] rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto animate-scale-in border border-gray-800">
-            <div className="p-6 border-b border-gray-800">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-white">Student Details</h2>
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="p-2 text-gray-400 hover:text-white"
-                >
-                  <span className="text-2xl">&times;</span>
-                </button>
-              </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-[#1a1a1a] rounded-2xl max-w-3xl w-full max-h-[92vh] overflow-y-auto animate-scale-in border border-gray-800 shadow-2xl">
+            <div className="p-6 border-b border-gray-800 sticky top-0 bg-[#1a1a1a]/95 backdrop-blur z-10 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-white">Student Details</h2>
+              <button
+                onClick={() => setShowModal(false)}
+                className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-gray-800 transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
 
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-6">
+              {/* Student Profile */}
               <div className="flex items-center gap-4">
                 <div className="h-20 w-20 rounded-full bg-cyan-500/10 flex items-center justify-center border border-cyan-500/20">
                   <span className="text-3xl text-cyan-400 font-bold">
@@ -329,10 +387,11 @@ const StudentManagement = () => {
                 </div>
               </div>
 
+              {/* Personal Info */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-3 bg-[#0f0f0f] rounded-lg border border-gray-800">
                   <p className="text-xs text-gray-500">CNIC</p>
-                  <p className="font-medium text-white">{selectedStudent.cnic || 'N/A'}</p>
+                  <p className="font-medium text-white font-mono">{selectedStudent.cnic || 'N/A'}</p>
                 </div>
                 <div className="p-3 bg-[#0f0f0f] rounded-lg border border-gray-800">
                   <p className="text-xs text-gray-500">Phone</p>
@@ -344,18 +403,106 @@ const StudentManagement = () => {
                 </div>
               </div>
 
+              {/* Uploaded Documents Section */}
               <div>
-                <h4 className="font-medium text-white mb-3">Applications</h4>
+                <h4 className="font-bold text-white text-base mb-3 flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-cyan-400" />
+                  Uploaded Documents
+                  {selectedStudent.documents?.length > 0 && (
+                    <span className="text-xs font-normal text-gray-400 ml-1">({selectedStudent.documents.length} files)</span>
+                  )}
+                </h4>
+                {selectedStudent.documents && selectedStudent.documents.length > 0 ? (
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    {selectedStudent.documents.map((doc, idx) => {
+                      const hasPreview = !!(doc.file_data || doc.file_url || doc.url);
+                      return (
+                        <div
+                          key={doc._id || idx}
+                          className="p-4 bg-[#0f0f0f] rounded-xl border border-gray-800 hover:border-gray-700 transition-all flex flex-col justify-between"
+                        >
+                          <div>
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-lg bg-gray-800/80 border border-gray-700">
+                                  {getDocIcon(doc.type)}
+                                </div>
+                                <div>
+                                  <h5 className="font-semibold text-white text-sm">{getDocTypeLabel(doc.type)}</h5>
+                                  <p className="text-xs text-gray-400 truncate max-w-[160px]" title={doc.name}>
+                                    {doc.name || 'document_file'}
+                                  </p>
+                                </div>
+                              </div>
+                              {doc.confidence && doc.confidence > 0 && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 whitespace-nowrap">
+                                  <Sparkles className="h-2.5 w-2.5 mr-1" />
+                                  OCR {Math.round(doc.confidence)}%
+                                </span>
+                              )}
+                            </div>
+
+                            {/* OCR Extracted summary */}
+                            {doc.extracted_data && Object.keys(doc.extracted_data).length > 0 && (
+                              <div className="mt-2 p-2 bg-[#161616] rounded-lg border border-gray-800/80 text-[11px] text-gray-400 space-y-0.5">
+                                {doc.extracted_data.cnic && (
+                                  <p><strong className="text-gray-300">CNIC:</strong> <span className="font-mono text-cyan-400">{doc.extracted_data.cnic}</span></p>
+                                )}
+                                {doc.extracted_data.name && (
+                                  <p><strong className="text-gray-300">Name:</strong> {doc.extracted_data.name}</p>
+                                )}
+                                {doc.extracted_data.obtained_marks && (
+                                  <p><strong className="text-gray-300">Marks:</strong> {doc.extracted_data.obtained_marks} / {doc.extracted_data.total_marks || 1100}</p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-800/80">
+                            <button
+                              onClick={() => handleOpenDocViewer(doc)}
+                              disabled={!hasPreview}
+                              className="flex-1 inline-flex items-center justify-center px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500 text-cyan-400 hover:text-white rounded-lg transition-colors text-xs font-semibold border border-cyan-500/20 disabled:opacity-40"
+                            >
+                              <Eye className="h-3.5 w-3.5 mr-1.5" />
+                              Preview
+                            </button>
+                            {hasPreview && (
+                              <button
+                                onClick={() => handleDownloadDoc(doc)}
+                                className="p-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg transition-colors border border-gray-700"
+                                title="Download"
+                              >
+                                <Download className="h-4 w-4" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="p-6 bg-[#0f0f0f] rounded-xl border border-gray-800 text-center">
+                    <AlertCircle className="h-8 w-8 text-gray-600 mx-auto mb-2" />
+                    <p className="text-sm text-gray-400">No documents uploaded by this student.</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Applications */}
+              <div>
+                <h4 className="font-bold text-white text-base mb-3">Applications</h4>
                 <div className="space-y-2">
                   {selectedStudent.applications?.map((app, idx) => (
                     <div key={idx} className="p-3 bg-[#0f0f0f] rounded-lg border border-gray-800">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-medium text-white">{app.program?.name}</p>
-                          <p className="text-xs text-gray-400">{app.program?.department}</p>
+                          <p className="font-medium text-white">{app.program?.name || app.program_id?.name}</p>
+                          <p className="text-xs text-gray-400">{app.program?.department || app.program_id?.department}</p>
                         </div>
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${
-                          app.status === 'approved' ? 'bg-green-500/20 text-green-400' :
+                        <span className={`px-2 py-1 rounded text-xs font-medium capitalize ${
+                          app.status === 'approved' || app.status === 'confirmed' ? 'bg-green-500/20 text-green-400' :
                           app.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
                           'bg-yellow-500/20 text-yellow-400'
                         }`}>
@@ -371,6 +518,108 @@ const StudentManagement = () => {
                   )) || <p className="text-gray-500">No applications</p>}
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Document Viewer Modal */}
+      {previewDoc && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+          <div className="bg-[#181818] rounded-2xl max-w-5xl w-full h-[90vh] flex flex-col border border-gray-700 shadow-2xl overflow-hidden animate-scale-in">
+            {/* Viewer Header */}
+            <div className="p-4 border-b border-gray-800 bg-[#121212] flex items-center justify-between flex-shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                  {getDocIcon(previewDoc.type)}
+                </div>
+                <div>
+                  <h3 className="font-bold text-white text-base flex items-center gap-2">
+                    {getDocTypeLabel(previewDoc.type)}
+                    {previewDoc.confidence && (
+                      <span className="text-xs font-normal text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-full border border-cyan-500/20">
+                        OCR: {Math.round(previewDoc.confidence)}%
+                      </span>
+                    )}
+                  </h3>
+                  <p className="text-xs text-gray-400">{previewDoc.name || 'Document File'}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setZoomLevel(z => Math.max(0.5, z - 0.25))} className="p-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors" title="Zoom Out">
+                  <ZoomOut className="h-4 w-4" />
+                </button>
+                <span className="text-xs text-gray-400 font-mono w-12 text-center">{Math.round(zoomLevel * 100)}%</span>
+                <button onClick={() => setZoomLevel(z => Math.min(3, z + 0.25))} className="p-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors" title="Zoom In">
+                  <ZoomIn className="h-4 w-4" />
+                </button>
+                <button onClick={() => setRotation(r => (r + 90) % 360)} className="p-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors" title="Rotate">
+                  <RotateCw className="h-4 w-4" />
+                </button>
+                <button onClick={() => handleDownloadDoc(previewDoc)} className="flex items-center px-3 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg transition-colors text-xs font-semibold">
+                  <Download className="h-4 w-4 mr-1.5" /> Download
+                </button>
+                <button onClick={() => setPreviewDoc(null)} className="p-2 bg-gray-800 hover:bg-red-600 text-gray-300 hover:text-white rounded-lg transition-colors ml-2">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Viewer Body & OCR Sidebar */}
+            <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+              <div className="flex-1 bg-[#0a0a0a] p-4 flex items-center justify-center overflow-auto">
+                {(() => {
+                  const src = previewDoc.file_data || previewDoc.file_url || previewDoc.url;
+                  const isPdf = previewDoc.mime_type === 'application/pdf' || previewDoc.name?.toLowerCase().endsWith('.pdf') || (src && src.startsWith('data:application/pdf'));
+                  if (!src) return <div className="text-center text-gray-500"><AlertCircle className="h-12 w-12 mx-auto mb-2 text-gray-600" /><p>No preview available.</p></div>;
+                  if (isPdf) return <iframe src={src} title={previewDoc.name || 'PDF'} className="w-full h-full rounded-xl border border-gray-800 bg-white shadow-2xl" />;
+                  return (
+                    <div className="transition-transform duration-200" style={{ transform: `scale(${zoomLevel}) rotate(${rotation}deg)`, transformOrigin: 'center center' }}>
+                      <img src={src} alt={previewDoc.name || 'Document'} className="max-h-[75vh] max-w-full object-contain rounded-lg shadow-2xl border border-gray-800" />
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* OCR Sidebar */}
+              {previewDoc.extracted_data && Object.keys(previewDoc.extracted_data).length > 0 && (
+                <div className="w-full lg:w-80 bg-[#121212] border-t lg:border-t-0 lg:border-l border-gray-800 p-5 overflow-y-auto flex-shrink-0">
+                  <div className="flex items-center gap-2 text-cyan-400 mb-4 font-bold text-sm pb-2 border-b border-gray-800">
+                    <Sparkles className="h-4 w-4" /> OCR Extracted Details
+                  </div>
+                  <div className="space-y-3 text-xs">
+                    {previewDoc.extracted_data.name && (
+                      <div className="p-2.5 bg-[#181818] rounded-lg border border-gray-800"><span className="text-gray-500 block">Name</span><span className="font-semibold text-white">{previewDoc.extracted_data.name}</span></div>
+                    )}
+                    {previewDoc.extracted_data.father_name && (
+                      <div className="p-2.5 bg-[#181818] rounded-lg border border-gray-800"><span className="text-gray-500 block">Father's Name</span><span className="font-semibold text-white">{previewDoc.extracted_data.father_name}</span></div>
+                    )}
+                    {previewDoc.extracted_data.cnic && (
+                      <div className="p-2.5 bg-[#181818] rounded-lg border border-gray-800"><span className="text-gray-500 block">CNIC / B-Form</span><span className="font-mono font-bold text-cyan-400">{previewDoc.extracted_data.cnic}</span></div>
+                    )}
+                    {previewDoc.extracted_data.date_of_birth && (
+                      <div className="p-2.5 bg-[#181818] rounded-lg border border-gray-800"><span className="text-gray-500 block">Date of Birth</span><span className="font-semibold text-white">{previewDoc.extracted_data.date_of_birth}</span></div>
+                    )}
+                    {previewDoc.extracted_data.board && (
+                      <div className="p-2.5 bg-[#181818] rounded-lg border border-gray-800"><span className="text-gray-500 block">Board</span><span className="font-semibold text-white">{previewDoc.extracted_data.board}</span></div>
+                    )}
+                    {previewDoc.extracted_data.obtained_marks !== undefined && previewDoc.extracted_data.obtained_marks !== null && (
+                      <div className="p-2.5 bg-[#181818] rounded-lg border border-gray-800">
+                        <span className="text-gray-500 block">Marks</span>
+                        <span className="font-bold text-emerald-400">
+                          {previewDoc.extracted_data.obtained_marks} / {previewDoc.extracted_data.total_marks || 1100}
+                          {previewDoc.extracted_data.total_marks && (
+                            <span className="text-gray-400 ml-1 font-normal">({((previewDoc.extracted_data.obtained_marks / previewDoc.extracted_data.total_marks) * 100).toFixed(1)}%)</span>
+                          )}
+                        </span>
+                      </div>
+                    )}
+                    {previewDoc.extracted_data.address && (
+                      <div className="p-2.5 bg-[#181818] rounded-lg border border-gray-800"><span className="text-gray-500 block">Address</span><span className="text-gray-300">{previewDoc.extracted_data.address}</span></div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

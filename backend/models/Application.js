@@ -41,9 +41,7 @@ const applicationSchema = new mongoose.Schema({
   },
   priority: {
     type: Number,
-    default: 1,
-    min: 1,
-    max: 5
+    default: 1
   },
   matric_percentage: {
     type: Number,
