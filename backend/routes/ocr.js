@@ -36,8 +36,9 @@ router.use(authenticateToken);
  * Clean OCR text by removing common noise characters
  */
 const cleanOcrText = (text) => {
+  if (!text) return '';
   return text
-    .replace(/[^\x00-\x7F\s]/g, ' ')   // Remove non-ASCII (Urdu chars etc.)
+    .replace(/[^\x00-\x7F\s]/g, ' ')   // Remove non-ASCII
     .replace(/\r\n/g, '\n')             // Normalize line endings
     .replace(/[ \t]+/g, ' ')            // Collapse multiple spaces/tabs
     .replace(/\n{3,}/g, '\n\n')         // Collapse excessive newlines
@@ -45,46 +46,41 @@ const cleanOcrText = (text) => {
 };
 
 /**
- * Extract CNIC data using multiple strategies for robustness
- */
-/**
  * Helper to fix common OCR digit-to-letter misreads
  */
 const fixOcrDigits = (str) => {
-  return str
-    .replace(/O/gi, '0')
-    .replace(/[Il]/g, '1')
-    .replace(/S/gi, '5')
-    .replace(/B/g, '8')
-    .replace(/Z/gi, '2');
+  if (!str) return '';
+  return String(str)
+    .replace(/[Oo]/g, '0')
+    .replace(/[Il|!ij]/g, '1')
+    .replace(/[Zz]/g, '2')
+    .replace(/[Ss]/g, '5')
+    .replace(/[Bb]/g, '8')
+    .replace(/[Gg]/g, '9');
 };
 
-/**
- * Score a name candidate to prioritize valid multi-word names and penalize OCR noise
- */
-const CNIC_NOISE_WORDS = new Set([
-  'gney', 'attorney', 'sign', 'signature', 'sig', 'specimen', 'card', 'holder',
-  'national', 'republic', 'pakistan', 'islamic', 'identity', 'number', 'reg',
-  'general', 'registrar', 'head', 'authority', 'nadra', 'govt', 'gov', 'pak',
-  'sai', 'sam', 'nam', 'namo', 'nene', 'nal', 'fath', 'fathar', 'fathor', 'fathsr',
-  'fatner', 'husb', 'father', 'husband', 'mother', 'date', 'birth', 'gender',
-  'sex', 'country', 'stay', 'expiry', 'issue', 'address', 'nic', 'cnic', 'puck',
-  'name', 'narne', 'neme', 'nama', 'of', 'the', 'and', 'for', 'with',
-  'valid', 'from', 'till', 'renewal', 'fee', 'status', 'photo',
-  'thumb', 'impression', 'print', 'finger', 'left', 'right',
-  'registration', 'form', 'office', 'district', 'province', 'tehsil',
-  'holders', 'des', 'der', 'sur', 'soi', 'sor', 'so', 'do', 'wo',
-  'mr', 'mrs', 'ms', 'miss', 'dr', 'pk', 'pkr', 'id', 'no', 'num', 's/o', 'd/o', 'w/o'
+const CNIC_HEADER_NOISE = new Set([
+  'national', 'identity', 'card', 'republic', 'islamic', 'pakistan', 'nadra',
+  'database', 'government', 'govt', 'gov', 'pak', 'authority', 'registrar', 'general', 'head',
+  'registration', 'form', 'office', 'district', 'province', 'tehsil', 'specimen',
+  'signature', 'sign', 'sig', 'attorney', 'gney', 'holder', 'holders', 'valid',
+  'from', 'till', 'renewal', 'fee', 'status', 'photo', 'thumb', 'impression',
+  'print', 'finger', 'left', 'right', 'country', 'stay', 'expiry', 'issue',
+  'address', 'nic', 'cnic', 'name', 'father', 'husband', 'mother', 'gender',
+  'sex', 'birth', 'date', 'son', 'daughter', 'wife', 'mr', 'mrs', 'ms', 'miss',
+  'dr', 'id', 'no', 'num', 'of', 'the', 'and', 'for', 'with', 'pkr', 'smart',
+  'computerized', 'citizen', 'director', 'directorate', 'board', 'education'
 ]);
 
 /**
- * Clean and format candidate name string by stripping CNIC noise words
+ * Filter and format candidate name string
  */
 const cleanNameCandidate = (rawStr) => {
   if (!rawStr) return null;
 
+  // Remove known field prefixes with word boundaries
   let text = rawStr
-    .replace(/(?:Father|Husband|Mother|Name|Narne|Namo|Nene|Holder|Card|Nal|Neme|Nama|Fathor|Fathar|Falher|Fathsr|Fatner|Fathe|Fther|Feather|Fether|Husb|S\/O|D\/O|W\/O|Son\s+of|Daughter\s+of|Wife\s+of)\s*[:\-]?/gi, ' ')
+    .replace(/(?:^|\b)(?:Father'?s?|Husband'?s?|Mother'?s?|Guardian'?s?|Name|Narne|Namo|Nene|Holder'?s?|Card|Neme|Nama|Fathor|Fathar|Falher|Fathsr|Fatner|Fathe|Fther|Feather|Fether|Husb|Son\s+of|Daughter\s+of|Wife\s+of)\b|S\/O|D\/O|W\/O\s*[:\-]?/gi, ' ')
     .replace(/[^A-Za-z\s]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
@@ -92,48 +88,81 @@ const cleanNameCandidate = (rawStr) => {
   if (!text) return null;
 
   const words = text.split(' ').filter(w => w.length > 0);
-
   const validWords = words.filter(word => {
     const lower = word.toLowerCase();
-    if (CNIC_NOISE_WORDS.has(lower)) return false;
+    if (CNIC_HEADER_NOISE.has(lower)) return false;
     if (word.length < 2) return false;
+    // Reject gibberish: word of 4+ characters with 0 vowels
+    const vowels = (lower.match(/[aeiouy]/g) || []).length;
+    if (word.length >= 4 && vowels === 0) return false;
+    // Reject 4+ consecutive consonants
+    if (/[bcdfghjklmnpqrstvwxyz]{4,}/i.test(lower)) return false;
     return true;
   });
 
   if (validWords.length < 1) return null;
+  // Limit to max 4 name words (e.g. "Muhammad Ali Raza Khan")
+  const trimmed = validWords.slice(0, 4);
 
-  return validWords
+  return trimmed
     .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
     .join(' ');
 };
 
 /**
- * Extract all dates from OCR text with flexible separators and digit misread fixes
+ * Normalize dates in OCR text
+ */
+const normalizeDatesInText = (textStr) => {
+  if (!textStr) return '';
+
+  let str = textStr;
+  const monthMap = {
+    jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
+    jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12'
+  };
+
+  // Convert month name dates e.g. "15 Aug 2001" or "15-AUG-2001"
+  str = str.replace(/\b([0-9]{1,2})\s*[\s.\-\/]\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s*[\s.\-\/]\s*([0-9]{4})\b/gi, (m, p1, p2, p3) => {
+    const d = p1.padStart(2, '0');
+    const mo = monthMap[p2.toLowerCase().substring(0, 3)] || '01';
+    return `${d}/${mo}/${p3}`;
+  });
+
+  // Convert punctuated dates e.g. "15.08.2001"
+  str = str.replace(/\b([0-9OolISBZ]{1,2})\s*[\.,:\-\/]\s*([0-9OolISBZ]{1,2})\s*[\.,:\-\/]\s*([0-9OolISBZ]{4})\b/gi, (m, p1, p2, p3) => {
+    const d = fixOcrDigits(p1).padStart(2, '0');
+    const mo = fixOcrDigits(p2).padStart(2, '0');
+    const y = fixOcrDigits(p3);
+    return `${d}/${mo}/${y}`;
+  });
+
+  return str;
+};
+
+/**
+ * Extract all dates from OCR text with context
  */
 const extractAllDatesFromText = (rawText) => {
   if (!rawText) return [];
   const clean = cleanOcrText(rawText);
+  const normalized = normalizeDatesInText(clean);
   const dates = [];
 
-  const regex = /([0-9OolISB]{1,2})[\s.\-\/,:]{1,3}([0-9OolISB]{1,2})[\s.\-\/,:]{1,3}([0-9OolISB]{4})/g;
-
+  const regex = /\b([0-9]{2})\/([0-9]{2})\/([0-9]{4})\b/g;
   let match;
-  while ((match = regex.exec(clean)) !== null) {
-    const dayVal = parseInt(fixOcrDigits(match[1]));
-    const monthVal = parseInt(fixOcrDigits(match[2]));
-    const yearVal = parseInt(fixOcrDigits(match[3]));
+  while ((match = regex.exec(normalized)) !== null) {
+    const dayVal = parseInt(match[1]);
+    const monthVal = parseInt(match[2]);
+    const yearVal = parseInt(match[3]);
 
     if (dayVal >= 1 && dayVal <= 31 && monthVal >= 1 && monthVal <= 12 && yearVal >= 1950 && yearVal <= 2035) {
-      const formattedDay = dayVal.toString().padStart(2, '0');
-      const formattedMonth = monthVal.toString().padStart(2, '0');
       const matchIndex = match.index;
-
-      const start = Math.max(0, matchIndex - 30);
-      const end = Math.min(clean.length, matchIndex + match[0].length + 30);
-      const context = clean.substring(start, end);
+      const start = Math.max(0, matchIndex - 35);
+      const end = Math.min(normalized.length, matchIndex + match[0].length + 35);
+      const context = normalized.substring(start, end);
 
       dates.push({
-        dateStr: `${formattedDay}/${formattedMonth}/${yearVal}`,
+        dateStr: `${match[1]}/${match[2]}/${match[3]}`,
         year: yearVal,
         context
       });
@@ -149,48 +178,76 @@ const extractAllDatesFromText = (rawText) => {
 const extractCNICData = (rawText) => {
   const text = rawText || '';
   const cleanText = cleanOcrText(text);
-  const lines = cleanText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  const normalizedText = normalizeDatesInText(cleanText);
+  const lines = normalizedText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
 
   console.log('--- OCR Raw Text ---');
   console.log(rawText);
   console.log('--- OCR Lines ---');
   lines.forEach((l, i) => console.log(`  [${i}]: "${l}"`));
 
-  // ===== 1. CNIC Number =====
+  // ===== 1. CNIC Number (13 digits: 5-7-1) =====
   let cnic = null;
-  const robustCnicPattern = /\b([0-9OolISB]{5})[-\s]?([0-9OolISB]{7})[-\s]?([0-9OolISB])\b/i;
-  const cnicMatch = cleanText.match(robustCnicPattern);
+
+  // Pattern A: Standard formatted or dashed/spaced CNIC: 35201-1234567-1 or 35201 1234567 1 or 35201.1234567.1
+  const cnicPattern = /\b([0-9OolISBZ]{5})[\s.\-\/]?([0-9OolISBZ]{7})[\s.\-\/]?([0-9OolISBZ])\b/i;
+  const cnicMatch = cleanText.match(cnicPattern);
   if (cnicMatch) {
-    const part1 = fixOcrDigits(cnicMatch[1]);
-    const part2 = fixOcrDigits(cnicMatch[2]);
-    const part3 = fixOcrDigits(cnicMatch[3]);
-    cnic = `${part1}-${part2}-${part3}`;
+    const p1 = fixOcrDigits(cnicMatch[1]);
+    const p2 = fixOcrDigits(cnicMatch[2]);
+    const p3 = fixOcrDigits(cnicMatch[3]);
+    if (p1.length === 5 && p2.length === 7 && p3.length === 1) {
+      cnic = `${p1}-${p2}-${p3}`;
+    }
+  }
+
+  // Pattern B: Search after keyword labels if not found
+  if (!cnic) {
+    const labelMatch = cleanText.match(/(?:Identity\s*Number|CNIC|NIC|Card\s*No|ID\s*No)[\s:\-]*([0-9OolISBZ\s.\-\/]{13,20})/i);
+    if (labelMatch) {
+      const digitsOnly = fixOcrDigits(labelMatch[1]).replace(/\D/g, '');
+      if (digitsOnly.length === 13) {
+        cnic = `${digitsOnly.slice(0, 5)}-${digitsOnly.slice(5, 12)}-${digitsOnly.slice(12)}`;
+      }
+    }
+  }
+
+  // Pattern C: Any continuous 13-digit sequence
+  if (!cnic) {
+    const rawDigits = fixOcrDigits(cleanText).replace(/[^0-9]/g, ' ');
+    const thirteenDigitMatch = rawDigits.match(/\b([1-8][0-9]{12})\b/);
+    if (thirteenDigitMatch) {
+      const d = thirteenDigitMatch[1];
+      cnic = `${d.slice(0, 5)}-${d.slice(5, 12)}-${d.slice(12)}`;
+    }
   }
 
   // ===== 2. Holder Name =====
   let name = null;
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (/(?:Name|Narne|Namo|Nene|Holder|Card|Nal|Neme|Nama)/i.test(line) && !/(?:Father|Husband|Mother|Date|Birth|CNIC|Identity|Gender|Sex|Fathor|Fathar|Falher|Fathsr|Fatner|Husb)/i.test(line)) {
+    if (/\b(?:Name|Narne|Namo|Nene|Holder|Neme|Nama)\b/i.test(line) &&
+        !/\b(?:Father|Husband|Mother|Date|Birth|CNIC|Identity|Gender|Sex|Country|Expiry|Issue|National|Database)\b/i.test(line)) {
       name = cleanNameCandidate(line);
       if (name && name.split(' ').length >= 2) break;
 
       for (let j = 1; j <= 2; j++) {
         const nextLine = lines[i + j];
         if (!nextLine) break;
-        if (/(?:Father|Husband|Mother|Date|Birth|CNIC|Identity|Gender|Sex|Country|Expiry|Issue|Card|National)/i.test(nextLine)) break;
+        if (/\b(?:Father|Husband|Mother|Date|Birth|CNIC|Identity|Gender|Sex|Country|Expiry|Issue|National|Republic|Database)\b/i.test(nextLine)) break;
         const cand = cleanNameCandidate(nextLine);
         if (cand && cand.split(' ').length >= 2) { name = cand; break; }
+        if (cand && !name) name = cand;
       }
       if (name) break;
     }
   }
 
-  // Fallback for Name: scan top lines for any 2+ word candidate that isn't header noise
+  // Fallback for Name: scan top 6 lines for valid 2+ word candidate that isn't header noise
   if (!name) {
-    for (let i = 0; i < lines.length; i++) {
+    for (let i = 0; i < Math.min(lines.length, 8); i++) {
       const line = lines[i];
-      if (/(?:Republic|Pakistan|National|Identity|Card|Islamic|Address|Expiry|Issue|Birth|Gender|Father|Husband)/i.test(line)) continue;
+      if (/(?:Republic|Pakistan|National|Identity|Card|Islamic|Address|Expiry|Issue|Birth|Gender|Father|Husband|NADRA|Database)/i.test(line)) continue;
       const cand = cleanNameCandidate(line);
       if (cand && cand.split(' ').length >= 2) {
         name = cand;
@@ -203,29 +260,32 @@ const extractCNICData = (rawText) => {
   let fatherName = null;
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (/(?:Father|Husband|Fathor|Fathar|Falher|Fathsr|Fatner|Fathe|Fther|Feather|Fether|Husb|S\/O|D\/O|W\/O|Son\s+of|Daughter\s+of|Wife\s+of)/i.test(line)) {
+    if (/\b(?:Father|Husband|Fathor|Fathar|Falher|Fathsr|Fatner|Fathe|Fther|Feather|Fether|Husb|Son\s+of|Daughter\s+of|Wife\s+of)\b|S\/O|D\/O|W\/O/i.test(line)) {
       fatherName = cleanNameCandidate(line);
       if (fatherName && fatherName.split(' ').length >= 2 && (!name || fatherName.toLowerCase() !== name.toLowerCase())) break;
 
       for (let j = 1; j <= 2; j++) {
         const nextLine = lines[i + j];
         if (!nextLine) break;
-        if (/(?:Date|Birth|CNIC|Identity|Gender|Sex|Country|Expiry|Issue|Card|National)/i.test(nextLine)) break;
+        if (/\b(?:Date|Birth|CNIC|Identity|Gender|Sex|Country|Expiry|Issue|Card|National|Database)\b/i.test(nextLine)) break;
         const cand = cleanNameCandidate(nextLine);
         if (cand && cand.split(' ').length >= 2 && (!name || cand.toLowerCase() !== name.toLowerCase())) {
           fatherName = cand;
           break;
+        }
+        if (cand && (!name || cand.toLowerCase() !== name.toLowerCase()) && !fatherName) {
+          fatherName = cand;
         }
       }
       if (fatherName) break;
     }
   }
 
-  // Fallback for Father Name: scan lines after holder name for another 2+ word candidate
+  // Fallback for Father Name: scan lines after holder name
   if (!fatherName) {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      if (/(?:Republic|Pakistan|National|Identity|Card|Islamic|Address|Expiry|Issue|Birth|Gender|CNIC|Date|Name)/i.test(line)) continue;
+      if (/(?:Republic|Pakistan|National|Identity|Card|Islamic|Address|Expiry|Issue|Birth|Gender|CNIC|Date|Name|NADRA|Database)/i.test(line)) continue;
       const cand = cleanNameCandidate(line);
       if (cand && cand.split(' ').length >= 2 && (!name || cand.toLowerCase() !== name.toLowerCase())) {
         fatherName = cand;
@@ -236,17 +296,18 @@ const extractCNICData = (rawText) => {
 
   // ===== 4. Date of Birth =====
   let dateOfBirth = null;
-  const allDates = extractAllDatesFromText(cleanText);
+  const allDates = extractAllDatesFromText(normalizedText);
 
-  // Attempt A: Context contains "Birth", "DOB", etc.
+  // Strategy A: Context contains "Birth", "DOB", etc.
   const birthDateObj = allDates.find(d => /Birth|DOB|D\.O\.B|Bate|Dote|Dafe/i.test(d.context));
   if (birthDateObj) {
     dateOfBirth = birthDateObj.dateStr;
   }
 
-  // Attempt B (Earliest Date Rule): DOB is ALWAYS the earliest date on a Pakistani CNIC (1950-2012)
+  // Strategy B (Earliest Valid Date Rule): DOB is ALWAYS the earliest date on a Pakistani CNIC (1950-2015)
   if (!dateOfBirth && allDates.length > 0) {
-    const birthCandidates = allDates.filter(d => d.year <= 2012 && d.year >= 1950);
+    const currentYear = new Date().getFullYear();
+    const birthCandidates = allDates.filter(d => d.year <= currentYear - 12 && d.year >= 1950);
     if (birthCandidates.length > 0) {
       birthCandidates.sort((a, b) => a.year - b.year);
       dateOfBirth = birthCandidates[0].dateStr;
@@ -278,7 +339,7 @@ const extractCNICData = (rawText) => {
     if (gender) break;
   }
 
-  // Gender fallback: scan entire text for standalone Male/Female
+  // Gender text search fallback
   if (!gender) {
     for (const line of lines) {
       const tokens = line.split(/[\s/,;:]+/);
@@ -291,9 +352,9 @@ const extractCNICData = (rawText) => {
     }
   }
 
-  // Gender fallback: infer from CNIC last digit (Pakistani CNICs: odd = male, even = female)
+  // Gender 100% Deterministic Fallback: NADRA Pakistani CNIC 13th digit (odd = male, even = female)
   if (!gender && cnic) {
-    const lastDigit = parseInt(cnic.replace(/-/g, '').slice(-1));
+    const lastDigit = parseInt(cnic.replace(/\D/g, '').slice(-1));
     if (!isNaN(lastDigit)) {
       gender = lastDigit % 2 !== 0 ? 'male' : 'female';
     }
@@ -302,16 +363,17 @@ const extractCNICData = (rawText) => {
   // ===== 6. Address =====
   let address = null;
   const addressPatterns = [
-    /(?:Address|Addr)\s*[:\-\/\s]+([A-Za-z0-9][A-Za-z0-9 ,.\/#\-]{10,})/im,
-    /(?:Address|Addr)\s*\n\s*([A-Za-z0-9][A-Za-z0-9 ,.\/#\-]{10,})/im,
+    /(?:Present\s*Address|Permanent\s*Address|Address|Addr)\s*[:\-\/\s]+([A-Za-z0-9][A-Za-z0-9 ,.\/#\-]{10,})/im,
+    /(?:Present\s*Address|Permanent\s*Address|Address|Addr)\s*\n\s*([A-Za-z0-9][A-Za-z0-9 ,.\/#\-]{10,})/im,
+    /(?:House\s*No|H\s*No|St\s*No|Street|Mohallah|Village|Tehsil|District)[\s:\-]+([A-Za-z0-9 ,.\/#\-]{10,})/im
   ];
 
   for (const pattern of addressPatterns) {
     const match = cleanText.match(pattern);
     if (match) {
-      address = match[1].trim().replace(/\s*(Country|Expiry|Date).*$/i, '').trim();
-      if (address.length < 10) address = null;
-      else break;
+      address = match[1].trim().replace(/\s*(Country|Expiry|Date|Issue|Stay).*$/i, '').trim();
+      if (address.length >= 10) break;
+      else address = null;
     }
   }
 
@@ -331,43 +393,66 @@ const extractCNICData = (rawText) => {
   return result;
 };
 
-// Board normalization dictionary for Pakistani Boards & common OCR misreads
+// Comprehensive Board normalization dictionary for 28+ Pakistani Boards & common OCR misreads
 const normalizeBoardName = (rawText) => {
   if (!rawText) return null;
   const str = rawText.toLowerCase();
 
-  // Known city/board mappings & common OCR misreads (e.g. Latiore -> Lahore)
-  if (/federal|fbise|islamabad/i.test(str)) return "FBISE Islamabad";
-  if (/lahore|latiore|lafore|lahor|lahere|lahr|latior/i.test(str)) return "BISE Lahore";
-  if (/gujranwala|gujranwla|gujrat/i.test(str)) return "BISE Gujranwala";
-  if (/rawalpindi|rawalpind|rwp|pindi/i.test(str)) return "BISE Rawalpindi";
-  if (/multan|mooltan/i.test(str)) return "BISE Multan";
-  if (/faisalabad|faislabad|lyallpur/i.test(str)) return "BISE Faisalabad";
-  if (/sargodha|sargoda/i.test(str)) return "BISE Sargodha";
-  if (/sahiwal|sahiwa/i.test(str)) return "BISE Sahiwal";
-  if (/bahawalpur|bahawlpur|bwl/i.test(str)) return "BISE Bahawalpur";
-  if (/dg\s*khan|d\.g\s*khan|dera\s*ghazi\s*khan/i.test(str)) return "BISE DG Khan";
-  if (/karachi|khi/i.test(str)) return "BISE Karachi";
-  if (/hyderabad/i.test(str)) return "BISE Hyderabad";
-  if (/sukkur/i.test(str)) return "BISE Sukkur";
-  if (/larkana/i.test(str)) return "BISE Larkana";
-  if (/mirpurkhas/i.test(str)) return "BISE Mirpurkhas";
-  if (/peshawar|psh/i.test(str)) return "BISE Peshawar";
-  if (/swat/i.test(str)) return "BISE Swat";
-  if (/kohat/i.test(str)) return "BISE Kohat";
-  if (/abbottabad|abottabad/i.test(str)) return "BISE Abbottabad";
-  if (/bannu/i.test(str)) return "BISE Bannu";
-  if (/mardan/i.test(str)) return "BISE Mardan";
-  if (/malakand/i.test(str)) return "BISE Malakand";
-  if (/quetta/i.test(str)) return "BISE Quetta";
-  if (/aga\s*khan|aku/i.test(str)) return "Aga Khan Board";
-  if (/cambridge|cie|edexcel|igcse/i.test(str)) return "Cambridge Board";
+  // Federal
+  if (/federal|fbise|islamabad|isb\b/i.test(str)) return "FBISE Islamabad";
+
+  // Punjab Boards
+  if (/lahore|latiore|lafore|lahor|lahere|lahr|latior|lhr\b/i.test(str)) return "BISE Lahore";
+  if (/gujranwala|gujranwla|gujrat|grw\b|sialkot/i.test(str)) return "BISE Gujranwala";
+  if (/rawalpindi|rawalpind|rwp\b|pindi|attock|chakwal|jhelum/i.test(str)) return "BISE Rawalpindi";
+  if (/multan|mooltan|mlt\b|khanewal|vehari/i.test(str)) return "BISE Multan";
+  if (/faisalabad|faislabad|lyallpur|fsd\b|jhang/i.test(str)) return "BISE Faisalabad";
+  if (/sargodha|sargoda|sgd\b|mianwali|bhakkar/i.test(str)) return "BISE Sargodha";
+  if (/sahiwal|sahiwa|swl\b|okara|pakpattan/i.test(str)) return "BISE Sahiwal";
+  if (/bahawalpur|bahawlpur|bwl\b|bwp\b|rahim\s*yar\s*khan/i.test(str)) return "BISE Bahawalpur";
+  if (/dg\s*khan|d\.g\s*khan|dera\s*ghazi\s*khan|dgk\b|muzaffargarh/i.test(str)) return "BISE DG Khan";
+  if (/pbte|punjab\s*board\s*of\s*technical|technical\s*education\s*punjab/i.test(str)) return "PBTE Lahore";
+
+  // Sindh Boards
+  if (/bsek|karachi\s*secondary|secondary\s*karachi/i.test(str)) return "BISE Karachi (BSEK)";
+  if (/biek|karachi\s*inter|karachi|khi\b/i.test(str)) return "BISE Karachi";
+  if (/hyderabad|hyd\b|jamshoro|thatta/i.test(str)) return "BISE Hyderabad";
+  if (/sukkur|skr\b|khairpur/i.test(str)) return "BISE Sukkur";
+  if (/larkana|lrk\b|shikarpur|jacobabad/i.test(str)) return "BISE Larkana";
+  if (/mirpurkhas|mirpur\s*khas|mpk\b|sanghar/i.test(str)) return "BISE Mirpurkhas";
+  if (/shaheed\s*benazirabad|benazirabad|nawabshah|sba\b/i.test(str)) return "BISE Shaheed Benazirabad";
+  if (/sbte|sindh\s*board\s*of\s*technical/i.test(str)) return "SBTE Karachi";
+
+  // Khyber Pakhtunkhwa (KPK) Boards
+  if (/peshawar|psh\b|charsadda/i.test(str)) return "BISE Peshawar";
+  if (/abbottabad|abottabad|atd\b|hazara|haripur|mansehra/i.test(str)) return "BISE Abbottabad";
+  if (/swat|saidu\s*sharif|shangla/i.test(str)) return "BISE Swat";
+  if (/malakand|dir\b|bajaur/i.test(str)) return "BISE Malakand";
+  if (/mardan|swabi/i.test(str)) return "BISE Mardan";
+  if (/kohat|hangu|karak/i.test(str)) return "BISE Kohat";
+  if (/bannu|lakki\s*marwat/i.test(str)) return "BISE Bannu";
+  if (/di\s*khan|d\.i\s*khan|dera\s*ismail\s*khan/i.test(str)) return "BISE DI Khan";
+
+  // Balochistan Boards
+  if (/quetta|qta\b|balochistan\s*board/i.test(str)) return "BISE Quetta";
+  if (/turbat|kech|gwadar/i.test(str)) return "BISE Turbat";
+  if (/khuzdar|kalat/i.test(str)) return "BISE Khuzdar";
+  if (/loralai|zhob/i.test(str)) return "BISE Loralai";
+
+  // Azad Jammu & Kashmir (AJK)
+  if (/mirpur|ajk\b|azad\s*kashmir|azad\s*jammu/i.test(str)) return "BISE Mirpur (AJK)";
+
+  // International / Specialized Boards
+  if (/aga\s*khan|aku|aku-eb|akueb/i.test(str)) return "Aga Khan Board";
+  if (/cambridge|cie|edexcel|igcse|gce|o\s*level|o-level|a\s*level|a-level|pearson/i.test(str)) return "Cambridge Board";
+  if (/wafaq|madaris|tanzeem/i.test(str)) return "Wafaq-ul-Madaris";
 
   return null;
 };
 
 // Convert number words in English (e.g., "Nine Hundred Fifty") to digits
 const wordsToNumber = (text) => {
+  if (!text) return null;
   const wordsMap = {
     zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9,
     ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16,
@@ -411,21 +496,19 @@ const wordsToNumber = (text) => {
   return null;
 };
 
+/**
+ * Extract Academic Data (Matric / Intermediate / Transcript) with high precision
+ */
 const extractAcademicData = (text) => {
   const cleanText = cleanOcrText(text);
 
   // 1. Board Name Detection & Normalization
   let board = null;
-  const biseMatch = text.match(/(?:Board\s+of\s+Intermediate(?:\s+(?:and|&|&amp;)?\s+Secondary\s+Education)?|BISE)[\s,:]*([A-Za-z]+)/i);
+  const biseMatch = text.match(/(?:Board\s+of\s+Intermediate(?:\s+(?:and|&|&amp;)?\s+Secondary\s+Education)?|BISE)[\s,:]*([A-Za-z\s]+?)(?:,|\.|\n|$)/i);
   if (biseMatch) {
     const rawCity = biseMatch[1].trim();
     board = normalizeBoardName(rawCity);
-    if (!board) {
-      const formattedCity = rawCity.charAt(0).toUpperCase() + rawCity.slice(1).toLowerCase();
-      board = `BISE ${formattedCity}`;
-    }
   }
-  
   if (!board) {
     board = normalizeBoardName(text);
   }
@@ -433,7 +516,7 @@ const extractAcademicData = (text) => {
   // 2. Passing Year Extraction
   let passingYear = null;
   const cleanedForYear = text.replace(/([12])([OolISBZ])([0-9OolISBZ]{2})/g, (m, p1, p2, p3) => `${p1}${fixOcrDigits(p2)}${fixOcrDigits(p3)}`);
-  
+
   const annualExamMatch = cleanedForYear.match(/(?:Annual|Supplementary|Special|Bi-Annual|Spring|Fall)\s+(?:Exam(?:ination)?\s+)?([12][09]\d{2})/i);
   const examMatch = cleanedForYear.match(/(?:Examination|Exam|Session|Passing|Held\s+in|Year|Dated)[\s,:]+([12][09]\d{2})/i);
   const rangeMatch = cleanedForYear.match(/(?:20\d{2}|19\d{2})\s*-\s*(20\d{2}|19\d{2})/);
@@ -459,7 +542,14 @@ const extractAcademicData = (text) => {
   }
 
   // 3. Roll Number
+  let rollNumber = null;
   const rollMatch = text.match(/Roll\s*(?:No|Number|#)?[\s:.]+([A-Za-z0-9-]+)/i);
+  if (rollMatch) {
+    const rawRoll = rollMatch[1].trim();
+    if (rawRoll.length >= 4 && rawRoll.length <= 15) {
+      rollNumber = rawRoll;
+    }
+  }
 
   // 4. Obtained Marks & Total Marks Extraction
   let obtainedMarks = null;
@@ -472,7 +562,7 @@ const extractAcademicData = (text) => {
     .replace(/([0-9])([OolISBZ])([0-9])/gi, (m, p1, p2, p3) => `${p1}${fixOcrDigits(p2)}${p3}`)
     .replace(/([0-9]{2,3})([OolISBZ])\b/gi, (m, p1, p2) => `${p1}${fixOcrDigits(p2)}`);
 
-  // a) Ratio patterns (e.g. 950 / 1100, 450/550, 450 out of 550, 450 of 550, 950-1100, 950:1100)
+  // a) Ratio patterns (e.g. 950 / 1100, 450/550, 450 out of 550, 950-1100, 950:1100)
   const ratioMatches = [...cleanedNumText.matchAll(/\b([0-9OolISBZ]{2,4})\s*(?:\/|\\|out\s+of|\bof\b|:|-)\s*([0-9OolISBZ]{3,4})\b/gi)];
   for (const match of ratioMatches) {
     const obtCandidate = parseInt(fixOcrDigits(match[1]));
@@ -488,7 +578,7 @@ const extractAcademicData = (text) => {
 
   // b) Explicit field labels if missing
   if (!obtainedMarks) {
-    const obtMatch = cleanedNumText.match(/(?:Marks\s*Obtained|Obtained\s*Marks|Total\s*Marks\s*Obtained|Marks\s*Secured|Secured\s*Marks|Marks\s*Obt|Obt\s*Marks|Obtained|securing|passed\s+with|with)[\s:\-]*([0-9OolISBZ]{3,4})\s*(?:marks)?\b/i)
+    const obtMatch = cleanedNumText.match(/(?:Marks\s*Obtained|Obtained\s*Marks|Total\s*Marks\s*Obtained|Marks\s*Secured|Secured\s*Marks|Marks\s*Obt|Obt\s*Marks|Obtained|securing|passed\s+with)[\s:\-]*([0-9OolISBZ]{3,4})\s*(?:marks)?\b/i)
       || cleanedNumText.match(/([0-9OolISBZ]{3,4})\s*marks\b/i);
     if (obtMatch) {
       const val = parseInt(fixOcrDigits(obtMatch[1]));
@@ -527,7 +617,7 @@ const extractAcademicData = (text) => {
     }
   }
 
-  // e) Generic Pakistani total marks scan if total is still missing
+  // e) Generic Pakistani standard total marks scan if total is still missing
   if (!totalMarks) {
     const stdTotals = [1100, 550, 1050, 500, 1200, 850, 800, 600];
     for (const stdTot of stdTotals) {
@@ -548,7 +638,7 @@ const extractAcademicData = (text) => {
     }
   }
 
-  // g) Fallback: If totalMarks is missing but obtainedMarks is found, default to standard Pakistani total (1100 or 550)
+  // g) Auto-deduce standard total marks if obtained is found
   if (obtainedMarks && !totalMarks) {
     totalMarks = obtainedMarks > 550 ? 1100 : 550;
   }
@@ -567,7 +657,68 @@ const extractAcademicData = (text) => {
     percentage = parseFloat(((obtainedMarks / totalMarks) * 100).toFixed(2));
   }
 
-  const gradeMatch = text.match(/Grade[\s:]+([A-F][+-]?)/i);
+  let grade = null;
+  const gradeMatch = text.match(/Grade[\s:]+([A-F][+-]?|A-1)/i);
+  if (gradeMatch) {
+    grade = gradeMatch[1].toUpperCase();
+  } else if (percentage) {
+    if (percentage >= 80) grade = 'A+';
+    else if (percentage >= 70) grade = 'A';
+    else if (percentage >= 60) grade = 'B';
+    else if (percentage >= 50) grade = 'C';
+    else if (percentage >= 40) grade = 'D';
+    else if (percentage >= 33) grade = 'E';
+    else grade = 'F';
+  }
+
+  // Extract candidate name from academic certificate
+  let name = null;
+  const lines = cleanText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/(?:Name\s*(?:of\s+)?(?:Candidate|Student|Examinee)|Student\s*Name|Candidate\s*Name)\s*[:\-]?/i.test(line)
+        && !/(?:Father|Husband|Mother|Board|Institution|School|College)/i.test(line)) {
+      const sameLineMatch = line.match(/(?:Name\s*(?:of\s+)?(?:Candidate|Student|Examinee)|Student\s*Name|Candidate\s*Name)\s*[:\-]?\s*(.+)$/i);
+      if (sameLineMatch && sameLineMatch[1]) {
+        const val = cleanNameCandidate(sameLineMatch[1]);
+        if (val && val.length >= 3) name = val;
+      }
+      if (!name) {
+        for (let j = 1; j <= 2; j++) {
+          const nextLine = lines[i + j];
+          if (!nextLine) break;
+          if (/(?:Father|Husband|Mother|Board|Institution|School|College|Roll|Marks)/i.test(nextLine)) break;
+          const val = cleanNameCandidate(nextLine);
+          if (val && val.length >= 3) { name = val; break; }
+        }
+      }
+      if (name) break;
+    }
+  }
+
+  // Extract father name
+  let fatherName = null;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/(?:Father|Guardian|Parent)[\s']?s?\s*(?:Name)?\s*[:\-]?/i.test(line)
+        && !/(?:Date|Birth|CNIC|Identity|Gender|Board|Institution|School)/i.test(line)) {
+      const sameLineMatch = line.match(/(?:Father|Guardian|Parent)[\s']?s?\s*(?:Name)?\s*[:\-]?\s*(.+)$/i);
+      if (sameLineMatch && sameLineMatch[1]) {
+        const val = cleanNameCandidate(sameLineMatch[1]);
+        if (val && val.length >= 3) fatherName = val;
+      }
+      if (!fatherName) {
+        for (let j = 1; j <= 2; j++) {
+          const nextLine = lines[i + j];
+          if (!nextLine) break;
+          if (/(?:Name|Roll|Marks|Board|Institution|School|College|Date)/i.test(nextLine)) break;
+          const val = cleanNameCandidate(nextLine);
+          if (val && val.length >= 3) { fatherName = val; break; }
+        }
+      }
+      if (fatherName) break;
+    }
+  }
 
   const subjectPatterns = {
     'Physics': /Physics[\s:]+(\d+)/i,
@@ -591,12 +742,14 @@ const extractAcademicData = (text) => {
 
   return {
     percentage: percentage,
-    grade: gradeMatch ? gradeMatch[1] : null,
+    grade: grade,
     passing_year: passingYear,
     board: board,
-    roll_number: rollMatch ? rollMatch[1] : null,
+    roll_number: rollNumber,
     obtained_marks: obtainedMarks,
     total_marks: totalMarks,
+    name: name,
+    father_name: fatherName,
     subject_scores: subjectScores,
     raw_text: text
   };

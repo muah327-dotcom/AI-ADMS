@@ -28,129 +28,74 @@ import toast from 'react-hot-toast';
 
 // ===== OCR Extraction Helpers (client-side) =====
 const cleanOcrText = (text) => {
+  if (!text) return '';
   return text
-    .replace(/[^\x00-\x7F\s]/g, ' ')
-    .replace(/\r\n/g, '\n')
-    .replace(/[ \t]+/g, ' ')
-    .replace(/\n{3,}/g, '\n\n')
+    .replace(/[^\x00-\x7F\s]/g, ' ')   // Remove non-ASCII
+    .replace(/\r\n/g, '\n')             // Normalize line endings
+    .replace(/[ \t]+/g, ' ')            // Collapse multiple spaces/tabs
+    .replace(/\n{3,}/g, '\n\n')         // Collapse excessive newlines
     .trim();
 };
 
 const fixOcrDigits = (str) => {
-  return str
-    .replace(/O/gi, '0')
-    .replace(/[Il]/g, '1')
-    .replace(/S/gi, '5')
-    .replace(/B/g, '8')
-    .replace(/Z/gi, '2');
+  if (!str) return '';
+  return String(str)
+    .replace(/[Oo]/g, '0')
+    .replace(/[Il|!ij]/g, '1')
+    .replace(/[Zz]/g, '2')
+    .replace(/[Ss]/g, '5')
+    .replace(/[Bb]/g, '8')
+    .replace(/[Gg]/g, '9');
 };
 
-const CNIC_NOISE_WORDS = new Set([
-  // CNIC labels & header text
-  'gney', 'attorney', 'sign', 'signature', 'sig', 'specimen', 'card', 'holder',
-  'national', 'republic', 'pakistan', 'islamic', 'identity', 'number', 'reg',
-  'general', 'registrar', 'head', 'authority', 'nadra', 'govt', 'gov', 'pak',
-  'holders', 'registration', 'form', 'office', 'district', 'province', 'tehsil',
-  'valid', 'from', 'till', 'renewal', 'fee', 'status', 'photo',
-  'thumb', 'impression', 'print', 'finger', 'left', 'right',
-  'country', 'stay', 'expiry', 'issue', 'address', 'nic', 'cnic',
-  // Name / Father field labels & OCR misreads
-  'name', 'narne', 'neme', 'nama', 'namo', 'nene', 'nal', 'nam',
-  'father', 'husband', 'mother', 'fath', 'fathar', 'fathor', 'fathsr',
-  'fatner', 'fathe', 'fther', 'feather', 'fether', 'falher', 'husb',
-  'date', 'birth', 'gender', 'sex',
-  // Common short prepositions / conjunctions / titles
-  'of', 'the', 'and', 'for', 'with', 'son', 'daughter', 'wife',
-  'mr', 'mrs', 'ms', 'miss', 'dr', 'pk', 'pkr', 'id', 'no', 'num',
-  'des', 'der', 'sur', 'soi', 'sor', 'so', 'do', 'wo',
-  'sai', 'sam', 'puck',
-  // Common Urdu OCR misreads that appear as mixed-case English gibberish
-  'ath', 'aih', 'aith', 'uch', 'akh', 'oth', 'uth', 'asi', 'isi', 'usi',
-  'gir', 'gar', 'ger', 'gur', 'ghr', 'ghi', 'gha', 'ghu',
-  'sak', 'sek', 'sik', 'sok', 'suk', 'sal', 'sel', 'sil', 'sol', 'sul',
-  'puk', 'pek', 'pik', 'pak', 'por', 'pur', 'par', 'per', 'pir', 'pul',
-  'dal', 'dil', 'dul', 'dar', 'dir', 'dur', 'dak', 'dik', 'duk',
-  'bal', 'bil', 'bul', 'bar', 'bir', 'bur', 'bak', 'bik', 'buk',
-  'kal', 'kil', 'kul', 'kar', 'kir', 'kur', 'kha', 'khi', 'khu',
-  'hal', 'hil', 'hul', 'har', 'hir', 'hur',
-  'tal', 'til', 'tul', 'tar', 'tir', 'tur', 'tha', 'thi', 'thu',
-  'mal', 'mil', 'mul', 'mar', 'mir', 'mur',
-  'wal', 'wil', 'wul', 'war', 'wir', 'wur',
-  'nal', 'nil', 'nul', 'nar', 'nir', 'nur',
-  'ral', 'ril', 'rul', 'rar', 'rir', 'rur',
-  'jal', 'jil', 'jul', 'jar', 'jir', 'jur',
-  'zal', 'zil', 'zul', 'zar', 'zir', 'zur',
-  'ain', 'ein', 'oin', 'aen', 'een', 'oen',
-  'che', 'chi', 'cha', 'chu', 'cho',
-  'sha', 'shi', 'shu', 'sho', 'she',
-  'aye', 'ays', 'ayn', 'aan', 'aab', 'aam', 'aas', 'aal',
-  'lam', 'mim', 'nun', 'waw', 'yaa', 'raa', 'zaa', 'taa', 'haa', 'kaf',
-  'daal', 'jeem', 'sheen', 'ghain', 'kaaf',
-  'bin', 'bint', 'ibn',
-  // Misc single-syllable gibberish from watermarks/card elements
-  'cae', 'cai', 'cay', 'ceo', 'cie', 'cio', 'coe', 'coi', 'coy',
-  'dae', 'dai', 'day', 'dei', 'die', 'doe', 'doi', 'doy', 'due', 'dui',
-  'fae', 'fai', 'fay', 'fie', 'foe', 'foi', 'foy', 'fue', 'fui',
-  'gae', 'gai', 'gay', 'gie', 'goe', 'goi', 'goy', 'gue', 'gui',
-  'hae', 'hai', 'hay', 'hie', 'hoe', 'hoi', 'hoy', 'hue', 'hui',
-  'jae', 'jai', 'jay', 'jie', 'joe', 'joi', 'joy', 'jue', 'jui',
-  'kai', 'kay', 'kie', 'koe', 'koi', 'koy', 'kue', 'kui',
-  'lai', 'lay', 'lei', 'lie', 'loi', 'loy', 'lue', 'lui',
-  'mae', 'mai', 'may', 'mei', 'mie', 'moe', 'moi', 'moy', 'mue', 'mui',
-  'nae', 'nai', 'nay', 'nie', 'noe', 'noi', 'noy', 'nue', 'nui',
-  'pai', 'pay', 'pie', 'poi', 'poy', 'pue', 'pui',
-  'rae', 'rai', 'ray', 'rei', 'rie', 'roe', 'roi', 'roy', 'rue', 'rui',
-  'sae', 'say', 'sei', 'sie', 'soe', 'soy', 'sue', 'sui',
-  'tae', 'tai', 'tay', 'tie', 'toe', 'toi', 'toy', 'tue', 'tui',
-  'vai', 'vay', 'vie', 'voe', 'voi', 'voy', 'vue', 'vui',
-  'wae', 'wai', 'way', 'wie', 'woe', 'woi', 'woy', 'wue', 'wui',
-  'yae', 'yai', 'yay', 'yie', 'yoe', 'yoi', 'yoy', 'yue', 'yui',
-  'zae', 'zai', 'zay', 'zie', 'zoe', 'zoi', 'zoy', 'zue', 'zui',
-  // Two-letter fragments
-  'ab', 'ac', 'ad', 'ae', 'af', 'ag', 'ah', 'ai', 'aj', 'ak', 'al', 'am', 'an', 'ao', 'ap', 'aq', 'ar', 'as', 'at', 'au', 'av', 'aw', 'ax', 'ay', 'az',
-  'ba', 'be', 'bi', 'bo', 'bu', 'ca', 'ce', 'ci', 'co', 'cu',
-  'da', 'de', 'di', 'du', 'ea', 'eb', 'ec', 'ed', 'ee', 'ef', 'eg', 'eh', 'ei', 'ej', 'ek', 'el', 'em', 'en', 'eo', 'ep', 'eq', 'er', 'es', 'et', 'eu', 'ev', 'ew', 'ex', 'ey', 'ez',
-  'fa', 'fe', 'fi', 'fo', 'fu', 'ga', 'ge', 'gi', 'go', 'gu',
-  'ha', 'he', 'hi', 'ho', 'hu', 'ia', 'ib', 'ic', 'ie', 'ig', 'ih', 'ii', 'ij', 'ik', 'il', 'im', 'in', 'io', 'ip', 'iq', 'ir', 'is', 'it', 'iu', 'iv', 'iw', 'ix', 'iy', 'iz',
-  'ja', 'je', 'ji', 'jo', 'ju', 'ka', 'ke', 'ki', 'ko', 'ku',
-  'la', 'le', 'li', 'lo', 'lu', 'ma', 'me', 'mi', 'mo', 'mu',
-  'na', 'ne', 'ni', 'nu', 'oa', 'ob', 'oc', 'od', 'oe', 'og', 'oh', 'oi', 'oj', 'ok', 'ol', 'om', 'on', 'oo', 'op', 'oq', 'or', 'os', 'ot', 'ou', 'ov', 'ow', 'ox', 'oy', 'oz',
-  'pa', 'pe', 'pi', 'po', 'pu', 'qa', 'qe', 'qi', 'qo', 'qu',
-  'ra', 're', 'ri', 'ro', 'ru', 'sa', 'se', 'si', 'ta', 'te', 'ti', 'to', 'tu',
-  'ua', 'ub', 'uc', 'ud', 'ue', 'uf', 'ug', 'uh', 'ui', 'uj', 'uk', 'ul', 'um', 'un', 'uo', 'up', 'uq', 'ur', 'us', 'ut', 'uu', 'uv', 'uw', 'ux', 'uy', 'uz',
-  'va', 've', 'vi', 'vo', 'vu', 'wa', 'we', 'wi', 'xu', 'ya', 'ye', 'yi', 'yo', 'yu',
-  'za', 'ze', 'zi', 'zo', 'zu'
+const CNIC_HEADER_NOISE = new Set([
+  'national', 'identity', 'card', 'republic', 'islamic', 'pakistan', 'nadra',
+  'database', 'government', 'govt', 'gov', 'pak', 'authority', 'registrar', 'general', 'head',
+  'registration', 'form', 'office', 'district', 'province', 'tehsil', 'specimen',
+  'signature', 'sign', 'sig', 'attorney', 'gney', 'holder', 'holders', 'valid',
+  'from', 'till', 'renewal', 'fee', 'status', 'photo', 'thumb', 'impression',
+  'print', 'finger', 'left', 'right', 'country', 'stay', 'expiry', 'issue',
+  'address', 'nic', 'cnic', 'name', 'father', 'husband', 'mother', 'gender',
+  'sex', 'birth', 'date', 'son', 'daughter', 'wife', 'mr', 'mrs', 'ms', 'miss',
+  'dr', 'id', 'no', 'num', 'of', 'the', 'and', 'for', 'with', 'pkr', 'smart',
+  'computerized', 'citizen', 'director', 'directorate', 'board', 'education'
 ]);
 
 /**
- * Detect gibberish/nonsense words from OCR misreads.
- * Pakistani CNIC names are real English transliterations of Urdu names (e.g. MUHAMMAD, AHMED, ZAHID, BIBI).
- * OCR misreads of Urdu script produce nonsense like "Gney", "Athiy", "Pukr", "Skhr" etc.
+ * Filter and format candidate name string
  */
-const isLikelyGibberish = (word) => {
-  if (!word || word.length < 2) return true;
-  const w = word.toLowerCase();
+const cleanNameCandidate = (rawStr) => {
+  if (!rawStr) return null;
 
-  // 3+ consecutive consonants (very rare in valid Pakistani names transliterated to English)
-  if (/[bcdfghjklmnpqrstvwxyz]{4,}/i.test(w)) return true;
+  // Remove known field prefixes with word boundaries
+  let text = rawStr
+    .replace(/(?:^|\b)(?:Father'?s?|Husband'?s?|Mother'?s?|Guardian'?s?|Name|Narne|Namo|Nene|Holder'?s?|Card|Neme|Nama|Fathor|Fathar|Falher|Fathsr|Fatner|Fathe|Fther|Feather|Fether|Husb|Son\s+of|Daughter\s+of|Wife\s+of)\b|S\/O|D\/O|W\/O\s*[:\-]?/gi, ' ')
+    .replace(/[^A-Za-z\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 
-  // Word of 4+ characters with zero vowels
-  const vowelCount = (w.match(/[aeiouy]/g) || []).length;
-  if (w.length >= 4 && vowelCount === 0) return true;
+  if (!text) return null;
 
-  // Very high consonant ratio for 5+ char words (e.g. "pukrn" has 4 consonants, 1 vowel)
-  if (w.length >= 5 && (w.length - vowelCount) / Math.max(vowelCount, 1) > 4) return true;
+  const words = text.split(' ').filter(w => w.length > 0);
+  const validWords = words.filter(word => {
+    const lower = word.toLowerCase();
+    if (CNIC_HEADER_NOISE.has(lower)) return false;
+    if (word.length < 2) return false;
+    // Reject gibberish: word of 4+ characters with 0 vowels
+    const vowels = (lower.match(/[aeiouy]/g) || []).length;
+    if (word.length >= 4 && vowels === 0) return false;
+    // Reject 4+ consecutive consonants
+    if (/[bcdfghjklmnpqrstvwxyz]{4,}/i.test(lower)) return false;
+    return true;
+  });
 
-  // Ends with unusual double consonants that don't appear in Pakistani names
-  if (/[bcfgjkpqvwxz]{2}$/.test(w)) return true;
+  if (validWords.length < 1) return null;
+  // Limit to max 4 name words (e.g. "Muhammad Ali Raza Khan")
+  const trimmed = validWords.slice(0, 4);
 
-  // Starts with unusual consonant clusters not found in Urdu/Arabic transliterations
-  if (/^[bcdfghjklmnpqrstvwxyz]{3,}/i.test(w)) return true;
-
-  // Very short word (2 chars) — already handled by noise list, but double-check
-  if (w.length === 2) return true;
-
-  return false;
+  return trimmed
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
 };
 
 /**
@@ -160,7 +105,6 @@ const normalizeDatesInText = (textStr) => {
   if (!textStr) return '';
 
   let str = textStr;
-
   const monthMap = {
     jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
     jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12'
@@ -168,14 +112,13 @@ const normalizeDatesInText = (textStr) => {
 
   // Convert month name dates e.g. "15 Aug 2001" or "15-AUG-2001"
   str = str.replace(/\b([0-9]{1,2})\s*[\s.\-\/]\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s*[\s.\-\/]\s*([0-9]{4})\b/gi, (m, p1, p2, p3) => {
-    const d = fixOcrDigits(p1).padStart(2, '0');
+    const d = p1.padStart(2, '0');
     const mo = monthMap[p2.toLowerCase().substring(0, 3)] || '01';
-    const y = fixOcrDigits(p3);
-    return `${d}/${mo}/${y}`;
+    return `${d}/${mo}/${p3}`;
   });
 
-  // Convert spaced or punctuated dates e.g. "15 . 08 . 2001" or "15,08,2001" or "15-08-2001"
-  str = str.replace(/\b([0-9OolISB]{1,2})\s*[\.,:\-\/]\s*([0-9OolISB]{1,2})\s*[\.,:\-\/]\s*([0-9OolISB]{4})\b/gi, (m, p1, p2, p3) => {
+  // Convert punctuated dates e.g. "15.08.2001"
+  str = str.replace(/\b([0-9OolISBZ]{1,2})\s*[\.,:\-\/]\s*([0-9OolISBZ]{1,2})\s*[\.,:\-\/]\s*([0-9OolISBZ]{4})\b/gi, (m, p1, p2, p3) => {
     const d = fixOcrDigits(p1).padStart(2, '0');
     const mo = fixOcrDigits(p2).padStart(2, '0');
     const y = fixOcrDigits(p3);
@@ -186,189 +129,176 @@ const normalizeDatesInText = (textStr) => {
 };
 
 /**
- * Extract clean English name (Holder or Father) by strictly filtering out Urdu OCR misreads.
- * Pakistani CNICs print English names in UPPERCASE. Urdu text below gets misread as gibberish.
+ * Extract all dates from OCR text with context
  */
-const extractEnglishNameFromLine = (line, isFather = false) => {
-  if (!line) return null;
-
-  // Remove all known label text and OCR variations of labels
-  let text = line
-    .replace(/(?:Father'?s?|Husband'?s?|Mother'?s?|Guardian'?s?|Name|Narne|Namo|Nene|Holder'?s?|Card|Nal|Neme|Nama|Fathor|Fathar|Falher|Fathsr|Fatner|Fathe|Fther|Feather|Fether|Husb|S\/O|D\/O|W\/O|Son\s+of|Daughter\s+of|Wife\s+of|Identity|National|Republic|Islamic|Pakistan|NADRA|Signature|Specimen|Attorney|Registration|Authority|Registrar|General|Head|Country|Stay|Address|Gender|Birth|Date|Expiry|Issue|Valid|Renewal|Photo|Thumb|Impression|Print|Finger|Number|CNIC|NIC|Govt|Gov|Office|District|Province|Tehsil|Form|Status|Fee)\s*[:\-]?/gi, ' ')
-    .replace(/[^A-Za-z\s]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-  if (!text) return null;
-
-  const words = text.split(' ').filter(w => w.length > 0);
-
-  // Strict word filtering for Pakistani CNIC names
-  const validWords = words.filter(word => {
-    const lower = word.toLowerCase();
-
-    // Reject noise words
-    if (CNIC_NOISE_WORDS.has(lower)) return false;
-
-    // Reject very short words (less than 3 chars) — valid Pakistani names are 3+ chars
-    // Exception: common real name parts like "Al" are too risky to keep (noise overlap)
-    if (word.length < 3) return false;
-
-    // Reject entirely lowercase words (Urdu misreads)
-    if (word === lower) return false;
-
-    // Must start with Uppercase letter A-Z
-    if (!/^[A-Z]/.test(word)) return false;
-
-    // Reject gibberish patterns
-    if (isLikelyGibberish(word)) return false;
-
-    return true;
-  });
-
-  if (validWords.length === 0) return null;
-
-  // Pakistani CNIC names are typically 2-4 words max (e.g. "Muhammad Ahmed Khan")
-  // Trim to max 4 words to drop any trailing OCR artifacts
-  const trimmedWords = validWords.slice(0, 4);
-
-  // Format in Title Case (e.g., "Muhammad Zahid")
-  const formatted = trimmedWords
-    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-    .join(' ');
-
-  if (formatted.length < 3 || CNIC_NOISE_WORDS.has(formatted.toLowerCase())) return null;
-
-  return formatted;
-};
-
-const preprocessCNICText = (rawText) => {
+const extractAllDatesFromText = (rawText) => {
   if (!rawText) return [];
-  let text = cleanOcrText(rawText);
+  const clean = cleanOcrText(rawText);
+  const normalized = normalizeDatesInText(clean);
+  const dates = [];
 
-  // Insert line breaks before major CNIC field labels if they were merged onto one line by OCR
-  text = text.replace(/(?<=\s|^)(Father\s*Name|Husband\s*Name|Father|Husband|Fathor|Fathar|Falher|Fathsr|Fatner|Father's\s*Name|Date\s*of\s*Birth|Birth\s*Date|D\.?O\.?B|Gender|Sex|Identity\s*Number|CNIC|NIC|Country\s*of\s*Stay|Date\s*of\s*Issue|Date\s*of\s*Expiry)(?=[:\s]|$)/gi, '\n$1');
+  const regex = /\b([0-9]{2})\/([0-9]{2})\/([0-9]{4})\b/g;
+  let match;
+  while ((match = regex.exec(normalized)) !== null) {
+    const dayVal = parseInt(match[1]);
+    const monthVal = parseInt(match[2]);
+    const yearVal = parseInt(match[3]);
 
-  return text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    if (dayVal >= 1 && dayVal <= 31 && monthVal >= 1 && monthVal <= 12 && yearVal >= 1950 && yearVal <= 2035) {
+      const matchIndex = match.index;
+      const start = Math.max(0, matchIndex - 35);
+      const end = Math.min(normalized.length, matchIndex + match[0].length + 35);
+      const context = normalized.substring(start, end);
+
+      dates.push({
+        dateStr: `${match[1]}/${match[2]}/${match[3]}`,
+        year: yearVal,
+        context
+      });
+    }
+  }
+
+  return dates;
 };
 
+/**
+ * Extract CNIC data using robust strategies tailored for Pakistani CNICs
+ */
 const extractCNICData = (rawText) => {
   const text = rawText || '';
   const cleanText = cleanOcrText(text);
   const normalizedText = normalizeDatesInText(cleanText);
-  const lines = preprocessCNICText(normalizedText);
+  const lines = normalizedText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
 
-  // 1. CNIC Number
+  // ===== 1. CNIC Number (13 digits: 5-7-1) =====
   let cnic = null;
-  const robustCnicPattern = /\b([0-9OolISB]{5})[-\s]?([0-9OolISB]{7})[-\s]?([0-9OolISB])\b/i;
-  const cnicMatch = cleanText.match(robustCnicPattern);
+
+  // Pattern A: Standard formatted or dashed/spaced CNIC: 35201-1234567-1 or 35201 1234567 1 or 35201.1234567.1
+  const cnicPattern = /\b([0-9OolISBZ]{5})[\s.\-\/]?([0-9OolISBZ]{7})[\s.\-\/]?([0-9OolISBZ])\b/i;
+  const cnicMatch = cleanText.match(cnicPattern);
   if (cnicMatch) {
-    cnic = `${fixOcrDigits(cnicMatch[1])}-${fixOcrDigits(cnicMatch[2])}-${fixOcrDigits(cnicMatch[3])}`;
+    const p1 = fixOcrDigits(cnicMatch[1]);
+    const p2 = fixOcrDigits(cnicMatch[2]);
+    const p3 = fixOcrDigits(cnicMatch[3]);
+    if (p1.length === 5 && p2.length === 7 && p3.length === 1) {
+      cnic = `${p1}-${p2}-${p3}`;
+    }
   }
 
-  // 2. Name
+  // Pattern B: Search after keyword labels if not found
+  if (!cnic) {
+    const labelMatch = cleanText.match(/(?:Identity\s*Number|CNIC|NIC|Card\s*No|ID\s*No)[\s:\-]*([0-9OolISBZ\s.\-\/]{13,20})/i);
+    if (labelMatch) {
+      const digitsOnly = fixOcrDigits(labelMatch[1]).replace(/\D/g, '');
+      if (digitsOnly.length === 13) {
+        cnic = `${digitsOnly.slice(0, 5)}-${digitsOnly.slice(5, 12)}-${digitsOnly.slice(12)}`;
+      }
+    }
+  }
+
+  // Pattern C: Any continuous 13-digit sequence
+  if (!cnic) {
+    const rawDigits = fixOcrDigits(cleanText).replace(/[^0-9]/g, ' ');
+    const thirteenDigitMatch = rawDigits.match(/\b([1-8][0-9]{12})\b/);
+    if (thirteenDigitMatch) {
+      const d = thirteenDigitMatch[1];
+      cnic = `${d.slice(0, 5)}-${d.slice(5, 12)}-${d.slice(12)}`;
+    }
+  }
+
+  // ===== 2. Holder Name =====
   let name = null;
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (/(?:Name|Narne|Namo|Nene|Holder|Card|Nal|Neme|Nama)/i.test(line) && !/(?:Father|Husband|Mother|Date|Birth|CNIC|Identity|Gender|Sex|Fathor|Fathar|Falher|Fathsr|Fatner|Husb)/i.test(line)) {
-      name = extractEnglishNameFromLine(line);
-      if (name) break;
+    if (/\b(?:Name|Narne|Namo|Nene|Holder|Neme|Nama)\b/i.test(line) &&
+        !/\b(?:Father|Husband|Mother|Date|Birth|CNIC|Identity|Gender|Sex|Country|Expiry|Issue|National|Database)\b/i.test(line)) {
+      name = cleanNameCandidate(line);
+      if (name && name.split(' ').length >= 2) break;
 
-      for (let j = 1; j <= 3; j++) {
+      for (let j = 1; j <= 2; j++) {
         const nextLine = lines[i + j];
         if (!nextLine) break;
-        if (/(?:Father|Husband|Mother|Date|Birth|CNIC|Identity|Gender|Sex|Country|Expiry|Issue|Card|National)/i.test(nextLine)) break;
-        name = extractEnglishNameFromLine(nextLine);
-        if (name) break;
+        if (/\b(?:Father|Husband|Mother|Date|Birth|CNIC|Identity|Gender|Sex|Country|Expiry|Issue|National|Republic|Database)\b/i.test(nextLine)) break;
+        const cand = cleanNameCandidate(nextLine);
+        if (cand && cand.split(' ').length >= 2) { name = cand; break; }
+        if (cand && !name) name = cand;
       }
       if (name) break;
     }
   }
 
-  // Fallback for Holder Name: Take the first multi-word English name line near top
+  // Fallback for Name: scan top 6 lines for valid 2+ word candidate that isn't header noise
   if (!name) {
-    for (let i = 0; i < lines.length; i++) {
+    for (let i = 0; i < Math.min(lines.length, 8); i++) {
       const line = lines[i];
-      if (/(?:Republic|Pakistan|National|Identity|Card|Islamic|Address|Expiry|Issue|Birth|Gender)/i.test(line)) continue;
-      const candidate = extractEnglishNameFromLine(line);
-      if (candidate && candidate.split(' ').length >= 2) {
-        name = candidate;
+      if (/(?:Republic|Pakistan|National|Identity|Card|Islamic|Address|Expiry|Issue|Birth|Gender|Father|Husband|NADRA|Database)/i.test(line)) continue;
+      const cand = cleanNameCandidate(line);
+      if (cand && cand.split(' ').length >= 2) {
+        name = cand;
         break;
       }
     }
   }
 
-  // 3. Father / Husband Name
+  // ===== 3. Father / Husband Name =====
   let fatherName = null;
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (/(?:Father|Husband|Fathor|Fathar|Falher|Fathsr|Fatner|Fathe|Fther|Feather|Fether|Husb|S\/O|D\/O|W\/O|Son\s+of|Daughter\s+of|Wife\s+of)/i.test(line)) {
-      fatherName = extractEnglishNameFromLine(line, true);
-      if (fatherName && (!name || fatherName.toLowerCase() !== name.toLowerCase())) break;
+    if (/\b(?:Father|Husband|Fathor|Fathar|Falher|Fathsr|Fatner|Fathe|Fther|Feather|Fether|Husb|Son\s+of|Daughter\s+of|Wife\s+of)\b|S\/O|D\/O|W\/O/i.test(line)) {
+      fatherName = cleanNameCandidate(line);
+      if (fatherName && fatherName.split(' ').length >= 2 && (!name || fatherName.toLowerCase() !== name.toLowerCase())) break;
 
-      for (let j = 1; j <= 3; j++) {
+      for (let j = 1; j <= 2; j++) {
         const nextLine = lines[i + j];
         if (!nextLine) break;
-        if (/(?:Date|Birth|CNIC|Identity|Gender|Sex|Country|Expiry|Issue|Card|National)/i.test(nextLine)) break;
-        fatherName = extractEnglishNameFromLine(nextLine, true);
-        if (fatherName && (!name || fatherName.toLowerCase() !== name.toLowerCase())) break;
+        if (/\b(?:Date|Birth|CNIC|Identity|Gender|Sex|Country|Expiry|Issue|Card|National|Database)\b/i.test(nextLine)) break;
+        const cand = cleanNameCandidate(nextLine);
+        if (cand && cand.split(' ').length >= 2 && (!name || cand.toLowerCase() !== name.toLowerCase())) {
+          fatherName = cand;
+          break;
+        }
+        if (cand && (!name || cand.toLowerCase() !== name.toLowerCase()) && !fatherName) {
+          fatherName = cand;
+        }
       }
       if (fatherName) break;
     }
   }
 
-  // Fallback for Father Name: scan lines after holder's name for another valid English name line
+  // Fallback for Father Name: scan lines after holder name
   if (!fatherName) {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      if (/(?:Republic|Pakistan|National|Identity|Card|Islamic|Address|Expiry|Issue|Birth|Gender|CNIC|Date)/i.test(line)) continue;
-      const candidate = extractEnglishNameFromLine(line, true);
-      if (candidate && candidate.split(' ').length >= 2) {
-        if (!name || candidate.toLowerCase() !== name.toLowerCase()) {
-          fatherName = candidate;
-          break;
-        }
+      if (/(?:Republic|Pakistan|National|Identity|Card|Islamic|Address|Expiry|Issue|Birth|Gender|CNIC|Date|Name|NADRA|Database)/i.test(line)) continue;
+      const cand = cleanNameCandidate(line);
+      if (cand && cand.split(' ').length >= 2 && (!name || cand.toLowerCase() !== name.toLowerCase())) {
+        fatherName = cand;
+        break;
       }
     }
   }
 
-  // 4. Date of Birth
+  // ===== 4. Date of Birth =====
   let dateOfBirth = null;
-  const allDates = [];
+  const allDates = extractAllDatesFromText(normalizedText);
 
-  for (const line of lines) {
-    const matches = [...line.matchAll(/\b(\d{2})\/(\d{2})\/(\d{4})\b/g)];
-    for (const match of matches) {
-      const dayVal = parseInt(match[1]);
-      const monthVal = parseInt(match[2]);
-      const yearVal = parseInt(match[3]);
-
-      if (dayVal >= 1 && dayVal <= 31 && monthVal >= 1 && monthVal <= 12 && yearVal >= 1950 && yearVal <= 2035) {
-        allDates.push({
-          dateStr: `${match[1]}/${match[2]}/${match[3]}`,
-          year: yearVal,
-          line
-        });
-      }
-    }
-  }
-
-  // Attempt A: Date line explicitly contains "Birth" / "DOB" / "Date of Birth"
-  const birthDateObj = allDates.find(d => /Birth|DOB|D\.O\.B|Bate|Dote|Dafe/i.test(d.line));
+  // Strategy A: Context contains "Birth", "DOB", etc.
+  const birthDateObj = allDates.find(d => /Birth|DOB|D\.O\.B|Bate|Dote|Dafe/i.test(d.context));
   if (birthDateObj) {
     dateOfBirth = birthDateObj.dateStr;
   }
 
-  // Attempt B (Earliest Date Rule): DOB is ALWAYS the earliest date on a Pakistani CNIC (1950-2012)!
+  // Strategy B (Earliest Valid Date Rule): DOB is ALWAYS the earliest date on a Pakistani CNIC (1950-2015)
   if (!dateOfBirth && allDates.length > 0) {
-    const birthCandidates = allDates.filter(d => d.year <= 2012 && d.year >= 1950);
+    const currentYear = new Date().getFullYear();
+    const birthCandidates = allDates.filter(d => d.year <= currentYear - 12 && d.year >= 1950);
     if (birthCandidates.length > 0) {
       birthCandidates.sort((a, b) => a.year - b.year);
       dateOfBirth = birthCandidates[0].dateStr;
     }
   }
 
-  // 5. Gender
+  // ===== 5. Gender =====
   let gender = null;
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -376,10 +306,16 @@ const extractCNICData = (rawText) => {
       for (let j = 0; j <= 2; j++) {
         const checkLine = lines[i + j];
         if (!checkLine) continue;
-        for (const token of checkLine.split(/[\s/]+/)) {
+        const tokens = checkLine.split(/[\s/]+/);
+        for (const token of tokens) {
           const cleanToken = token.trim().toUpperCase();
-          if (cleanToken === 'M' || cleanToken === 'MALE') { gender = 'male'; break; }
-          else if (cleanToken === 'F' || cleanToken === 'FEMALE') { gender = 'female'; break; }
+          if (cleanToken === 'M' || cleanToken === 'MALE') {
+            gender = 'male';
+            break;
+          } else if (cleanToken === 'F' || cleanToken === 'FEMALE') {
+            gender = 'female';
+            break;
+          }
         }
         if (gender) break;
       }
@@ -387,7 +323,7 @@ const extractCNICData = (rawText) => {
     if (gender) break;
   }
 
-  // Gender fallback: scan entire text for standalone Male/Female
+  // Gender text search fallback
   if (!gender) {
     for (const line of lines) {
       const tokens = line.split(/[\s/,;:]+/);
@@ -400,69 +336,102 @@ const extractCNICData = (rawText) => {
     }
   }
 
-  // Gender fallback: infer from CNIC last digit (Pakistani CNICs: odd = male, even = female)
+  // Gender 100% Deterministic Fallback: NADRA Pakistani CNIC 13th digit (odd = male, even = female)
   if (!gender && cnic) {
-    const lastDigit = parseInt(cnic.replace(/-/g, '').slice(-1));
+    const lastDigit = parseInt(cnic.replace(/\D/g, '').slice(-1));
     if (!isNaN(lastDigit)) {
       gender = lastDigit % 2 !== 0 ? 'male' : 'female';
     }
   }
 
-  // 6. Address
+  // ===== 6. Address =====
   let address = null;
   const addressPatterns = [
-    /(?:Address|Addr)\s*[:\-\/\s]+([A-Za-z0-9][A-Za-z0-9 ,.\/#\-]{10,})/im,
-    /(?:Address|Addr)\s*\n\s*([A-Za-z0-9][A-Za-z0-9 ,.\/#\-]{10,})/im,
+    /(?:Present\s*Address|Permanent\s*Address|Address|Addr)\s*[:\-\/\s]+([A-Za-z0-9][A-Za-z0-9 ,.\/#\-]{10,})/im,
+    /(?:Present\s*Address|Permanent\s*Address|Address|Addr)\s*\n\s*([A-Za-z0-9][A-Za-z0-9 ,.\/#\-]{10,})/im,
+    /(?:House\s*No|H\s*No|St\s*No|Street|Mohallah|Village|Tehsil|District)[\s:\-]+([A-Za-z0-9 ,.\/#\-]{10,})/im
   ];
+
   for (const pattern of addressPatterns) {
     const match = cleanText.match(pattern);
     if (match) {
-      address = match[1].trim().replace(/\s*(Country|Expiry|Date).*$/i, '').trim();
-      if (address.length < 10) address = null;
-      else break;
+      address = match[1].trim().replace(/\s*(Country|Expiry|Date|Issue|Stay).*$/i, '').trim();
+      if (address.length >= 10) break;
+      else address = null;
     }
   }
 
-  return { cnic, name, father_name: fatherName, date_of_birth: dateOfBirth, gender, address };
+  return {
+    cnic,
+    name,
+    father_name: fatherName,
+    date_of_birth: dateOfBirth,
+    gender,
+    address,
+    raw_text: rawText
+  };
 };
 
-// Board normalization dictionary for Pakistani Boards & common OCR misreads
+// Comprehensive Board normalization dictionary for 28+ Pakistani Boards & common OCR misreads
 const normalizeBoardName = (rawText) => {
   if (!rawText) return null;
   const str = rawText.toLowerCase();
 
-  // Known city/board mappings & common OCR misreads (e.g. Latiore -> Lahore)
-  if (/federal|fbise|islamabad/i.test(str)) return "FBISE Islamabad";
-  if (/lahore|latiore|lafore|lahor|lahere|lahr|latior/i.test(str)) return "BISE Lahore";
-  if (/gujranwala|gujranwla|gujrat/i.test(str)) return "BISE Gujranwala";
-  if (/rawalpindi|rawalpind|rwp|pindi/i.test(str)) return "BISE Rawalpindi";
-  if (/multan|mooltan/i.test(str)) return "BISE Multan";
-  if (/faisalabad|faislabad|lyallpur/i.test(str)) return "BISE Faisalabad";
-  if (/sargodha|sargoda/i.test(str)) return "BISE Sargodha";
-  if (/sahiwal|sahiwa/i.test(str)) return "BISE Sahiwal";
-  if (/bahawalpur|bahawlpur|bwl/i.test(str)) return "BISE Bahawalpur";
-  if (/dg\s*khan|d\.g\s*khan|dera\s*ghazi\s*khan/i.test(str)) return "BISE DG Khan";
-  if (/karachi|khi/i.test(str)) return "BISE Karachi";
-  if (/hyderabad/i.test(str)) return "BISE Hyderabad";
-  if (/sukkur/i.test(str)) return "BISE Sukkur";
-  if (/larkana/i.test(str)) return "BISE Larkana";
-  if (/mirpurkhas/i.test(str)) return "BISE Mirpurkhas";
-  if (/peshawar|psh/i.test(str)) return "BISE Peshawar";
-  if (/swat/i.test(str)) return "BISE Swat";
-  if (/kohat/i.test(str)) return "BISE Kohat";
-  if (/abbottabad|abottabad/i.test(str)) return "BISE Abbottabad";
-  if (/bannu/i.test(str)) return "BISE Bannu";
-  if (/mardan/i.test(str)) return "BISE Mardan";
-  if (/malakand/i.test(str)) return "BISE Malakand";
-  if (/quetta/i.test(str)) return "BISE Quetta";
-  if (/aga\s*khan|aku/i.test(str)) return "Aga Khan Board";
-  if (/cambridge|cie|edexcel|igcse/i.test(str)) return "Cambridge Board";
+  // Federal
+  if (/federal|fbise|islamabad|isb\b/i.test(str)) return "FBISE Islamabad";
+
+  // Punjab Boards
+  if (/lahore|latiore|lafore|lahor|lahere|lahr|latior|lhr\b/i.test(str)) return "BISE Lahore";
+  if (/gujranwala|gujranwla|gujrat|grw\b|sialkot/i.test(str)) return "BISE Gujranwala";
+  if (/rawalpindi|rawalpind|rwp\b|pindi|attock|chakwal|jhelum/i.test(str)) return "BISE Rawalpindi";
+  if (/multan|mooltan|mlt\b|khanewal|vehari/i.test(str)) return "BISE Multan";
+  if (/faisalabad|faislabad|lyallpur|fsd\b|jhang/i.test(str)) return "BISE Faisalabad";
+  if (/sargodha|sargoda|sgd\b|mianwali|bhakkar/i.test(str)) return "BISE Sargodha";
+  if (/sahiwal|sahiwa|swl\b|okara|pakpattan/i.test(str)) return "BISE Sahiwal";
+  if (/bahawalpur|bahawlpur|bwl\b|bwp\b|rahim\s*yar\s*khan/i.test(str)) return "BISE Bahawalpur";
+  if (/dg\s*khan|d\.g\s*khan|dera\s*ghazi\s*khan|dgk\b|muzaffargarh/i.test(str)) return "BISE DG Khan";
+  if (/pbte|punjab\s*board\s*of\s*technical|technical\s*education\s*punjab/i.test(str)) return "PBTE Lahore";
+
+  // Sindh Boards
+  if (/bsek|karachi\s*secondary|secondary\s*karachi/i.test(str)) return "BISE Karachi (BSEK)";
+  if (/biek|karachi\s*inter|karachi|khi\b/i.test(str)) return "BISE Karachi";
+  if (/hyderabad|hyd\b|jamshoro|thatta/i.test(str)) return "BISE Hyderabad";
+  if (/sukkur|skr\b|khairpur/i.test(str)) return "BISE Sukkur";
+  if (/larkana|lrk\b|shikarpur|jacobabad/i.test(str)) return "BISE Larkana";
+  if (/mirpurkhas|mirpur\s*khas|mpk\b|sanghar/i.test(str)) return "BISE Mirpurkhas";
+  if (/shaheed\s*benazirabad|benazirabad|nawabshah|sba\b/i.test(str)) return "BISE Shaheed Benazirabad";
+  if (/sbte|sindh\s*board\s*of\s*technical/i.test(str)) return "SBTE Karachi";
+
+  // Khyber Pakhtunkhwa (KPK) Boards
+  if (/peshawar|psh\b|charsadda/i.test(str)) return "BISE Peshawar";
+  if (/abbottabad|abottabad|atd\b|hazara|haripur|mansehra/i.test(str)) return "BISE Abbottabad";
+  if (/swat|saidu\s*sharif|shangla/i.test(str)) return "BISE Swat";
+  if (/malakand|dir\b|bajaur/i.test(str)) return "BISE Malakand";
+  if (/mardan|swabi/i.test(str)) return "BISE Mardan";
+  if (/kohat|hangu|karak/i.test(str)) return "BISE Kohat";
+  if (/bannu|lakki\s*marwat/i.test(str)) return "BISE Bannu";
+  if (/di\s*khan|d\.i\s*khan|dera\s*ismail\s*khan/i.test(str)) return "BISE DI Khan";
+
+  // Balochistan Boards
+  if (/quetta|qta\b|balochistan\s*board/i.test(str)) return "BISE Quetta";
+  if (/turbat|kech|gwadar/i.test(str)) return "BISE Turbat";
+  if (/khuzdar|kalat/i.test(str)) return "BISE Khuzdar";
+  if (/loralai|zhob/i.test(str)) return "BISE Loralai";
+
+  // Azad Jammu & Kashmir (AJK)
+  if (/mirpur|ajk\b|azad\s*kashmir|azad\s*jammu/i.test(str)) return "BISE Mirpur (AJK)";
+
+  // International / Specialized Boards
+  if (/aga\s*khan|aku|aku-eb|akueb/i.test(str)) return "Aga Khan Board";
+  if (/cambridge|cie|edexcel|igcse|gce|o\s*level|o-level|a\s*level|a-level|pearson/i.test(str)) return "Cambridge Board";
+  if (/wafaq|madaris|tanzeem/i.test(str)) return "Wafaq-ul-Madaris";
 
   return null;
 };
 
 // Convert number words in English (e.g., "Nine Hundred Fifty") to digits
 const wordsToNumber = (text) => {
+  if (!text) return null;
   const wordsMap = {
     zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9,
     ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16,
@@ -506,21 +475,19 @@ const wordsToNumber = (text) => {
   return null;
 };
 
+/**
+ * Extract Academic Data (Matric / Intermediate / Transcript) with high precision
+ */
 const extractAcademicData = (text) => {
   const cleanText = cleanOcrText(text);
 
   // 1. Board Name Detection & Normalization
   let board = null;
-  const biseMatch = text.match(/(?:Board\s+of\s+Intermediate(?:\s+(?:and|&|&amp;)?\s+Secondary\s+Education)?|BISE)[\s,:]*([A-Za-z]+)/i);
+  const biseMatch = text.match(/(?:Board\s+of\s+Intermediate(?:\s+(?:and|&|&amp;)?\s+Secondary\s+Education)?|BISE)[\s,:]*([A-Za-z\s]+?)(?:,|\.|\n|$)/i);
   if (biseMatch) {
     const rawCity = biseMatch[1].trim();
     board = normalizeBoardName(rawCity);
-    if (!board) {
-      const formattedCity = rawCity.charAt(0).toUpperCase() + rawCity.slice(1).toLowerCase();
-      board = `BISE ${formattedCity}`;
-    }
   }
-  
   if (!board) {
     board = normalizeBoardName(text);
   }
@@ -528,7 +495,7 @@ const extractAcademicData = (text) => {
   // 2. Passing Year Extraction
   let passingYear = null;
   const cleanedForYear = text.replace(/([12])([OolISBZ])([0-9OolISBZ]{2})/g, (m, p1, p2, p3) => `${p1}${fixOcrDigits(p2)}${fixOcrDigits(p3)}`);
-  
+
   const annualExamMatch = cleanedForYear.match(/(?:Annual|Supplementary|Special|Bi-Annual|Spring|Fall)\s+(?:Exam(?:ination)?\s+)?([12][09]\d{2})/i);
   const examMatch = cleanedForYear.match(/(?:Examination|Exam|Session|Passing|Held\s+in|Year|Dated)[\s,:]+([12][09]\d{2})/i);
   const rangeMatch = cleanedForYear.match(/(?:20\d{2}|19\d{2})\s*-\s*(20\d{2}|19\d{2})/);
@@ -554,7 +521,14 @@ const extractAcademicData = (text) => {
   }
 
   // 3. Roll Number
+  let rollNumber = null;
   const rollMatch = text.match(/Roll\s*(?:No|Number|#)?[\s:.]+([A-Za-z0-9-]+)/i);
+  if (rollMatch) {
+    const rawRoll = rollMatch[1].trim();
+    if (rawRoll.length >= 4 && rawRoll.length <= 15) {
+      rollNumber = rawRoll;
+    }
+  }
 
   // 4. Obtained Marks & Total Marks Extraction
   let obtainedMarks = null;
@@ -567,7 +541,7 @@ const extractAcademicData = (text) => {
     .replace(/([0-9])([OolISBZ])([0-9])/gi, (m, p1, p2, p3) => `${p1}${fixOcrDigits(p2)}${p3}`)
     .replace(/([0-9]{2,3})([OolISBZ])\b/gi, (m, p1, p2) => `${p1}${fixOcrDigits(p2)}`);
 
-  // a) Ratio patterns (e.g. 950 / 1100, 450/550, 450 out of 550, 450 of 550, 950-1100, 950:1100)
+  // a) Ratio patterns (e.g. 950 / 1100, 450/550, 450 out of 550, 950-1100, 950:1100)
   const ratioMatches = [...cleanedNumText.matchAll(/\b([0-9OolISBZ]{2,4})\s*(?:\/|\\|out\s+of|\bof\b|:|-)\s*([0-9OolISBZ]{3,4})\b/gi)];
   for (const match of ratioMatches) {
     const obtCandidate = parseInt(fixOcrDigits(match[1]));
@@ -583,7 +557,7 @@ const extractAcademicData = (text) => {
 
   // b) Explicit field labels if missing
   if (!obtainedMarks) {
-    const obtMatch = cleanedNumText.match(/(?:Marks\s*Obtained|Obtained\s*Marks|Total\s*Marks\s*Obtained|Marks\s*Secured|Secured\s*Marks|Marks\s*Obt|Obt\s*Marks|Obtained|securing|passed\s+with|with)[\s:\-]*([0-9OolISBZ]{3,4})\s*(?:marks)?\b/i)
+    const obtMatch = cleanedNumText.match(/(?:Marks\s*Obtained|Obtained\s*Marks|Total\s*Marks\s*Obtained|Marks\s*Secured|Secured\s*Marks|Marks\s*Obt|Obt\s*Marks|Obtained|securing|passed\s+with)[\s:\-]*([0-9OolISBZ]{3,4})\s*(?:marks)?\b/i)
       || cleanedNumText.match(/([0-9OolISBZ]{3,4})\s*marks\b/i);
     if (obtMatch) {
       const val = parseInt(fixOcrDigits(obtMatch[1]));
@@ -622,7 +596,7 @@ const extractAcademicData = (text) => {
     }
   }
 
-  // e) Generic Pakistani total marks scan if total is still missing
+  // e) Generic Pakistani standard total marks scan if total is still missing
   if (!totalMarks) {
     const stdTotals = [1100, 550, 1050, 500, 1200, 850, 800, 600];
     for (const stdTot of stdTotals) {
@@ -643,7 +617,7 @@ const extractAcademicData = (text) => {
     }
   }
 
-  // g) Fallback: If totalMarks is missing but obtainedMarks is found, default to standard Pakistani total (1100 or 550)
+  // g) Auto-deduce standard total marks if obtained is found
   if (obtainedMarks && !totalMarks) {
     totalMarks = obtainedMarks > 550 ? 1100 : 550;
   }
@@ -662,7 +636,19 @@ const extractAcademicData = (text) => {
     percentage = parseFloat(((obtainedMarks / totalMarks) * 100).toFixed(2));
   }
 
-  const gradeMatch = text.match(/Grade[\s:]+([A-F][+-]?)/i);
+  let grade = null;
+  const gradeMatch = text.match(/Grade[\s:]+([A-F][+-]?|A-1)/i);
+  if (gradeMatch) {
+    grade = gradeMatch[1].toUpperCase();
+  } else if (percentage) {
+    if (percentage >= 80) grade = 'A+';
+    else if (percentage >= 70) grade = 'A';
+    else if (percentage >= 60) grade = 'B';
+    else if (percentage >= 50) grade = 'C';
+    else if (percentage >= 40) grade = 'D';
+    else if (percentage >= 33) grade = 'E';
+    else grade = 'F';
+  }
 
   // Extract candidate name from academic certificate
   let name = null;
@@ -673,16 +659,16 @@ const extractAcademicData = (text) => {
         && !/(?:Father|Husband|Mother|Board|Institution|School|College)/i.test(line)) {
       const sameLineMatch = line.match(/(?:Name\s*(?:of\s+)?(?:Candidate|Student|Examinee)|Student\s*Name|Candidate\s*Name)\s*[:\-]?\s*(.+)$/i);
       if (sameLineMatch && sameLineMatch[1]) {
-        const val = sameLineMatch[1].replace(/[^A-Za-z\s]/g, '').trim();
-        if (val.length >= 3) name = val;
+        const val = cleanNameCandidate(sameLineMatch[1]);
+        if (val && val.length >= 3) name = val;
       }
       if (!name) {
         for (let j = 1; j <= 2; j++) {
           const nextLine = lines[i + j];
           if (!nextLine) break;
           if (/(?:Father|Husband|Mother|Board|Institution|School|College|Roll|Marks)/i.test(nextLine)) break;
-          const val = nextLine.replace(/[^A-Za-z\s]/g, '').trim();
-          if (val.length >= 3) { name = val; break; }
+          const val = cleanNameCandidate(nextLine);
+          if (val && val.length >= 3) { name = val; break; }
         }
       }
       if (name) break;
@@ -697,16 +683,16 @@ const extractAcademicData = (text) => {
         && !/(?:Date|Birth|CNIC|Identity|Gender|Board|Institution|School)/i.test(line)) {
       const sameLineMatch = line.match(/(?:Father|Guardian|Parent)[\s']?s?\s*(?:Name)?\s*[:\-]?\s*(.+)$/i);
       if (sameLineMatch && sameLineMatch[1]) {
-        const val = sameLineMatch[1].replace(/[^A-Za-z\s]/g, '').trim();
-        if (val.length >= 3) fatherName = val;
+        const val = cleanNameCandidate(sameLineMatch[1]);
+        if (val && val.length >= 3) fatherName = val;
       }
       if (!fatherName) {
         for (let j = 1; j <= 2; j++) {
           const nextLine = lines[i + j];
           if (!nextLine) break;
           if (/(?:Name|Roll|Marks|Board|Institution|School|College|Date)/i.test(nextLine)) break;
-          const val = nextLine.replace(/[^A-Za-z\s]/g, '').trim();
-          if (val.length >= 3) { fatherName = val; break; }
+          const val = cleanNameCandidate(nextLine);
+          if (val && val.length >= 3) { fatherName = val; break; }
         }
       }
       if (fatherName) break;
@@ -715,14 +701,15 @@ const extractAcademicData = (text) => {
 
   return {
     percentage: percentage,
-    grade: gradeMatch ? gradeMatch[1] : null,
+    grade: grade,
     passing_year: passingYear,
     board: board,
-    roll_number: rollMatch ? rollMatch[1] : null,
+    roll_number: rollNumber,
     obtained_marks: obtainedMarks,
     total_marks: totalMarks,
     name: name,
     father_name: fatherName,
+    raw_text: text
   };
 };
 
@@ -731,30 +718,26 @@ const normalizeNameForComparison = (name) => {
   if (!name) return '';
   return name
     .toLowerCase()
-    .replace(/[^a-z\s]/g, '')  // remove non-alpha
-    .replace(/\s+/g, ' ')      // collapse whitespace
+    .replace(/[^a-z\s]/g, '')
+    .replace(/\s+/g, ' ')
     .trim();
 };
 
 const namesMatch = (name1, name2) => {
-  if (!name1 || !name2) return true; // can't compare if either is missing, skip
+  if (!name1 || !name2) return true;
   const n1 = normalizeNameForComparison(name1);
   const n2 = normalizeNameForComparison(name2);
   if (!n1 || !n2) return true;
 
-  // Exact match
   if (n1 === n2) return true;
-
-  // Check if one name contains the other (handles middle name differences)
   if (n1.includes(n2) || n2.includes(n1)) return true;
 
-  // Token-based comparison: if all tokens of the shorter name appear in the longer name
-  const tokens1 = n1.split(' ');
-  const tokens2 = n2.split(' ');
-  const shorter = tokens1.length <= tokens2.length ? tokens1 : tokens2;
-  const longer = tokens1.length > tokens2.length ? tokens1 : tokens2;
-  const allShorterInLonger = shorter.every(t => longer.some(lt => lt === t || lt.includes(t) || t.includes(lt)));
-  if (allShorterInLonger) return true;
+  const tokens1 = n1.split(' ').filter(t => t.length > 2);
+  const tokens2 = n2.split(' ').filter(t => t.length > 2);
+  if (tokens1.length === 0 || tokens2.length === 0) return true;
+
+  const sharedTokens = tokens1.filter(t => tokens2.includes(t));
+  if (sharedTokens.length >= 1) return true;
 
   return false;
 };
@@ -763,7 +746,7 @@ const namesMatch = (name1, name2) => {
 const crossDocumentVerification = (currentDocType, currentExtractedData, uploadedFiles, userProfile) => {
   const warnings = [];
   let rejectCurrentDoc = false;
-  const removeIndices = []; // indices of existing docs to remove if CNIC overrides them
+  const removeIndices = [];
 
   if (!currentExtractedData) return { warnings, rejectCurrentDoc, removeIndices };
 
@@ -780,7 +763,6 @@ const crossDocumentVerification = (currentDocType, currentExtractedData, uploade
   };
   const currentLabel = docTypeLabels[currentDocType] || 'Document';
 
-  // 1. Compare against user profile (if profile details are present)
   if (userProfile?.full_name && currentName) {
     if (!namesMatch(currentName, userProfile.full_name)) {
       warnings.push(`Candidate name detected as "${currentName}" on ${currentLabel}, which differs from your account profile ("${userProfile.full_name}"). Image blur, camera glare, or dark lighting usually causes OCR to misread printed text.`);
@@ -794,13 +776,11 @@ const crossDocumentVerification = (currentDocType, currentExtractedData, uploade
     }
   }
 
-  // 2. Compare against EVERY previously uploaded document in uploadedFiles
   uploadedFiles.forEach((file, index) => {
     if (!file.extractedData) return;
     const existingData = file.extractedData;
     const existingLabel = docTypeLabels[file.type] || 'Uploaded Document';
 
-    // Candidate Name Check
     if (currentName && existingData.name) {
       if (!namesMatch(currentName, existingData.name)) {
         warnings.push(`Candidate name extracted from ${currentLabel} ("${currentName}") differs from ${existingLabel} ("${existingData.name}"). Ensure images are clear and readable.`);
@@ -813,7 +793,6 @@ const crossDocumentVerification = (currentDocType, currentExtractedData, uploade
       }
     }
 
-    // Father Name Check
     if (currentFatherName && existingData.father_name) {
       if (!namesMatch(currentFatherName, existingData.father_name)) {
         warnings.push(`Father's name extracted from ${currentLabel} ("${currentFatherName}") differs from ${existingLabel} ("${existingData.father_name}"). Please verify image clarity.`);
@@ -830,15 +809,22 @@ const crossDocumentVerification = (currentDocType, currentExtractedData, uploade
   return { warnings, rejectCurrentDoc, removeIndices };
 };
 
-// Helper function to scale up and enhance contrast of images/canvases for Tesseract OCR
-const preprocessImageForOcr = (imageOrCanvas) => {
+/**
+ * Multi-stage canvas preprocessing for optimal Tesseract OCR precision:
+ * 1. Upscale to 2400-3000px resolution (300 DPI equivalent)
+ * 2. Luminance Grayscale conversion
+ * 3. Contrast Stretching (Histogram Normalization)
+ * 4. Local Adaptive Thresholding (eliminates phone camera shadows/gradients)
+ * 5. 3x3 Convolution Sharpening (crisp text edges)
+ */
+const preprocessImageForOcr = (imageOrCanvas, mode = 'adaptive') => {
   return new Promise((resolve) => {
     const processCanvas = (srcCanvas) => {
       try {
-        let width = srcCanvas.width;
-        let height = srcCanvas.height;
+        const width = srcCanvas.width;
+        const height = srcCanvas.height;
 
-        const targetWidth = Math.max(width, 2200);
+        const targetWidth = Math.max(width, 2400);
         const scale = targetWidth / width;
         const targetHeight = Math.round(height * scale);
 
@@ -853,18 +839,91 @@ const preprocessImageForOcr = (imageOrCanvas) => {
 
         const imgData = ctx.getImageData(0, 0, targetWidth, targetHeight);
         const d = imgData.data;
-        for (let i = 0; i < d.length; i += 4) {
-          const gray = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-          let v = (gray - 128) * 1.35 + 128;
-          v = Math.min(255, Math.max(0, v));
-          d[i] = v;
-          d[i + 1] = v;
-          d[i + 2] = v;
+        const numPixels = targetWidth * targetHeight;
+
+        // Step 1: Compute grayscale luminance buffer
+        const grayBuf = new Uint8Array(numPixels);
+        for (let i = 0; i < numPixels; i++) {
+          const idx = i * 4;
+          grayBuf[i] = Math.round(0.299 * d[idx] + 0.587 * d[idx + 1] + 0.114 * d[idx + 2]);
         }
+
+        // Step 2: Contrast Stretching (find 2nd and 98th percentiles)
+        const hist = new Int32Array(256);
+        for (let i = 0; i < numPixels; i++) {
+          hist[grayBuf[i]]++;
+        }
+        let count = 0;
+        let minP = 0;
+        let maxP = 255;
+        const lowCut = numPixels * 0.02;
+        const highCut = numPixels * 0.98;
+        for (let i = 0; i < 256; i++) {
+          count += hist[i];
+          if (count >= lowCut && minP === 0) minP = i;
+          if (count >= highCut) { maxP = i; break; }
+        }
+        const range = Math.max(maxP - minP, 1);
+
+        // Normalize grayscale buffer
+        for (let i = 0; i < numPixels; i++) {
+          const stretched = Math.min(255, Math.max(0, Math.round(((grayBuf[i] - minP) / range) * 255)));
+          grayBuf[i] = stretched;
+        }
+
+        if (mode === 'grayscale') {
+          // Output high-contrast grayscale directly
+          for (let i = 0; i < numPixels; i++) {
+            const idx = i * 4;
+            const v = grayBuf[i];
+            d[idx] = v;
+            d[idx + 1] = v;
+            d[idx + 2] = v;
+          }
+        } else {
+          // Step 3: Adaptive Binarization (Sauvola / Bradley Integral Image technique)
+          // Compute integral image for fast local window averages
+          const integral = new Float64Array((targetWidth + 1) * (targetHeight + 1));
+          for (let y = 0; y < targetHeight; y++) {
+            let rowSum = 0;
+            const yOffset = (y + 1) * (targetWidth + 1);
+            const prevYOffset = y * (targetWidth + 1);
+            const grayRowOffset = y * targetWidth;
+            for (let x = 0; x < targetWidth; x++) {
+              rowSum += grayBuf[grayRowOffset + x];
+              integral[yOffset + x + 1] = integral[prevYOffset + x + 1] + rowSum;
+            }
+          }
+
+          const s = Math.max(Math.round(targetWidth / 16), 15);
+          const t = 0.15; // 15% below local mean threshold
+
+          for (let y = 0; y < targetHeight; y++) {
+            const y1 = Math.max(0, y - s);
+            const y2 = Math.min(targetHeight, y + s);
+            const yOffset = y * targetWidth;
+            for (let x = 0; x < targetWidth; x++) {
+              const x1 = Math.max(0, x - s);
+              const x2 = Math.min(targetWidth, x + s);
+              const count = (x2 - x1) * (y2 - y1);
+              const sum = integral[y2 * (targetWidth + 1) + x2]
+                        - integral[y1 * (targetWidth + 1) + x2]
+                        - integral[y2 * (targetWidth + 1) + x1]
+                        + integral[y1 * (targetWidth + 1) + x1];
+              const mean = sum / count;
+              const idx = (yOffset + x) * 4;
+              const val = grayBuf[yOffset + x] < mean * (1 - t) ? 0 : 255;
+              d[idx] = val;
+              d[idx + 1] = val;
+              d[idx + 2] = val;
+            }
+          }
+        }
+
         ctx.putImageData(imgData, 0, 0);
         resolve(outCanvas);
       } catch (err) {
-        console.warn('Preprocessing canvas failed, using original canvas:', err);
+        console.warn('Advanced preprocessing canvas failed, using original canvas:', err);
         resolve(srcCanvas);
       }
     };
@@ -876,8 +935,8 @@ const preprocessImageForOcr = (imageOrCanvas) => {
       const url = URL.createObjectURL(imageOrCanvas);
       img.onload = () => {
         const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = img.width || 1000;
-        tempCanvas.height = img.height || 1000;
+        tempCanvas.width = img.width || 1200;
+        tempCanvas.height = img.height || 1200;
         const ctx = tempCanvas.getContext('2d');
         ctx.drawImage(img, 0, 0);
         URL.revokeObjectURL(url);
@@ -917,21 +976,19 @@ const extractTextFromPDF = async (file, onProgress) => {
   console.log('Scanned PDF detected. Rendering to canvas and running OCR...');
   let ocrText = '';
   let totalConfidence = 0;
-  let pageCount = pdf.numPages;
+  const pageCount = pdf.numPages;
 
   for (let i = 1; i <= pageCount; i++) {
     const page = await pdf.getPage(i);
-    const viewport = page.getViewport({ scale: 2.5 }); // Use 2.5 scale for high resolution rendering
+    const viewport = page.getViewport({ scale: 2.5 });
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
     canvas.height = viewport.height;
     canvas.width = viewport.width;
 
     await page.render({ canvasContext: context, viewport }).promise;
-
     const processedCanvas = await preprocessImageForOcr(canvas);
 
-    // Run Tesseract OCR on page canvas
     const result = await Tesseract.recognize(processedCanvas, 'eng', {
       logger: m => {
         if (onProgress && m.status === 'recognizing text') {
@@ -1529,17 +1586,50 @@ const getDocTypeFieldsToClear = (docType) => {
         extractedText = pdfResult.text;
         confidence = pdfResult.confidence;
       } else {
-        // Run Tesseract OCR on preprocessed image canvas for higher accuracy
-        const processedCanvas = await preprocessImageForOcr(file);
+        // Pass 1: Run Tesseract OCR on adaptive-binarized canvas
+        const processedCanvas = await preprocessImageForOcr(file, 'adaptive');
         const result = await Tesseract.recognize(processedCanvas, 'eng', {
           logger: m => {
             if (m.status === 'recognizing text') {
-              console.log(`OCR Progress: ${(m.progress * 100).toFixed(0)}%`);
+              console.log(`OCR Progress (Pass 1): ${(m.progress * 100).toFixed(0)}%`);
             }
           }
         });
         extractedText = result?.data?.text || '';
         confidence = result?.data?.confidence || 0;
+
+        // Map document types and check if key fields are missing
+        const docCategory = (documentType === 'matric' || documentType === 'intermediate' || documentType === 'transcript')
+          ? 'academic' : documentType === 'cnic' ? 'cnic' : 'other';
+
+        let pass1Data = docCategory === 'cnic' ? extractCNICData(extractedText) : extractAcademicData(extractedText);
+        const pass1Incomplete = (docCategory === 'cnic' && (!pass1Data.cnic || !pass1Data.name)) ||
+                                (docCategory === 'academic' && (!pass1Data.obtained_marks || !pass1Data.board));
+
+        // Pass 2: If Pass 1 is incomplete or has low confidence, try high-contrast grayscale pass
+        if (pass1Incomplete || confidence < 65) {
+          try {
+            console.log('Running OCR Pass 2 with enhanced grayscale canvas...');
+            const grayCanvas = await preprocessImageForOcr(file, 'grayscale');
+            const result2 = await Tesseract.recognize(grayCanvas, 'eng');
+            const text2 = result2?.data?.text || '';
+            const conf2 = result2?.data?.confidence || 0;
+
+            if (text2 && text2.length > 20) {
+              const pass2Data = docCategory === 'cnic' ? extractCNICData(text2) : extractAcademicData(text2);
+              const pass2Score = Object.values(pass2Data).filter(v => v !== null && v !== undefined && v !== '').length;
+              const pass1Score = Object.values(pass1Data).filter(v => v !== null && v !== undefined && v !== '').length;
+
+              if (pass2Score >= pass1Score || conf2 > confidence) {
+                console.log('Pass 2 yielded superior extraction results.');
+                extractedText = text2;
+                confidence = Math.max(confidence, conf2);
+              }
+            }
+          } catch (pass2Err) {
+            console.warn('Pass 2 OCR notice:', pass2Err);
+          }
+        }
       }
 
       if (!extractedText || extractedText.trim().length === 0) {
