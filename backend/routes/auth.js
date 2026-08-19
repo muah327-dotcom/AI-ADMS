@@ -545,4 +545,65 @@ router.get('/avatar/:fileId', async (req, res) => {
   }
 });
 
+// ===== Delete Account =====
+router.delete('/delete-account', authenticateToken, async (req, res) => {
+  try {
+    const { password } = req.body;
+
+    if (!password) {
+      return res.status(400).json({ error: 'Password is required to confirm account deletion' });
+    }
+
+    // 1. Verify the user exists and check password
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ error: 'Incorrect password. Account deletion cancelled.' });
+    }
+
+    // Prevent admin accounts from self-deleting through this endpoint
+    if (user.role === 'admin') {
+      return res.status(403).json({ error: 'Admin accounts cannot be deleted through this endpoint.' });
+    }
+
+    console.log(`\n=== Account Deletion Request: user=${user.email} (${user._id}) ===`);
+
+    // 2. Delete user's avatar from GridFS if it exists
+    if (user.avatar_url) {
+      try {
+        const fileId = user.avatar_url.split('/').pop();
+        if (fileId && fileId.length === 24) {
+          await deleteFileFromGridFS(fileId);
+          console.log(`  Deleted avatar from GridFS: ${fileId}`);
+        }
+      } catch (err) {
+        console.log('  Avatar cleanup skipped (not found or already deleted)');
+      }
+    }
+
+    // 3. Delete all uploaded documents for this user
+    const Document = mongoose.model('Document');
+    const deletedDocs = await Document.deleteMany({ user_id: user._id });
+    console.log(`  Deleted ${deletedDocs.deletedCount} documents`);
+
+    // 4. Delete all applications for this user
+    const Application = mongoose.model('Application');
+    const deletedApps = await Application.deleteMany({ user_id: user._id });
+    console.log(`  Deleted ${deletedApps.deletedCount} applications`);
+
+    // 5. Delete the user record itself
+    await User.findByIdAndDelete(user._id);
+    console.log(`  Deleted user record: ${user.email}`);
+
+    res.json({ message: 'Your account and all associated data have been permanently deleted.' });
+  } catch (error) {
+    console.error('Account deletion error:', error);
+    res.status(500).json({ error: 'Failed to delete account. Please try again.' });
+  }
+});
+
 export default router;
