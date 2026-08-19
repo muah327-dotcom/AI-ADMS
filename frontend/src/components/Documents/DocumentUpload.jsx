@@ -58,39 +58,164 @@ const CNIC_HEADER_NOISE = new Set([
   'address', 'nic', 'cnic', 'name', 'father', 'husband', 'mother', 'gender',
   'sex', 'birth', 'date', 'son', 'daughter', 'wife', 'mr', 'mrs', 'ms', 'miss',
   'dr', 'id', 'no', 'num', 'of', 'the', 'and', 'for', 'with', 'pkr', 'smart',
-  'computerized', 'citizen', 'director', 'directorate', 'board', 'education'
+  'computerized', 'citizen', 'director', 'directorate', 'board', 'education',
+  'pakistani', 'temporary', 'permanent', 'present', 'cardholder',
+  'block', 'letters', 'capital', 'figures', 'words', 'english', 'urdu',
+  'candidate', 'student', 'examinee', 'applicant', 'guardian', 'parent',
+  'examination', 'certificate', 'secondary', 'intermediate', 'session', 'annual',
+  'passed', 'promoted', 'group', 'science', 'arts', 'general', 'result', 'roll',
+  'in', 'at', 'on', 'to', 'by', 'is', 'as', 'an', 'cnicno', 'nicno', 'idno',
+  'occupation', 'profession', 'income', 'salary', 'deceased', 'alive', 'cell', 'mobile'
+]);
+
+const URDU_OCR_NOISE_TOKENS = new Set([
+  'anty', 'anly', 'anfy', 'anhy', 'rerpa', 'en', 'eh', 'namo', 'neme', 'nama', 'narne',
+  'wale', 'wald', 'waldiat', 'shn', 'kpa', 'pak', 'biah', 'sn', 'so', 'do', 'wo',
+  'fo', 'mo', 'no', 'kr', 'mr', 'ms', 'dr', 'alr', 'dlr', 'sih', 'hls', 'hsn',
+  'trn', 'trq', 'zhd', 'md', 'amd', 'mhd', 'mhm', 'fsh', 'psh', 'kzn', 'gzn',
+  'hzn', 'yzn', 'wld', 'wly', 'jld', 'ald', 'bld', 'kld', 'ild', 'fld', 'cld',
+  'sod', 'tod', 'mod', 'pod', 'lah', 'mdh', 'fath', 'fthr', 'fthrname',
+  'ur', 'pk', 'pkr', 'govt', 'nadra', 'card', 'cnic', 'smart', 'nic', 'holder'
 ]);
 
 /**
- * Filter and format candidate name string
+ * Comprehensive Pakistani/Muslim name dictionary for validating OCR-extracted name candidates.
+ * When Tesseract reads Urdu script in English-only mode, it produces gibberish Latin characters
+ * (e.g., "Rerpa En Eh" or "Anty" from حسن طارق or محمد زاہد). This dictionary helps distinguish real English names
+ * from OCR-misread Urdu and strips any ghost/noise tokens.
+ */
+const PAKISTANI_NAME_PARTS = new Set([
+  // Common Pakistani/Muslim male first and middle names
+  'muhammad', 'mohammad', 'mohammed', 'ahmed', 'ahmad', 'ali', 'hassan', 'hasan', 'hussain', 'husain',
+  'usman', 'othman', 'osman', 'umar', 'omer', 'omar', 'umer', 'aamir', 'amir', 'abid', 'abdul',
+  'abdullah', 'abrar', 'adeel', 'adil', 'afzal', 'ahsan', 'ehsan', 'aijaz', 'ejaz', 'ajmal',
+  'akbar', 'akram', 'alam', 'amjad', 'ameen', 'amin', 'anis', 'anees', 'anwar', 'aqeel',
+  'arif', 'arshad', 'asghar', 'ashfaq', 'ashraf', 'asif', 'aslam', 'ata', 'atta', 'atif',
+  'azam', 'azhar', 'aziz', 'babar', 'baig', 'bari', 'bashir', 'bilal', 'burhan', 'daud',
+  'dawood', 'fahad', 'faheem', 'faisal', 'faiz', 'farhan', 'farid', 'fareed', 'farooq', 'farrukh',
+  'faseeh', 'fassih', 'fazal', 'ghani', 'ghulam', 'habib', 'hafeez', 'hafiz', 'haider', 'hyder',
+  'hameed', 'hamid', 'hamza', 'hanif', 'haroon', 'haris', 'harris', 'hayat', 'humayun', 'ibad',
+  'ibrahim', 'idrees', 'idris', 'iftikhar', 'ijaz', 'ikram', 'ilyas', 'elias', 'imran', 'inayat',
+  'intizar', 'iqbal', 'irfan', 'erfan', 'ishaq', 'ismail', 'jaffar', 'jafar', 'jahangir', 'jalil',
+  'jamal', 'jameel', 'jamil', 'javed', 'javid', 'jawad', 'junaid', 'kabir', 'kamran', 'kashif',
+  'karim', 'kareem', 'khawar', 'khurram', 'khurshid', 'latif', 'liaqat', 'liaquat', 'luqman',
+  'maalik', 'malik', 'majeed', 'majid', 'manzoor', 'maqbool', 'maqsood', 'masood', 'masud',
+  'mazhar', 'mehmood', 'mahmood', 'mahmoud', 'mian', 'mirza', 'mohsin', 'mubarak', 'mudassar',
+  'mudassir', 'mujahid', 'mukhtar', 'mumtaz', 'munir', 'muneer', 'murad', 'murtaza', 'musa',
+  'musaddiq', 'mushahid', 'mushtaq', 'mustafa', 'muzaffar', 'muzammil', 'naeem', 'nasir', 'nasser',
+  'naseem', 'nasim', 'naveed', 'navid', 'nazir', 'nazeer', 'niaz', 'nouman', 'nauman', 'noman',
+  'noor', 'obaid', 'ubaid', 'owais', 'awais', 'parvez', 'pervaiz', 'pervez', 'qadir', 'qadeer',
+  'qamar', 'qasim', 'qureshi', 'rafi', 'rafiq', 'rafeeq', 'rahim', 'raheem', 'raja', 'rashid',
+  'rasheed', 'rauf', 'raza', 'razaq', 'razzaq', 'rehman', 'rahman', 'riaz', 'rizwan', 'saad',
+  'sabir', 'sadiq', 'saeed', 'safdar', 'sajid', 'sajjad', 'saleem', 'salim', 'sami', 'sameer',
+  'samir', 'sarfraz', 'sarwar', 'shahbaz', 'shahid', 'shahrukh', 'shakeel', 'shakil', 'shams',
+  'shafiq', 'shafeeq', 'shaukat', 'shehzad', 'shahzad', 'shoaib', 'shuaib', 'siddiq', 'siddique',
+  'sohail', 'suhail', 'subhan', 'suleman', 'sulaiman', 'sultan', 'tahir', 'talha', 'tanveer',
+  'tanvir', 'tariq', 'taufeeq', 'tauqeer', 'tauseef', 'touseef', 'umair', 'usmaan', 'wahab',
+  'waheed', 'wajid', 'waleed', 'walid', 'waqar', 'waqas', 'waseem', 'wasim', 'yaqoob', 'yaqub',
+  'yaseen', 'yasin', 'yasir', 'younas', 'younus', 'younis', 'yousaf', 'yousuf', 'yusuf', 'zafar',
+  'zahid', 'zaheer', 'zain', 'zakir', 'zaman', 'zameer', 'zia', 'zubair', 'zulfiqar', 'zulfikar',
+
+  // Common Pakistani/Muslim female first and middle names
+  'aisha', 'ayesha', 'amina', 'aminah', 'amna', 'anum', 'anmol', 'asma', 'bushra', 'faiza',
+  'fatima', 'fathima', 'fariha', 'gulnaz', 'hina', 'huma', 'iqra', 'khadija', 'maryam', 'mariam',
+  'mehnaz', 'mahnoor', 'nadia', 'naheed', 'naila', 'nasreen', 'nazia', 'nighat', 'noreen',
+  'parveen', 'rabia', 'riffat', 'rubina', 'rukhsana', 'saima', 'sajida', 'samina', 'sana',
+  'shagufta', 'shaista', 'shamim', 'sughra', 'sumera', 'sumaira', 'tahira', 'uzma', 'yasmin',
+  'yasmeen', 'zainab', 'zubaida', 'sadia', 'hira', 'komal', 'aiman', 'misbah', 'sidra',
+  'tayyaba', 'salma', 'kulsoom', 'razia', 'farzana', 'shabana',
+
+  // Common Pakistani family/surname/caste/tribal names
+  'khan', 'malik', 'sheikh', 'shaikh', 'shah', 'butt', 'bhatti', 'chaudhry', 'chaudhary',
+  'choudhry', 'chughtai', 'syed', 'mir', 'mughal', 'awan', 'abbasi', 'qureshi', 'hashmi',
+  'kazmi', 'naqvi', 'rizvi', 'zaidi', 'gilani', 'geelani', 'gardezi', 'bukhari', 'jilani',
+  'niazi', 'lodhi', 'gul', 'jan', 'begum', 'bibi', 'khatoon', 'bano', 'sultana', 'pasha',
+  'bakhsh', 'baksh', 'din', 'uddin', 'ullah', 'elahi', 'ilahi', 'akhtar', 'akhter', 'hayat',
+  'haq', 'rehman', 'rahman', 'sattar', 'ghaffar', 'mannan', 'qayyum', 'memon', 'ansari',
+  'rajput', 'arain', 'jutt', 'jatt', 'baloch', 'baluch', 'marri', 'bugti', 'mengal', 'durrani',
+  'yousafzai', 'afridi', 'shinwari', 'khattak', 'bangash', 'orakzai', 'mehsud', 'wazir',
+  'mohmand', 'tareen', 'leghari', 'mazari', 'khosa', 'rind', 'lashari', 'alvi', 'usmani',
+  'farooqi', 'siddiqui', 'chishti', 'qadri', 'suharwardi', 'rehmani', 'madni', 'qasmi',
+  'faridi', 'sabri', 'khokhar', 'dogar', 'gujjar', 'gurmani', 'tiwana', 'warraich', 'cheema',
+  'tarar', 'virk', 'sandhu', 'bajwa', 'dhillon', 'soomro', 'bhutto', 'talpur', 'chandio',
+  'kalhoro', 'makhdoom', 'pirzada', 'khuhro', 'jatoi', 'mahar', 'gabol', 'achakzai', 'kakar',
+  'marwat', 'swati', 'kansi', 'panhwar', 'dareshak', 'dasti', 'malghani',
+
+  // Connectors & honorifics
+  'ul', 'ur', 'bin', 'ibn', 'bint', 'al', 'un', 'ud', 'us',
+  'maula', 'maulana', 'haji', 'hajji'
+]);
+
+/**
+ * Score a name candidate based on how many words match known Pakistani name parts.
+ * Higher score = more likely a real English name vs OCR-misread Urdu gibberish.
+ */
+const scoreNameCandidate = (candidateStr) => {
+  if (!candidateStr) return 0;
+  const words = candidateStr.toLowerCase().split(/\s+/);
+  let score = 0;
+  for (const word of words) {
+    if (PAKISTANI_NAME_PARTS.has(word)) {
+      score += 10; // Strong match
+    }
+  }
+  // Bonus for multi-word names (real names tend to be 2-4 words)
+  if (words.length >= 2 && words.length <= 4) score += 2;
+  return score;
+};
+
+/**
+ * Filter, clean, and format candidate name string
  */
 const cleanNameCandidate = (rawStr) => {
   if (!rawStr) return null;
 
-  // Remove known field prefixes with word boundaries
+  // 1. Remove bracketed descriptions e.g. (in block letters), [in English], {in figures}, etc.
   let text = rawStr
-    .replace(/(?:^|\b)(?:Father'?s?|Husband'?s?|Mother'?s?|Guardian'?s?|Name|Narne|Namo|Nene|Holder'?s?|Card|Neme|Nama|Fathor|Fathar|Falher|Fathsr|Fatner|Fathe|Fther|Feather|Fether|Husb|Son\s+of|Daughter\s+of|Wife\s+of)\b|S\/O|D\/O|W\/O\s*[:\-]?/gi, ' ')
+    .replace(/\([^\)]*\)/g, ' ')
+    .replace(/\[[^\]]*\]/g, ' ')
+    .replace(/\{[^\}]*\}/g, ' ');
+
+  // 2. Remove known label prefixes with flexible spacing and punctuation
+  text = text
+    .replace(/(?:^|\b)(?:Name\s*of\s*(?:Father|Guardian|Parent|Candidate|Student|Examinee)|Father(?:[''`]?s)?(?:\s*[\/\&]\s*(?:Husband|Guardian|Mother)(?:[''`]?s)?)?|Husband(?:[''`]?s)?|Guardian(?:[''`]?s)?|Parent(?:[''`]?s)?|Candidate\s*Name|Student\s*Name|Candidate|Student|FatherName|FathersName|F\/Name|F\.Name|FName|F\s*Name|P\/Name|P\.Name|Walad|Waldiat|Card\s*Holder|Holder[''`]?s?|Neme|Nama|Fathor|Fathar|Falher|Fathsr|Fatner|Fathe|Fther|Feather|Fether|Husb|Son\s+of|Daughter\s+of|Wife\s+of|S\/O|D\/O|W\/O|S\.O|D\.O|W\.O|Name|Narne|Namo)\b[\s:.\-\/_=]*/gi, ' ')
     .replace(/[^A-Za-z\s]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 
   if (!text) return null;
 
-  const words = text.split(' ').filter(w => w.length > 0);
-  const validWords = words.filter(word => {
+  let words = text.split(' ').filter(w => w.length > 0);
+  let validWords = words.filter(word => {
     const lower = word.toLowerCase();
     if (CNIC_HEADER_NOISE.has(lower)) return false;
+    if (URDU_OCR_NOISE_TOKENS.has(lower)) return false;
     if (word.length < 2) return false;
-    // Reject gibberish: word of 4+ characters with 0 vowels
+    // Must contain at least one vowel or vowel sound (a, e, i, o, u, y)
     const vowels = (lower.match(/[aeiouy]/g) || []).length;
-    if (word.length >= 4 && vowels === 0) return false;
-    // Reject 4+ consecutive consonants
-    if (/[bcdfghjklmnpqrstvwxyz]{4,}/i.test(lower)) return false;
+    if (vowels === 0) return false;
     return true;
   });
 
   if (validWords.length < 1) return null;
-  // Limit to max 4 name words (e.g. "Muhammad Ali Raza Khan")
+
+  // 3. NOISE STRIPPING:
+  // If the candidate contains known Pakistani name dictionary words,
+  // trim away any leading or trailing words that are NOT recognized in the name dictionary.
+  // For example: ["Anty", "Muhammad", "Zahid"] -> "Anty" is stripped -> ["Muhammad", "Zahid"]!
+  const hasRecognizedPart = validWords.some(w => PAKISTANI_NAME_PARTS.has(w.toLowerCase()));
+  if (hasRecognizedPart) {
+    // Strip leading non-dictionary words (e.g. "Anty", "Namo", Urdu artifacts)
+    while (validWords.length > 0 && !PAKISTANI_NAME_PARTS.has(validWords[0].toLowerCase())) {
+      validWords.shift();
+    }
+    // Strip trailing non-dictionary words (e.g. Urdu artifacts on right edge)
+    while (validWords.length > 0 && !PAKISTANI_NAME_PARTS.has(validWords[validWords.length - 1].toLowerCase())) {
+      validWords.pop();
+    }
+  }
+
+  if (validWords.length < 1) return null;
   const trimmed = validWords.slice(0, 4);
 
   return trimmed
@@ -162,7 +287,7 @@ const extractAllDatesFromText = (rawText) => {
 };
 
 /**
- * Extract CNIC data using robust strategies tailored for Pakistani CNICs
+ * Extract CNIC data using robust multi-strategy methods tailored for Pakistani CNICs
  */
 const extractCNICData = (rawText) => {
   const text = rawText || '';
@@ -208,73 +333,164 @@ const extractCNICData = (rawText) => {
 
   // ===== 2. Holder Name =====
   let name = null;
+  let nameLineIndex = -1;
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (/\b(?:Name|Narne|Namo|Nene|Holder|Neme|Nama)\b/i.test(line) &&
-        !/\b(?:Father|Husband|Mother|Date|Birth|CNIC|Identity|Gender|Sex|Country|Expiry|Issue|National|Database)\b/i.test(line)) {
+        !/\b(?:Father|Husband|Mother|Date|Birth|CNIC|Identity|Gender|Sex|Country|Expiry|Issue|National|Database|Stay)\b/i.test(line)) {
       name = cleanNameCandidate(line);
-      if (name && name.split(' ').length >= 2) break;
+      if (name) {
+        nameLineIndex = i;
+        break;
+      }
 
-      for (let j = 1; j <= 2; j++) {
+      for (let j = 1; j <= 3; j++) {
         const nextLine = lines[i + j];
         if (!nextLine) break;
-        if (/\b(?:Father|Husband|Mother|Date|Birth|CNIC|Identity|Gender|Sex|Country|Expiry|Issue|National|Republic|Database)\b/i.test(nextLine)) break;
+        if (/\b(?:Father|Husband|Mother|Date|Birth|CNIC|Identity|Gender|Sex|Country|Expiry|Issue|National|Republic|Database|Stay)\b/i.test(nextLine)) break;
         const cand = cleanNameCandidate(nextLine);
-        if (cand && cand.split(' ').length >= 2) { name = cand; break; }
-        if (cand && !name) name = cand;
+        if (cand) {
+          name = cand;
+          nameLineIndex = i + j;
+          break;
+        }
       }
       if (name) break;
     }
   }
 
-  // Fallback for Name: scan top 6 lines for valid 2+ word candidate that isn't header noise
+  // Fallback for Name: scan top 8 lines
   if (!name) {
     for (let i = 0; i < Math.min(lines.length, 8); i++) {
       const line = lines[i];
-      if (/(?:Republic|Pakistan|National|Identity|Card|Islamic|Address|Expiry|Issue|Birth|Gender|Father|Husband|NADRA|Database)/i.test(line)) continue;
+      if (/(?:Republic|Pakistan|National|Identity|Card|Islamic|Address|Expiry|Issue|Birth|Gender|Father|Husband|NADRA|Database|Country|Stay)/i.test(line)) continue;
       const cand = cleanNameCandidate(line);
       if (cand && cand.split(' ').length >= 2) {
         name = cand;
+        nameLineIndex = i;
         break;
       }
     }
   }
 
-  // ===== 3. Father / Husband Name =====
+  // ===== 3. Father / Husband Name (Multi-Strategy with Dictionary Scoring) =====
+  // Pakistani CNICs show names in both English and Urdu. Tesseract (English mode) misreads
+  // Urdu script as gibberish Latin characters (e.g., "Rerpa En Eh" from حسن طارق).
+  // We collect ALL candidates and pick the one with the highest Pakistani name dictionary score.
   let fatherName = null;
+
+  const isDifferentFromHolder = (cand) => {
+    if (!cand) return false;
+    if (!name) return true;
+    return cand.toLowerCase() !== name.toLowerCase();
+  };
+
+  const isFatherLine = (lineStr) => {
+    if (!lineStr) return false;
+    if (/(?:CNIC|NIC|Identity|Cell|Mobile|Phone|Contact|Occupation|Profession|Income|Salary|Sign|Signature|Thumb|Address|Live|Dead|Status|Deceased|Alive|Date\s*of\s*Birth|DOB|Issue|Expiry)\b/i.test(lineStr)) {
+      return false;
+    }
+    return /(?:Father(?:[''`]?s)?(?:\s*[\/\&]\s*(?:Husband|Guardian|Mother)(?:[''`]?s)?)?|Husband(?:[''`]?s)?|Guardian(?:[''`]?s)?|Parent(?:[''`]?s)?|Name\s*of\s*Father|FatherName|FathersName|F\/Name|F\.Name|FName|F\s*Name|Walad|Waldiat|Fathor|Fathar|Falher|Fathsr|Fatner|Fathe|Fther|Feather|Fether|Husb|S\/O|D\/O|W\/O|S\.O|D\.O|W\.O|Son\s+of|Daughter\s+of)\b/i.test(lineStr);
+  };
+
+  // Collect all father name candidates with their scores
+  const fatherCandidates = [];
+
+  // Strategy A: Same-line extraction from label line
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (/\b(?:Father|Husband|Fathor|Fathar|Falher|Fathsr|Fatner|Fathe|Fther|Feather|Fether|Husb|Son\s+of|Daughter\s+of|Wife\s+of)\b|S\/O|D\/O|W\/O/i.test(line)) {
-      fatherName = cleanNameCandidate(line);
-      if (fatherName && fatherName.split(' ').length >= 2 && (!name || fatherName.toLowerCase() !== name.toLowerCase())) break;
-
-      for (let j = 1; j <= 2; j++) {
-        const nextLine = lines[i + j];
-        if (!nextLine) break;
-        if (/\b(?:Date|Birth|CNIC|Identity|Gender|Sex|Country|Expiry|Issue|Card|National|Database)\b/i.test(nextLine)) break;
-        const cand = cleanNameCandidate(nextLine);
-        if (cand && cand.split(' ').length >= 2 && (!name || cand.toLowerCase() !== name.toLowerCase())) {
-          fatherName = cand;
-          break;
-        }
-        if (cand && (!name || cand.toLowerCase() !== name.toLowerCase()) && !fatherName) {
-          fatherName = cand;
-        }
+    if (isFatherLine(line)) {
+      const sameLineCandidate = cleanNameCandidate(line);
+      if (sameLineCandidate) {
+        fatherCandidates.push({ name: sameLineCandidate, score: scoreNameCandidate(sameLineCandidate), strategy: 'A' });
       }
-      if (fatherName) break;
     }
   }
 
-  // Fallback for Father Name: scan lines after holder name
-  if (!fatherName) {
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      if (/(?:Republic|Pakistan|National|Identity|Card|Islamic|Address|Expiry|Issue|Birth|Gender|CNIC|Date|Name|NADRA|Database)/i.test(line)) continue;
-      const cand = cleanNameCandidate(line);
-      if (cand && cand.split(' ').length >= 2 && (!name || cand.toLowerCase() !== name.toLowerCase())) {
-        fatherName = cand;
-        break;
+  // Strategy B: Multi-line lookahead (collect ALL candidates from subsequent lines)
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (isFatherLine(line)) {
+      for (let j = 1; j <= 6; j++) {
+        const nextLine = lines[i + j];
+        if (!nextLine) break;
+        if (/^[0-9\s.\-\/:]+$/.test(nextLine)) continue;
+        if (/(?:Identity\s*Number|CNIC|NIC|Date\s*of\s*Birth|DOB|Gender|Country|Stay|Address|Expiry|Issue)/i.test(nextLine)) break;
+
+        const cand = cleanNameCandidate(nextLine);
+        if (cand) {
+          fatherCandidates.push({ name: cand, score: scoreNameCandidate(cand), strategy: 'B' });
+        }
       }
+      break; // Only process the first father label block
+    }
+  }
+
+  // Strategy C: Positional scan (lines after Holder Name)
+  if (nameLineIndex >= 0) {
+    for (let i = nameLineIndex + 1; i < Math.min(lines.length, nameLineIndex + 8); i++) {
+      const line = lines[i];
+      if (/(?:Republic|Pakistan|National|Identity|Card|Islamic|Address|Expiry|Issue|Birth|Gender|CNIC|Date|Stay|Country|NADRA)/i.test(line)) continue;
+      const cand = cleanNameCandidate(line);
+      if (cand && isDifferentFromHolder(cand)) {
+        fatherCandidates.push({ name: cand, score: scoreNameCandidate(cand), strategy: 'C' });
+      }
+    }
+  }
+
+  // Strategy D: Regex across full text
+  const regexPatterns = [
+    /(?:Father(?:[''`]?s)?(?:\s*[\/\&]\s*(?:Husband|Guardian)(?:[''`]?s)?)?|Husband(?:[''`]?s)?|Guardian(?:[''`]?s)?|Parent(?:[''`]?s)?|F\/Name|F\.Name|FName|Walad|Waldiat|S\/O|D\/O|W\/O|Son\s+of|Daughter\s+of)[\s:\-._\n\r]+([A-Za-z\s]{2,40})/gi,
+    /(?:Father|Husband|Guardian)[\s\S]{1,60}?([A-Z][a-zA-Z]*(?:\s+[A-Za-z]+){0,3})/gi
+  ];
+  for (const pat of regexPatterns) {
+    const matches = [...cleanText.matchAll(pat)];
+    for (const m of matches) {
+      if (m && m[1]) {
+        const cand = cleanNameCandidate(m[1]);
+        if (cand && isDifferentFromHolder(cand)) {
+          fatherCandidates.push({ name: cand, score: scoreNameCandidate(cand), strategy: 'D' });
+        }
+      }
+    }
+  }
+
+  // Pick the best candidate: highest dictionary score wins; ties broken by strategy priority (A > B > C > D)
+  if (fatherCandidates.length > 0) {
+    // Deduplicate by name
+    const seen = new Set();
+    const unique = fatherCandidates.filter(c => {
+      const key = c.name.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    // Sort by score descending
+    unique.sort((a, b) => b.score - a.score);
+
+    console.log('--- Father Name Candidates ---');
+    unique.forEach(c => console.log(`  [${c.strategy}] "${c.name}" (score: ${c.score})`));
+
+    // Pick the highest scoring candidate
+    fatherName = unique[0].name;
+  }
+
+  // Strategy E: Fallback scan (only if no candidates found above)
+  if (!fatherName) {
+    for (let i = 0; i < Math.min(lines.length, 10); i++) {
+      const line = lines[i];
+      if (/(?:Republic|Pakistan|National|Identity|Card|Islamic|Address|Expiry|Issue|Birth|Gender|CNIC|Date|Stay|Country|NADRA|Database)/i.test(line)) continue;
+      const cand = cleanNameCandidate(line);
+      if (cand && isDifferentFromHolder(cand)) {
+        fatherCandidates.push({ name: cand, score: scoreNameCandidate(cand), strategy: 'E' });
+      }
+    }
+    // Pick best from fallback
+    if (fatherCandidates.length > 0) {
+      fatherCandidates.sort((a, b) => b.score - a.score);
+      fatherName = fatherCandidates[0].name;
     }
   }
 
@@ -530,7 +746,7 @@ const extractAcademicData = (text) => {
     }
   }
 
-  // 4. Obtained Marks & Total Marks Extraction
+  // 4. Obtained Marks & Total Marks Extraction (Multi-Strategy)
   let obtainedMarks = null;
   let totalMarks = null;
 
@@ -541,11 +757,12 @@ const extractAcademicData = (text) => {
     .replace(/([0-9])([OolISBZ])([0-9])/gi, (m, p1, p2, p3) => `${p1}${fixOcrDigits(p2)}${p3}`)
     .replace(/([0-9]{2,3})([OolISBZ])\b/gi, (m, p1, p2) => `${p1}${fixOcrDigits(p2)}`);
 
-  // a) Ratio patterns (e.g. 950 / 1100, 450/550, 450 out of 550, 950-1100, 950:1100)
-  const ratioMatches = [...cleanedNumText.matchAll(/\b([0-9OolISBZ]{2,4})\s*(?:\/|\\|out\s+of|\bof\b|:|-)\s*([0-9OolISBZ]{3,4})\b/gi)];
+  // a) Ratio patterns (e.g. 980/1100, 980 / 1100, 0980/1100, 980|1100, 980 I 1100, 980 out of 1100)
+  const ratioPattern = /\b([0-9OolISBZ]{3,4})\s*(?:\/|\\|\||I|l|out\s+of|\bof\b|:|-)\s*([0-9OolISBZ]{3,4})\b/gi;
+  const ratioMatches = [...cleanedNumText.matchAll(ratioPattern)];
   for (const match of ratioMatches) {
-    const obtCandidate = parseInt(fixOcrDigits(match[1]));
-    const totCandidate = parseInt(fixOcrDigits(match[2]));
+    const obtCandidate = parseInt(fixOcrDigits(match[1]), 10);
+    const totCandidate = parseInt(fixOcrDigits(match[2]), 10);
     if (!isNaN(obtCandidate) && !isNaN(totCandidate)) {
       if (totCandidate >= 300 && totCandidate <= 1200 && obtCandidate <= totCandidate && obtCandidate >= 100) {
         obtainedMarks = obtCandidate;
@@ -555,21 +772,45 @@ const extractAcademicData = (text) => {
     }
   }
 
-  // b) Explicit field labels if missing
+  // b) Explicit field labels (handling "(in figures)", "(in words)", newlines, etc.)
   if (!obtainedMarks) {
-    const obtMatch = cleanedNumText.match(/(?:Marks\s*Obtained|Obtained\s*Marks|Total\s*Marks\s*Obtained|Marks\s*Secured|Secured\s*Marks|Marks\s*Obt|Obt\s*Marks|Obtained|securing|passed\s+with)[\s:\-]*([0-9OolISBZ]{3,4})\s*(?:marks)?\b/i)
-      || cleanedNumText.match(/([0-9OolISBZ]{3,4})\s*marks\b/i);
-    if (obtMatch) {
-      const val = parseInt(fixOcrDigits(obtMatch[1]));
-      if (!isNaN(val) && val >= 100 && val <= 1200) obtainedMarks = val;
+    const obtPatterns = [
+      /(?:Marks\s*Obtained|Obtained\s*Marks|Total\s*Marks\s*Obtained|Marks\s*Secured|Secured\s*Marks|Marks\s*Obt|Obt\s*Marks)[\s\S]{0,35}?([0-9OolISBZ]{3,4})\b/gi,
+      /(?:(?<!Total\s+|Max\s+|Maximum\s+)Marks\s*[\(]?in\s+figures[\)]?|Marks\s*in\s*Figures)[\s:\-.\n]*([0-9OolISBZ]{3,4})\b/gi,
+      /(?:secured|obtained|passed\s+with|with)[\s:\-]*([0-9OolISBZ]{3,4})\s*(?:marks)?\b/gi,
+      /(?:GRAND\s+TOTAL|G\.\s*TOTAL|AGGREGATE)[\s\S]{0,25}?([0-9OolISBZ]{3,4})\b/gi
+    ];
+
+    for (const pat of obtPatterns) {
+      const matches = [...cleanedNumText.matchAll(pat)];
+      for (const m of matches) {
+        if (m && m[1]) {
+          const val = parseInt(fixOcrDigits(m[1]), 10);
+          if (!isNaN(val) && val >= 100 && val <= 1200 && val !== 1100 && val !== 1050) {
+            obtainedMarks = val;
+            break;
+          }
+        }
+      }
+      if (obtainedMarks) break;
     }
   }
 
   if (!totalMarks) {
-    const totMatch = cleanedNumText.match(/(?:Total\s*Marks|Maximum\s*Marks|Max\s*Marks|Out\s*of|Total)[\s:\-]*([0-9OolISBZ]{3,4})\b/i);
-    if (totMatch) {
-      const val = parseInt(fixOcrDigits(totMatch[1]));
-      if (!isNaN(val) && val >= 300 && val <= 1200) totalMarks = val;
+    const totPatterns = [
+      /(?:Total\s*Marks|Maximum\s*Marks|Max\s*Marks|Out\s*of|Total)[\s\S]{0,30}?(?:\(in\s+figures\))?[\s:\-.\n]*([0-9OolISBZ]{3,4})\b/gi,
+      /\b(1100|1050|550|500|850|1200)\b/
+    ];
+
+    for (const pat of totPatterns) {
+      const match = cleanedNumText.match(pat);
+      if (match && match[1]) {
+        const val = parseInt(fixOcrDigits(match[1]), 10);
+        if (!isNaN(val) && val >= 300 && val <= 1200) {
+          totalMarks = val;
+          break;
+        }
+      }
     }
   }
 
@@ -585,7 +826,7 @@ const extractAcademicData = (text) => {
   if (!obtainedMarks || !totalMarks) {
     const totalRows = [...cleanedNumText.matchAll(/(?:GRAND\s+TOTAL|TOTAL\s+MARKS|TOTAL|AGGREGATE|RESULT)[\s:\-]+([0-9OolISBZ\s]{3,30})/gi)];
     for (const rowMatch of totalRows) {
-      const numbersInRow = rowMatch[1].split(/\s+/).map(n => parseInt(fixOcrDigits(n))).filter(n => !isNaN(n) && n >= 100 && n <= 1200);
+      const numbersInRow = rowMatch[1].split(/\s+/).map(n => parseInt(fixOcrDigits(n), 10)).filter(n => !isNaN(n) && n >= 100 && n <= 1200);
       if (numbersInRow.length >= 2) {
         const stdTotals = [1100, 1050, 850, 550, 500, 600, 1200, 800, 400];
         const foundTotal = numbersInRow.find(n => stdTotals.includes(n)) || Math.max(...numbersInRow);
@@ -610,7 +851,7 @@ const extractAcademicData = (text) => {
   // f) Fallback: If obtained is missing but there are numbers <= totalMarks in text
   if (!obtainedMarks && totalMarks) {
     const allNums = [...cleanedNumText.matchAll(/\b([0-9OolISBZ]{3,4})\b/g)]
-      .map(m => parseInt(fixOcrDigits(m[1])))
+      .map(m => parseInt(fixOcrDigits(m[1]), 10))
       .filter(n => !isNaN(n) && n >= 150 && n < totalMarks && n !== totalMarks);
     if (allNums.length > 0) {
       obtainedMarks = Math.max(...allNums);
@@ -656,17 +897,17 @@ const extractAcademicData = (text) => {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (/(?:Name\s*(?:of\s+)?(?:Candidate|Student|Examinee)|Student\s*Name|Candidate\s*Name)\s*[:\-]?/i.test(line)
-        && !/(?:Father|Husband|Mother|Board|Institution|School|College)/i.test(line)) {
+        && !/(?:Father|Husband|Mother|Guardian|Board|Institution|School|College)/i.test(line)) {
       const sameLineMatch = line.match(/(?:Name\s*(?:of\s+)?(?:Candidate|Student|Examinee)|Student\s*Name|Candidate\s*Name)\s*[:\-]?\s*(.+)$/i);
       if (sameLineMatch && sameLineMatch[1]) {
         const val = cleanNameCandidate(sameLineMatch[1]);
         if (val && val.length >= 3) name = val;
       }
       if (!name) {
-        for (let j = 1; j <= 2; j++) {
+        for (let j = 1; j <= 3; j++) {
           const nextLine = lines[i + j];
           if (!nextLine) break;
-          if (/(?:Father|Husband|Mother|Board|Institution|School|College|Roll|Marks)/i.test(nextLine)) break;
+          if (/(?:Father|Husband|Mother|Guardian|Board|Institution|School|College|Roll|Marks)/i.test(nextLine)) break;
           const val = cleanNameCandidate(nextLine);
           if (val && val.length >= 3) { name = val; break; }
         }
@@ -675,28 +916,80 @@ const extractAcademicData = (text) => {
     }
   }
 
-  // Extract father name
+  // Extract father name from academic certificate (Multi-candidate with Dictionary Scoring)
   let fatherName = null;
+  const isDifferentFromCandidate = (cand) => {
+    if (!cand) return false;
+    if (!name) return true;
+    return cand.toLowerCase() !== name.toLowerCase();
+  };
+
+  const isAcademicFatherLine = (lineStr) => {
+    if (!lineStr) return false;
+    if (/(?:Board\s+of|Examination|Secondary|Higher|Intermediate|Roll\s*No|Total|Obtained|Marks|Grade|Result|Date|Birth|CNIC|Identity|Gender|Institution|School|College)\b/i.test(lineStr)) {
+      return false;
+    }
+    return /(?:Father(?:[''`]?s)?(?:\s*[\/\&]\s*(?:Husband|Guardian|Mother)(?:[''`]?s)?)?|Husband(?:[''`]?s)?|Guardian(?:[''`]?s)?|Parent(?:[''`]?s)?|Name\s*of\s*Father|FatherName|FathersName|F\/Name|F\.Name|FName|F\s*Name|Walad|Waldiat|S\/O|D\/O|W\/O|S\.O|D\.O|W\.O|Son\s+of|Daughter\s+of)\b/i.test(lineStr);
+  };
+
+  const academicFatherCandidates = [];
+
+  // Strategy 1: Same line extraction
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (/(?:Father|Guardian|Parent)[\s']?s?\s*(?:Name)?\s*[:\-]?/i.test(line)
-        && !/(?:Date|Birth|CNIC|Identity|Gender|Board|Institution|School)/i.test(line)) {
-      const sameLineMatch = line.match(/(?:Father|Guardian|Parent)[\s']?s?\s*(?:Name)?\s*[:\-]?\s*(.+)$/i);
-      if (sameLineMatch && sameLineMatch[1]) {
-        const val = cleanNameCandidate(sameLineMatch[1]);
-        if (val && val.length >= 3) fatherName = val;
+    if (isAcademicFatherLine(line)) {
+      const sameLineCand = cleanNameCandidate(line);
+      if (sameLineCand) {
+        academicFatherCandidates.push({ name: sameLineCand, score: scoreNameCandidate(sameLineCand), strategy: '1' });
       }
-      if (!fatherName) {
-        for (let j = 1; j <= 2; j++) {
-          const nextLine = lines[i + j];
-          if (!nextLine) break;
-          if (/(?:Name|Roll|Marks|Board|Institution|School|College|Date)/i.test(nextLine)) break;
-          const val = cleanNameCandidate(nextLine);
-          if (val && val.length >= 3) { fatherName = val; break; }
+    }
+  }
+
+  // Strategy 2: Multi-line lookahead
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (isAcademicFatherLine(line)) {
+      for (let j = 1; j <= 6; j++) {
+        const nextLine = lines[i + j];
+        if (!nextLine) break;
+        if (/^[0-9\s.\-\/:]+$/.test(nextLine)) continue;
+        if (/(?:Roll\s*No|Marks|Board|Examination|Total|Obtained|Grade|Result|Institution|School|College)/i.test(nextLine)) break;
+        const cand = cleanNameCandidate(nextLine);
+        if (cand) {
+          academicFatherCandidates.push({ name: cand, score: scoreNameCandidate(cand), strategy: '2' });
         }
       }
-      if (fatherName) break;
+      break;
     }
+  }
+
+  // Strategy 3: Fallback regex scan for Father Name in academic documents
+  const academicRegexPatterns = [
+    /(?:Father(?:[''`]?s)?(?:\s*[\/\&]\s*(?:Husband|Guardian)(?:[''`]?s)?)?|Husband(?:[''`]?s)?|Guardian(?:[''`]?s)?|Parent(?:[''`]?s)?|F\/Name|F\.Name|FName|Walad|Waldiat|S\/O|D\/O|W\/O|Son\s+of|Daughter\s+of)[\s:\-._\n\r]+([A-Za-z\s]{2,40})/gi,
+    /(?:Father|Guardian|Parent)[\s\S]{1,50}?([A-Z][a-zA-Z]*(?:\s+[A-Za-z]+){0,3})/gi
+  ];
+  for (const pat of academicRegexPatterns) {
+    const matches = [...cleanText.matchAll(pat)];
+    for (const m of matches) {
+      if (m && m[1]) {
+        const cand = cleanNameCandidate(m[1]);
+        if (cand && isDifferentFromCandidate(cand)) {
+          academicFatherCandidates.push({ name: cand, score: scoreNameCandidate(cand), strategy: '3' });
+        }
+      }
+    }
+  }
+
+  if (academicFatherCandidates.length > 0) {
+    const seen = new Set();
+    const unique = academicFatherCandidates.filter(c => {
+      const key = c.name.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    unique.sort((a, b) => b.score - a.score);
+    fatherName = unique[0].name;
   }
 
   return {
@@ -1182,6 +1475,8 @@ const sanitizeToEnglishName = (name) => {
     });
     str = parts.join(' ').replace(/[\u0600-\u06FF]/g, '').trim();
   }
+  const cleaned = cleanNameCandidate(str);
+  if (cleaned) return cleaned;
   return str.replace(/[^A-Za-z\s.\-']/g, '').replace(/\s+/g, ' ').trim();
 };
 
@@ -1259,7 +1554,7 @@ const DocumentUpload = () => {
       if (res.ok) {
         const data = await res.json();
         if (data.documents && Array.isArray(data.documents)) {
-          setUploadedFiles(data.documents.map(d => ({
+          const docs = data.documents.map(d => ({
             _id: d._id,
             name: d.name,
             type: d.type,
@@ -1268,7 +1563,15 @@ const DocumentUpload = () => {
             file_data: d.file_data || null,
             file_url: d.file_url || null,
             uploaded_at: d.uploaded_at || d.created_at
-          })));
+          }));
+          setUploadedFiles(docs);
+
+          // Auto-populate formData from existing documents
+          docs.forEach(doc => {
+            if (doc.extractedData) {
+              autoFillFromOCR(doc.extractedData, doc.type);
+            }
+          });
         }
       }
     } catch (err) {
@@ -1356,6 +1659,14 @@ const DocumentUpload = () => {
       }
 
       if (docType === 'matric') {
+        if (extractedData.name && (!updated.full_name || updated.full_name.trim() === '')) {
+          updated.full_name = sanitizeToEnglishName(extractedData.name);
+          newFilledFields.add('full_name');
+        }
+        if (extractedData.father_name && (!updated.father_name || updated.father_name.trim() === '')) {
+          updated.father_name = sanitizeToEnglishName(extractedData.father_name);
+          newFilledFields.add('father_name');
+        }
         if (extractedData.board) {
           updated.matric_board = extractedData.board;
           newFilledFields.add('matric_board');
@@ -1375,6 +1686,14 @@ const DocumentUpload = () => {
       }
 
       if (docType === 'intermediate' || docType === 'transcript') {
+        if (extractedData.name && (!updated.full_name || updated.full_name.trim() === '')) {
+          updated.full_name = sanitizeToEnglishName(extractedData.name);
+          newFilledFields.add('full_name');
+        }
+        if (extractedData.father_name && (!updated.father_name || updated.father_name.trim() === '')) {
+          updated.father_name = sanitizeToEnglishName(extractedData.father_name);
+          newFilledFields.add('father_name');
+        }
         if (extractedData.board) {
           updated.inter_board = extractedData.board;
           newFilledFields.add('inter_board');
