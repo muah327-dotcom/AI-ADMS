@@ -354,7 +354,7 @@ const extractCNICData = (rawText) => {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (/\b(?:Name|Narne|Namo|Nene|Holder|Neme|Nama)\b/i.test(line) &&
-        !/\b(?:Father|Husband|Mother|Date|Birth|CNIC|Identity|Gender|Sex|Country|Expiry|Issue|National|Database|Stay)\b/i.test(line)) {
+      !/\b(?:Father|Husband|Mother|Date|Birth|CNIC|Identity|Gender|Sex|Country|Expiry|Issue|National|Database|Stay)\b/i.test(line)) {
       name = cleanNameCandidate(line);
       if (name) {
         nameLineIndex = i;
@@ -904,7 +904,7 @@ const extractAcademicData = (text) => {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (/(?:Name\s*(?:of\s+)?(?:Candidate|Student|Examinee)|Student\s*Name|Candidate\s*Name)\s*[:\-]?/i.test(line)
-        && !/(?:Father|Husband|Mother|Guardian|Board|Institution|School|College)/i.test(line)) {
+      && !/(?:Father|Husband|Mother|Guardian|Board|Institution|School|College)/i.test(line)) {
       const sameLineMatch = line.match(/(?:Name\s*(?:of\s+)?(?:Candidate|Student|Examinee)|Student\s*Name|Candidate\s*Name)\s*[:\-]?\s*(.+)$/i);
       if (sameLineMatch && sameLineMatch[1]) {
         const val = cleanNameCandidate(sameLineMatch[1]);

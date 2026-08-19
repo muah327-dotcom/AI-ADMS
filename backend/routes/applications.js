@@ -74,10 +74,11 @@ router.post('/', [
         error: `Your percentage (${submittedPercentage}%) is below the minimum required percentage (${program.min_percentage}%) for ${program.name}. Application cannot be submitted.`
       });
     }
+    const allowedDocTypes = ['cnic', 'photograph', 'matric', 'intermediate', 'fsc', 'transcript', 'domicile', 'entry_test', 'other'];
+
     let sanitizedDocuments = (documents || []).map(doc => {
-      const allowedTypes = ['cnic', 'matric', 'fsc', 'entry_test', 'other'];
       let docType = doc.type;
-      if (!allowedTypes.includes(docType)) {
+      if (!allowedDocTypes.includes(docType)) {
         docType = 'other';
       }
       return {
@@ -90,11 +91,17 @@ router.post('/', [
     if (sanitizedDocuments.length === 0) {
       const userStoredDocs = await Document.find({ user_id: userId });
       if (userStoredDocs && userStoredDocs.length > 0) {
-        sanitizedDocuments = userStoredDocs.map(doc => ({
-          type: doc.type === 'intermediate' ? 'fsc' : (doc.type || 'other'),
-          filename: doc.name,
-          url: doc.file_url || ''
-        }));
+        sanitizedDocuments = userStoredDocs.map(doc => {
+          let docType = doc.type;
+          if (!allowedDocTypes.includes(docType)) {
+            docType = 'other';
+          }
+          return {
+            type: docType,
+            filename: doc.name || 'document',
+            url: doc.file_url || ''
+          };
+        });
       }
     }
 
@@ -104,6 +111,9 @@ router.post('/', [
       matric_percentage: parseFloat(academic_records.matric_percentage || academic_records.percentage || 0),
       fsc_percentage: parseFloat(academic_records.fsc_percentage || academic_records.percentage || 0),
       entry_test_marks: parseFloat(academic_records.entry_test_marks || 0),
+      cnic: user.cnic || null,
+      phone: user.phone || null,
+      address: user.address || null,
       documents: sanitizedDocuments,
       priority: 1,
       personal_statement: personal_statement || '',
@@ -117,7 +127,7 @@ router.post('/', [
     });
   } catch (error) {
     console.error('Application submission error:', error);
-    res.status(500).json({ error: 'Failed to submit application' });
+    res.status(500).json({ error: error.message || 'Failed to submit application' });
   }
 });
 

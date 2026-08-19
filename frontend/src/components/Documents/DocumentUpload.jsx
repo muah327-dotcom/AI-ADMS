@@ -338,7 +338,7 @@ const extractCNICData = (rawText) => {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (/\b(?:Name|Narne|Namo|Nene|Holder|Neme|Nama)\b/i.test(line) &&
-        !/\b(?:Father|Husband|Mother|Date|Birth|CNIC|Identity|Gender|Sex|Country|Expiry|Issue|National|Database|Stay)\b/i.test(line)) {
+      !/\b(?:Father|Husband|Mother|Date|Birth|CNIC|Identity|Gender|Sex|Country|Expiry|Issue|National|Database|Stay)\b/i.test(line)) {
       name = cleanNameCandidate(line);
       if (name) {
         nameLineIndex = i;
@@ -897,7 +897,7 @@ const extractAcademicData = (text) => {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (/(?:Name\s*(?:of\s+)?(?:Candidate|Student|Examinee)|Student\s*Name|Candidate\s*Name)\s*[:\-]?/i.test(line)
-        && !/(?:Father|Husband|Mother|Guardian|Board|Institution|School|College)/i.test(line)) {
+      && !/(?:Father|Husband|Mother|Guardian|Board|Institution|School|College)/i.test(line)) {
       const sameLineMatch = line.match(/(?:Name\s*(?:of\s+)?(?:Candidate|Student|Examinee)|Student\s*Name|Candidate\s*Name)\s*[:\-]?\s*(.+)$/i);
       if (sameLineMatch && sameLineMatch[1]) {
         const val = cleanNameCandidate(sameLineMatch[1]);
@@ -1200,9 +1200,9 @@ const preprocessImageForOcr = (imageOrCanvas, mode = 'adaptive') => {
               const x2 = Math.min(targetWidth, x + s);
               const count = (x2 - x1) * (y2 - y1);
               const sum = integral[y2 * (targetWidth + 1) + x2]
-                        - integral[y1 * (targetWidth + 1) + x2]
-                        - integral[y2 * (targetWidth + 1) + x1]
-                        + integral[y1 * (targetWidth + 1) + x1];
+                - integral[y1 * (targetWidth + 1) + x2]
+                - integral[y2 * (targetWidth + 1) + x1]
+                + integral[y1 * (targetWidth + 1) + x1];
               const mean = sum / count;
               const idx = (yOffset + x) * 4;
               const val = grayBuf[yOffset + x] < mean * (1 - t) ? 0 : 255;
@@ -1718,79 +1718,79 @@ const DocumentUpload = () => {
     setOcrFilledFields(newFilledFields);
   };
 
-// ===== Pakistani Phone & CNIC Formatters & Validators =====
-const formatPakistaniPhone = (value) => {
-  if (!value) return '';
-  let digits = value.replace(/\D/g, '');
-  if (digits.startsWith('92') && digits.length >= 12) {
-    digits = '0' + digits.slice(2);
-  }
-  digits = digits.slice(0, 11);
-  if (digits.length <= 4) {
-    return digits;
-  }
-  return `${digits.slice(0, 4)}-${digits.slice(4)}`;
-};
+  // ===== Pakistani Phone & CNIC Formatters & Validators =====
+  const formatPakistaniPhone = (value) => {
+    if (!value) return '';
+    let digits = value.replace(/\D/g, '');
+    if (digits.startsWith('92') && digits.length >= 12) {
+      digits = '0' + digits.slice(2);
+    }
+    digits = digits.slice(0, 11);
+    if (digits.length <= 4) {
+      return digits;
+    }
+    return `${digits.slice(0, 4)}-${digits.slice(4)}`;
+  };
 
-const formatPakistaniCnic = (value) => {
-  if (!value) return '';
-  let digits = value.replace(/\D/g, '').slice(0, 13);
-  if (digits.length <= 5) {
-    return digits;
-  } else if (digits.length <= 12) {
-    return `${digits.slice(0, 5)}-${digits.slice(5)}`;
-  } else {
-    return `${digits.slice(0, 5)}-${digits.slice(5, 12)}-${digits.slice(12)}`;
-  }
-};
+  const formatPakistaniCnic = (value) => {
+    if (!value) return '';
+    let digits = value.replace(/\D/g, '').slice(0, 13);
+    if (digits.length <= 5) {
+      return digits;
+    } else if (digits.length <= 12) {
+      return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+    } else {
+      return `${digits.slice(0, 5)}-${digits.slice(5, 12)}-${digits.slice(12)}`;
+    }
+  };
 
-const isValidPakistaniPhone = (value, isOptional = false) => {
-  if (!value || value.trim() === '') {
-    return isOptional;
-  }
-  const cleaned = value.trim();
-  return /^03[0-9]{2}-[0-9]{7}$/.test(cleaned) || /^03[0-9]{9}$/.test(cleaned);
-};
+  const isValidPakistaniPhone = (value, isOptional = false) => {
+    if (!value || value.trim() === '') {
+      return isOptional;
+    }
+    const cleaned = value.trim();
+    return /^03[0-9]{2}-[0-9]{7}$/.test(cleaned) || /^03[0-9]{9}$/.test(cleaned);
+  };
 
-// Returns exact form fields and database null fields associated with each document type
-const getDocTypeFieldsToClear = (docType) => {
-  if (docType === 'cnic') {
-    return {
-      formFields: ['father_name', 'date_of_birth', 'gender', 'cnic', 'address', 'permanent_address'],
-      dbFields: {
-        father_name: null,
-        date_of_birth: null,
-        gender: null,
-        cnic: null,
-        address: null,
-        permanent_address: null
-      }
-    };
-  }
-  if (docType === 'matric') {
-    return {
-      formFields: ['matric_board', 'matric_passing_year', 'matric_obtained_marks', 'matric_total_marks'],
-      dbFields: {
-        matric_board: null,
-        matric_passing_year: null,
-        matric_obtained_marks: null,
-        matric_total_marks: null
-      }
-    };
-  }
-  if (docType === 'intermediate' || docType === 'transcript') {
-    return {
-      formFields: ['inter_board', 'inter_passing_year', 'inter_obtained_marks', 'inter_total_marks'],
-      dbFields: {
-        inter_board: null,
-        inter_passing_year: null,
-        inter_obtained_marks: null,
-        inter_total_marks: null
-      }
-    };
-  }
-  return { formFields: [], dbFields: {} };
-};
+  // Returns exact form fields and database null fields associated with each document type
+  const getDocTypeFieldsToClear = (docType) => {
+    if (docType === 'cnic') {
+      return {
+        formFields: ['father_name', 'date_of_birth', 'gender', 'cnic', 'address', 'permanent_address'],
+        dbFields: {
+          father_name: null,
+          date_of_birth: null,
+          gender: null,
+          cnic: null,
+          address: null,
+          permanent_address: null
+        }
+      };
+    }
+    if (docType === 'matric') {
+      return {
+        formFields: ['matric_board', 'matric_passing_year', 'matric_obtained_marks', 'matric_total_marks'],
+        dbFields: {
+          matric_board: null,
+          matric_passing_year: null,
+          matric_obtained_marks: null,
+          matric_total_marks: null
+        }
+      };
+    }
+    if (docType === 'intermediate' || docType === 'transcript') {
+      return {
+        formFields: ['inter_board', 'inter_passing_year', 'inter_obtained_marks', 'inter_total_marks'],
+        dbFields: {
+          inter_board: null,
+          inter_passing_year: null,
+          inter_obtained_marks: null,
+          inter_total_marks: null
+        }
+      };
+    }
+    return { formFields: [], dbFields: {} };
+  };
 
   // Clear auto-filled form fields for a given document type
   const clearOCRFieldsForDocType = (docType) => {
@@ -1923,7 +1923,7 @@ const getDocTypeFieldsToClear = (docType) => {
 
         let pass1Data = docCategory === 'cnic' ? extractCNICData(extractedText) : extractAcademicData(extractedText);
         const pass1Incomplete = (docCategory === 'cnic' && (!pass1Data.cnic || !pass1Data.name)) ||
-                                (docCategory === 'academic' && (!pass1Data.obtained_marks || !pass1Data.board));
+          (docCategory === 'academic' && (!pass1Data.obtained_marks || !pass1Data.board));
 
         // Pass 2: If Pass 1 is incomplete or has low confidence, try high-contrast grayscale pass
         if (pass1Incomplete || confidence < 65) {

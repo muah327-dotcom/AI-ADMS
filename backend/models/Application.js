@@ -70,7 +70,8 @@ const applicationSchema = new mongoose.Schema({
   documents: [{
     type: {
       type: String,
-      enum: ['cnic', 'matric', 'fsc', 'entry_test', 'other']
+      enum: ['cnic', 'photograph', 'matric', 'intermediate', 'fsc', 'transcript', 'domicile', 'entry_test', 'other'],
+      default: 'other'
     },
     url: String,
     filename: String,
