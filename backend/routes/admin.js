@@ -5,6 +5,7 @@ import Application from '../models/Application.js';
 import User from '../models/User.js';
 import Program from '../models/Program.js';
 import Document from '../models/Document.js';
+import Department from '../models/Department.js';
 
 const router = express.Router();
 
@@ -285,6 +286,86 @@ router.get('/students', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch students' });
   }
 });
+
+// ----------------------------------------
+// DEPARTMENT ROUTES
+// ----------------------------------------
+
+router.get('/departments', async (req, res) => {
+  try {
+    const departments = await Department.find().sort({ name: 1 });
+    res.json({ departments: departments || [] });
+  } catch (error) {
+    console.error('Fetch departments error:', error);
+    res.status(500).json({ error: 'Failed to fetch departments' });
+  }
+});
+
+router.post('/departments', [
+  body('name').trim().notEmpty(),
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const department = await Department.create(req.body);
+    res.status(201).json({ message: 'Department created successfully', department });
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ error: 'Department name already exists' });
+    }
+    console.error('Create department error:', error);
+    res.status(500).json({ error: 'Failed to create department' });
+  }
+});
+
+router.patch('/departments/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+
+    const department = await Department.findByIdAndUpdate(
+      id,
+      { ...updates, updated_at: new Date() },
+      { new: true }
+    );
+
+    if (!department) {
+      return res.status(404).json({ error: 'Department not found' });
+    }
+
+    res.json({ message: 'Department updated successfully', department });
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ error: 'Department name already exists' });
+    }
+    console.error('Update department error:', error);
+    res.status(500).json({ error: 'Failed to update department' });
+  }
+});
+
+router.delete('/departments/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const department = await Department.findByIdAndDelete(id);
+
+    if (!department) {
+      return res.status(404).json({ error: 'Department not found' });
+    }
+
+    res.json({ message: 'Department deleted successfully' });
+  } catch (error) {
+    console.error('Delete department error:', error);
+    res.status(500).json({ error: 'Failed to delete department' });
+  }
+});
+
+// ----------------------------------------
+// PROGRAM ROUTES
+// ----------------------------------------
 
 router.post('/programs', [
   body('name').trim().notEmpty(),
