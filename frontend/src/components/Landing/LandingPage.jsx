@@ -870,93 +870,41 @@ const ContactSection = () => {
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
           variants={staggerContainer}
-          className="grid lg:grid-cols-5 gap-8"
+          className="grid sm:grid-cols-3 gap-6 max-w-3xl mx-auto"
         >
           {/* Contact Info */}
-          <motion.div variants={fadeInUp} className="lg:col-span-2 space-y-4">
-            {[
-              { icon: "✉️", title: "Email", value: "admissions@ggctownship.edu.pk" },
-              { icon: "📞", title: "Phone", value: "+92 42 1234 5678" },
-              { icon: "📍", title: "Location", value: "Township, Lahore, Pakistan" }
-            ].map((item, index) => (
-              <motion.div
-                key={index}
-                whileHover={{ scale: 1.02, x: 4 }}
-                className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl hover:bg-cyan-50 transition-colors cursor-pointer"
-              >
-                <div className="w-12 h-12 bg-cyan-100 rounded-xl flex items-center justify-center text-2xl">
-                  {item.icon}
-                </div>
-                <div>
-                  <div className="text-sm text-gray-500">{item.title}</div>
-                  <div className="font-medium text-gray-900">{item.value}</div>
-                </div>
-              </motion.div>
-            ))}
-
-            <motion.div 
+          {[
+            { icon: "✉️", title: "Email", value: "admissions@ggctownship.edu.pk" },
+            { icon: "📞", title: "Phone", value: "+92 42 1234 5678" },
+            { icon: "📍", title: "Location", value: "Township, Lahore, Pakistan" }
+          ].map((item, index) => (
+            <motion.div
+              key={index}
               variants={fadeInUp}
-              className="bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-xl p-6 text-white mt-6"
+              whileHover={{ scale: 1.05, y: -4 }}
+              className="flex flex-col items-center gap-3 p-6 bg-gray-50 rounded-2xl hover:bg-cyan-50 transition-colors cursor-pointer text-center"
             >
-              <h4 className="font-semibold mb-3">Office Hours</h4>
-              <ul className="space-y-2 text-sm text-cyan-100">
-                <li>Monday - Friday: 9:00 AM - 5:00 PM</li>
-                <li>Saturday: 9:00 AM - 2:00 PM</li>
-                <li>Sunday: Closed</li>
-              </ul>
+              <div className="w-14 h-14 bg-cyan-100 rounded-xl flex items-center justify-center text-2xl">
+                {item.icon}
+              </div>
+              <div>
+                <div className="text-sm text-gray-500 mb-1">{item.title}</div>
+                <div className="font-medium text-gray-900">{item.value}</div>
+              </div>
             </motion.div>
-          </motion.div>
+          ))}
 
-          {/* Contact Form */}
-          <motion.div variants={fadeInUp} className="lg:col-span-3">
-            <form className="bg-white rounded-2xl border border-gray-200 p-6 lg:p-8 shadow-lg">
-              <div className="grid sm:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
-                  <input 
-                    type="text" 
-                    placeholder="Enter your name"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
-                  <input 
-                    type="email" 
-                    placeholder="your.email@example.com"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all"
-                  />
-                </div>
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                <input 
-                  type="tel" 
-                  placeholder="+92 300 1234567"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all"
-                />
-              </div>
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Message *</label>
-                <textarea 
-                  rows={4}
-                  placeholder="Tell us about your inquiry..."
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all resize-none"
-                />
-              </div>
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                type="submit"
-                className="w-full py-4 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors"
-              >
-                Send Message
-                <ArrowRight className="w-5 h-5" />
-              </motion.button>
-              <p className="text-xs text-gray-500 text-center mt-4">
-                By submitting this form, you agree to our privacy policy and terms of service.
-              </p>
-            </form>
+          {/* Office Hours */}
+          <motion.div 
+            variants={fadeInUp}
+            className="sm:col-span-3 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-xl p-6 text-white mt-2"
+          >
+            <h4 className="font-semibold mb-3">Office Hours</h4>
+            <ul className="space-y-2 text-sm text-cyan-100">
+              <li>Monday - Friday: 9:00 AM - 5:00 PM</li>
+              <li>Saturday: 9:00 AM - 2:00 PM</li>
+              <li>Sunday: Closed</li>
+            </ul>
           </motion.div>
         </motion.div>
       </div>
