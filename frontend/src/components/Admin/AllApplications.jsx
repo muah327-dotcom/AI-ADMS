@@ -215,14 +215,14 @@ const AllApplications = () => {
   const getAllApplicationDocuments = (app) => {
     if (!app) return [];
     const list = [];
-    const seenIds = new Set();
+    const seenTypes = new Set();
 
     // 1. From MongoDB Document collection
     if (app.student_documents && Array.isArray(app.student_documents)) {
       app.student_documents.forEach(doc => {
-        const id = doc._id || doc.id || doc.type;
-        if (!seenIds.has(id)) {
-          seenIds.add(id);
+        const type = doc.type || doc._id || doc.id;
+        if (!seenTypes.has(type)) {
+          seenTypes.add(type);
           list.push(doc);
         }
       });
@@ -231,9 +231,10 @@ const AllApplications = () => {
     // 2. From application.documents array
     if (app.documents && Array.isArray(app.documents)) {
       app.documents.forEach((doc, idx) => {
-        const id = doc._id || `app-doc-${idx}`;
-        if (!seenIds.has(id)) {
-          seenIds.add(id);
+        const type = doc.type || `app-doc-${idx}`;
+        if (!seenTypes.has(type)) {
+          seenTypes.add(type);
+          const id = doc._id || `app-doc-${idx}`;
           list.push({
             _id: id,
             type: doc.type,
@@ -249,9 +250,10 @@ const AllApplications = () => {
 
     // 3. From fee_challan paid receipt
     if (app.fee_challan?.paid_receipt_url) {
-      const receiptId = 'fee-receipt';
-      if (!seenIds.has(receiptId)) {
-        seenIds.add(receiptId);
+      const type = 'fee_receipt';
+      if (!seenTypes.has(type)) {
+        seenTypes.add(type);
+        const receiptId = 'fee-receipt';
         list.push({
           _id: receiptId,
           type: 'fee_receipt',
