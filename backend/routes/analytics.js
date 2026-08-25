@@ -12,38 +12,30 @@ router.get('/admissions-by-category', async (req, res) => {
   try {
     const applications = await Application.find();
 
-    // Mock category data since we don't have admission_category field in our model
     const chartData = [
       { category: 'Merit', count: applications.length, percentage: '100' }
     ];
 
-    res.json({ admissionsByCategory: chartData });
+    res.json({ data: chartData, total: applications.length });
   } catch (error) {
     console.error('Analytics error:', error);
     res.status(500).json({ error: 'Failed to fetch analytics' });
   }
 });
 
-router.get('/application-trend', async (req, res) => {
+router.get('/applications-by-program', async (req, res) => {
   try {
-    const applications = await Application.find().sort({ application_date: 1 });
-
-    const monthlyData = applications.reduce((acc, app) => {
-      const date = new Date(app.application_date);
-      const monthYear = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      acc[monthYear] = (acc[monthYear] || 0) + 1;
-      return acc;
-    }, {});
-
-    const trend = Object.entries(monthlyData).map(([month, count]) => ({
-      month,
-      count
-    }));
-
-    res.json({ trend });
+    const applications = await Application.find().populate('program_id');
+    const programCounts = {};
+    applications.forEach(app => {
+      const progName = app.program_id?.name || 'Unknown';
+      programCounts[progName] = (programCounts[progName] || 0) + 1;
+    });
+    const data = Object.entries(programCounts).map(([program, count]) => ({ program, count }));
+    res.json({ data });
   } catch (error) {
-    console.error('Trend error:', error);
-    res.status(500).json({ error: 'Failed to fetch trend data' });
+    console.error('Program analytics error:', error);
+    res.status(500).json({ error: 'Failed to fetch program data' });
   }
 });
 
@@ -58,8 +50,6 @@ router.get('/performance-insights', async (req, res) => {
       '60-69': 0,
       'Below 60': 0
     };
-
-    const subjectPerformance = {};
 
     applications.forEach(app => {
       const matricPercentage = app.matric_percentage || 0;
@@ -98,10 +88,10 @@ router.get('/monthly-trends', async (req, res) => {
       const monthYear = `${date.toLocaleString('default', { month: 'short' })} ${date.getFullYear()}`;
       
       if (!acc[monthYear]) {
-        acc[monthYear] = { applications: 0, approved: 0 };
+        acc[monthYear] = { count: 0, approved: 0 };
       }
       
-      acc[monthYear].applications++;
+      acc[monthYear].count++;
       if (app.status === 'approved') {
         acc[monthYear].approved++;
       }
@@ -114,7 +104,7 @@ router.get('/monthly-trends', async (req, res) => {
       ...data
     }));
 
-    res.json({ trends });
+    res.json({ data: trends });
   } catch (error) {
     console.error('Monthly trends error:', error);
     res.status(500).json({ error: 'Failed to fetch monthly trends' });
@@ -135,7 +125,7 @@ router.get('/seat-occupancy', async (req, res) => {
         program: program.name,
         totalSeats: program.total_seats,
         filled: admitted.length,
-        occupancyRate: ((admitted.length / program.total_seats) * 100).toFixed(2),
+        occupancyRate: program.total_seats > 0 ? ((admitted.length / program.total_seats) * 100).toFixed(2) : '0.00',
         available: program.total_seats - admitted.length
       };
     }));
