@@ -56,7 +56,7 @@ const ContactPage = () => {
               info@ggctownship.edu.pk
             </a>
             <p className="text-gray-600 mt-3 mb-2">For admissions:</p>
-            <a href="mailto:muah327@gmail.com" className="text-cyan-600 hover:text-cyan-700 font-medium">
+            <a href="https://mail.google.com/mail/?view=cm&fs=1&to=muah327@gmail.com" target="_blank" rel="noopener noreferrer" className="text-cyan-600 hover:text-cyan-700 font-medium">
               muah327@gmail.com
             </a>
           </div>
