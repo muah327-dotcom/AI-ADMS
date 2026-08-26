@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import { 
-  Sparkles, 
-  Zap, 
-  Shield, 
-  BarChart3, 
-  Clock, 
+import {
+  Sparkles,
+  Zap,
+  Shield,
+  BarChart3,
+  Clock,
   CheckCircle2,
   ChevronRight,
   Menu,
@@ -22,8 +22,8 @@ import { Link } from 'react-router-dom';
 // Animation variants
 const fadeInUp = {
   hidden: { opacity: 0, y: 60 },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     y: 0,
     transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
   }
@@ -39,8 +39,8 @@ const staggerContainer = {
 
 const scaleIn = {
   hidden: { opacity: 0, scale: 0.8 },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     scale: 1,
     transition: { duration: 0.5, ease: "easeOut" }
   }
@@ -48,8 +48,8 @@ const scaleIn = {
 
 const slideInLeft = {
   hidden: { opacity: 0, x: -100 },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     x: 0,
     transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] }
   }
@@ -57,8 +57,8 @@ const slideInLeft = {
 
 const slideInRight = {
   hidden: { opacity: 0, x: 100 },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     x: 0,
     transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] }
   }
@@ -67,28 +67,28 @@ const slideInRight = {
 // Animated counter component
 const AnimatedCounter = ({ end, duration = 2, suffix = "" }) => {
   const [count, setCount] = useState(0);
-  
+
   useEffect(() => {
     let startTime;
     let animationFrame;
-    
+
     const animate = (timestamp) => {
       if (!startTime) startTime = timestamp;
       const progress = Math.min((timestamp - startTime) / (duration * 1000), 1);
-      
+
       // Easing function
       const easeOutQuart = 1 - Math.pow(1 - progress, 4);
       setCount(Math.floor(easeOutQuart * end));
-      
+
       if (progress < 1) {
         animationFrame = requestAnimationFrame(animate);
       }
     };
-    
+
     animationFrame = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animationFrame);
   }, [end, duration]);
-  
+
   return <span>{count}{suffix}</span>;
 };
 
@@ -122,16 +122,15 @@ const Navigation = ({ onNavClick }) => {
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled 
-          ? 'bg-white/90 backdrop-blur-lg shadow-lg' 
-          : 'bg-transparent'
-      }`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
+        ? 'bg-white/90 backdrop-blur-lg shadow-lg'
+        : 'bg-transparent'
+        }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 lg:h-20">
           {/* Logo */}
-          <motion.div 
+          <motion.div
             className="flex items-center gap-2"
             whileHover={{ scale: 1.05 }}
           >
@@ -153,9 +152,8 @@ const Navigation = ({ onNavClick }) => {
                 key={link.name}
                 href={link.href}
                 onClick={(e) => handleClick(e, link.href)}
-                className={`text-sm font-medium transition-colors cursor-pointer ${
-                  isScrolled ? 'text-gray-700 hover:text-cyan-600' : 'text-gray-700 hover:text-cyan-600'
-                }`}
+                className={`text-sm font-medium transition-colors cursor-pointer ${isScrolled ? 'text-gray-700 hover:text-cyan-600' : 'text-gray-700 hover:text-cyan-600'
+                  }`}
                 whileHover={{ y: -2 }}
               >
                 {link.name}
@@ -177,7 +175,7 @@ const Navigation = ({ onNavClick }) => {
           </div>
 
           {/* Mobile Menu Button */}
-          <button 
+          <button
             className="lg:hidden p-2"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
@@ -206,7 +204,7 @@ const Navigation = ({ onNavClick }) => {
                   {link.name}
                 </a>
               ))}
-              <Link 
+              <Link
                 to="/login"
                 className="block w-full py-3 bg-cyan-500 text-white text-center rounded-lg font-medium"
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -227,7 +225,7 @@ const HeroSection = () => {
     <section id="home" className="relative min-h-screen pt-20 lg:pt-0 overflow-hidden">
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-cyan-50 via-white to-blue-50" />
-      
+
       {/* Animated background shapes */}
       <motion.div
         className="absolute top-20 right-10 w-72 h-72 bg-cyan-200/30 rounded-full blur-3xl"
@@ -255,7 +253,7 @@ const HeroSection = () => {
             variants={staggerContainer}
             className="text-center lg:text-left"
           >
-            <motion.h1 
+            <motion.h1
               variants={fadeInUp}
               className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6"
             >
@@ -266,15 +264,15 @@ const HeroSection = () => {
               with AI
             </motion.h1>
 
-            <motion.p 
+            <motion.p
               variants={fadeInUp}
               className="text-lg text-gray-600 mb-8 max-w-xl mx-auto lg:mx-0"
             >
-              Automating the entire admission cycle from OCR data extraction to smart merit list generation. 
+              Automating the entire admission cycle from OCR data extraction to smart merit list generation.
               Experience a seamless, transparent, and efficient admission process.
             </motion.p>
 
-            <motion.div 
+            <motion.div
               variants={fadeInUp}
               className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
             >
@@ -301,7 +299,7 @@ const HeroSection = () => {
             </motion.div>
 
             {/* Stats */}
-            <motion.div 
+            <motion.div
               variants={fadeInUp}
               className="grid grid-cols-3 gap-8 mt-12 pt-8 border-t border-gray-200"
             >
@@ -423,13 +421,13 @@ const AboutSection = () => {
           variants={staggerContainer}
           className="text-center mb-16"
         >
-          <motion.span 
+          <motion.span
             variants={fadeInUp}
             className="inline-block px-4 py-2 bg-cyan-100 text-cyan-700 rounded-full text-sm font-medium mb-4"
           >
             About AI-ADMS
           </motion.span>
-          <motion.h2 
+          <motion.h2
             variants={fadeInUp}
             className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-6"
           >
@@ -438,11 +436,11 @@ const AboutSection = () => {
               Modern Education
             </span>
           </motion.h2>
-          <motion.p 
+          <motion.p
             variants={fadeInUp}
             className="text-lg text-gray-600 max-w-3xl mx-auto"
           >
-            AI-ADMS (AI-Enhanced Admission Management System) is a comprehensive, data-driven 
+            AI-ADMS (AI-Enhanced Admission Management System) is a comprehensive, data-driven
             platform that integrates cutting-edge artificial intelligence with educational administration.
           </motion.p>
         </motion.div>
@@ -478,7 +476,7 @@ const AboutSection = () => {
           variants={staggerContainer}
           className="mt-16 grid sm:grid-cols-2 gap-6 max-w-2xl mx-auto"
         >
-          <motion.div 
+          <motion.div
             variants={scaleIn}
             className="bg-gradient-to-br from-cyan-50 to-cyan-100 rounded-2xl p-6 border border-cyan-200"
           >
@@ -487,7 +485,7 @@ const AboutSection = () => {
             </div>
             <div className="text-gray-700 font-medium">Applications Processed</div>
           </motion.div>
-          <motion.div 
+          <motion.div
             variants={scaleIn}
             className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 border border-blue-200"
           >
@@ -536,18 +534,18 @@ const ProblemSection = () => {
           variants={staggerContainer}
           className="text-center mb-16"
         >
-          <motion.h2 
+          <motion.h2
             variants={fadeInUp}
             className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-6"
           >
             Traditional Admissions Are{' '}
             <span className="text-red-500">Broken & Inefficient</span>
           </motion.h2>
-          <motion.p 
+          <motion.p
             variants={fadeInUp}
             className="text-lg text-gray-600 max-w-2xl mx-auto"
           >
-            Manual processes create barriers for students and overwhelm administrators. 
+            Manual processes create barriers for students and overwhelm administrators.
             It's time for a smarter solution.
           </motion.p>
         </motion.div>
@@ -569,7 +567,7 @@ const ProblemSection = () => {
               <div className="relative h-48 overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-red-500/20 to-orange-500/20" />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <motion.div 
+                  <motion.div
                     className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center"
                     whileHover={{ scale: 1.1, rotate: 10 }}
                   >
@@ -631,13 +629,13 @@ const SolutionSection = () => {
           variants={staggerContainer}
           className="text-center mb-16"
         >
-          <motion.span 
+          <motion.span
             variants={fadeInUp}
             className="inline-block px-4 py-2 bg-cyan-100 text-cyan-700 rounded-full text-sm font-medium mb-4"
           >
             For Administrators
           </motion.span>
-          <motion.h2 
+          <motion.h2
             variants={fadeInUp}
             className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-6"
           >
@@ -646,7 +644,7 @@ const SolutionSection = () => {
               Admin Dashboard & Analytics
             </span>
           </motion.h2>
-          <motion.p 
+          <motion.p
             variants={fadeInUp}
             className="text-lg text-gray-600 max-w-2xl mx-auto"
           >
@@ -699,7 +697,7 @@ const SolutionSection = () => {
                 <p className="text-gray-600 mb-6">{solution.description}</p>
                 <ul className="space-y-3">
                   {solution.features.map((feature, i) => (
-                    <motion.li 
+                    <motion.li
                       key={i}
                       initial={{ opacity: 0, x: 20 }}
                       whileInView={{ opacity: 1, x: 0 }}
@@ -726,7 +724,7 @@ const SolutionSection = () => {
 // FAQ Section
 const FAQSection = () => {
   const [openIndex, setOpenIndex] = useState(0);
-  
+
   const faqs = [
     {
       question: "How does the OCR technology work?",
@@ -760,13 +758,13 @@ const FAQSection = () => {
           variants={staggerContainer}
           className="text-center mb-12"
         >
-          <motion.span 
+          <motion.span
             variants={fadeInUp}
             className="inline-block px-4 py-2 bg-cyan-100 text-cyan-700 rounded-full text-sm font-medium mb-4"
           >
             FAQ
           </motion.span>
-          <motion.h2 
+          <motion.h2
             variants={fadeInUp}
             className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4"
           >
@@ -775,7 +773,7 @@ const FAQSection = () => {
               Questions
             </span>
           </motion.h2>
-          <motion.p 
+          <motion.p
             variants={fadeInUp}
             className="text-gray-600"
           >
@@ -842,13 +840,13 @@ const ContactSection = () => {
           variants={staggerContainer}
           className="text-center mb-16"
         >
-          <motion.span 
+          <motion.span
             variants={fadeInUp}
             className="inline-block px-4 py-2 bg-cyan-100 text-cyan-700 rounded-full text-sm font-medium mb-4"
           >
             Get in Touch
           </motion.span>
-          <motion.h2 
+          <motion.h2
             variants={fadeInUp}
             className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4"
           >
@@ -857,7 +855,7 @@ const ContactSection = () => {
               Admission Experience?
             </span>
           </motion.h2>
-          <motion.p 
+          <motion.p
             variants={fadeInUp}
             className="text-gray-600 max-w-2xl mx-auto"
           >
@@ -875,7 +873,7 @@ const ContactSection = () => {
           {/* Contact Info */}
           {[
             { icon: "✉️", title: "Email", value: "muah327@gmail.com" },
-            { icon: "📞", title: "Phone", value: "0345 6572787" },
+            { icon: "📞", title: "Phone", value: "03456572787" },
             { icon: "📍", title: "Location", value: "Township, Lahore, Pakistan" }
           ].map((item, index) => (
             <motion.div
@@ -902,7 +900,7 @@ const ContactSection = () => {
           ))}
 
           {/* Office Hours */}
-          <motion.div 
+          <motion.div
             variants={fadeInUp}
             className="sm:col-span-3 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-xl p-6 text-white mt-2"
           >
@@ -947,7 +945,7 @@ const Footer = ({ onNavClick }) => {
                 <span>✉️</span> muah327@gmail.com
               </div>
               <div className="flex items-center gap-2">
-                <span>📞</span> 0345 6572787
+                <span>📞</span> 03456572787
               </div>
               <div className="flex items-center gap-2">
                 <span>📍</span> Township, Lahore, Pakistan
@@ -981,8 +979,8 @@ const Footer = ({ onNavClick }) => {
               Subscribe to get the latest updates on admissions and college news.
             </p>
             <div className="flex gap-2">
-              <input 
-                type="email" 
+              <input
+                type="email"
                 placeholder="Your email"
                 className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 outline-none"
               />
@@ -1005,7 +1003,7 @@ const Footer = ({ onNavClick }) => {
               aria-label="Facebook"
             >
               <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
               </svg>
             </motion.a>
             <motion.a
@@ -1015,7 +1013,7 @@ const Footer = ({ onNavClick }) => {
               aria-label="Twitter"
             >
               <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
               </svg>
             </motion.a>
             <motion.a
@@ -1025,7 +1023,7 @@ const Footer = ({ onNavClick }) => {
               aria-label="LinkedIn"
             >
               <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
               </svg>
             </motion.a>
             <motion.a
@@ -1035,7 +1033,7 @@ const Footer = ({ onNavClick }) => {
               aria-label="Instagram"
             >
               <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.067.06 1.407.06 4.123v.08c0 2.643-.012 2.987-.06 4.043-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.067.048-1.407.06-4.123.06h-.08c-2.643 0-2.987-.012-4.043-.06-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.047-1.024-.06-1.379-.06-3.808v-.63c0-2.43.013-2.784.06-3.808.049-1.064.218-1.791.465-2.427a4.902 4.902 0 011.153-1.772A4.902 4.902 0 015.45 2.525c.636-.247 1.363-.416 2.427-.465C8.901 2.013 9.256 2 11.685 2h.63zm-.081 1.802h-.468c-2.456 0-2.784.011-3.807.058-.975.045-1.504.207-1.857.344-.467.182-.8.398-1.15.748-.35.35-.566.683-.748 1.15-.137.353-.3.882-.344 1.857-.047 1.023-.058 1.351-.058 3.807v.468c0 2.456.011 2.784.058 3.807.045.975.207 1.504.344 1.857.182.466.399.8.748 1.15.35.35.683.566 1.15.748.353.137.882.3 1.857.344 1.054.048 1.37.058 4.041.058h.08c2.597 0 2.917-.01 3.96-.058.976-.045 1.505-.207 1.858-.344.466-.182.8-.398 1.15-.748.35-.35.566-.683.748-1.15.137-.353.3-.882.344-1.857.048-1.055.058-1.37.058-4.041v-.08c0-2.597-.01-2.917-.058-3.96-.045-.976-.207-1.505-.344-1.858a3.097 3.097 0 00-.748-1.15 3.098 3.098 0 00-1.15-.748c-.353-.137-.882-.3-1.857-.344-1.023-.047-1.351-.058-3.807-.058zM12 6.865a5.135 5.135 0 110 10.27 5.135 5.135 0 010-10.27zm0 1.802a3.333 3.333 0 100 6.666 3.333 3.333 0 000-6.666zm5.338-3.205a1.2 1.2 0 110 2.4 1.2 1.2 0 010-2.4z"/>
+                <path d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.067.06 1.407.06 4.123v.08c0 2.643-.012 2.987-.06 4.043-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.067.048-1.407.06-4.123.06h-.08c-2.643 0-2.987-.012-4.043-.06-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.047-1.024-.06-1.379-.06-3.808v-.63c0-2.43.013-2.784.06-3.808.049-1.064.218-1.791.465-2.427a4.902 4.902 0 011.153-1.772A4.902 4.902 0 015.45 2.525c.636-.247 1.363-.416 2.427-.465C8.901 2.013 9.256 2 11.685 2h.63zm-.081 1.802h-.468c-2.456 0-2.784.011-3.807.058-.975.045-1.504.207-1.857.344-.467.182-.8.398-1.15.748-.35.35-.566.683-.748 1.15-.137.353-.3.882-.344 1.857-.047 1.023-.058 1.351-.058 3.807v.468c0 2.456.011 2.784.058 3.807.045.975.207 1.504.344 1.857.182.466.399.8.748 1.15.35.35.683.566 1.15.748.353.137.882.3 1.857.344 1.054.048 1.37.058 4.041.058h.08c2.597 0 2.917-.01 3.96-.058.976-.045 1.505-.207 1.858-.344.466-.182.8-.398 1.15-.748.35-.35.566-.683.748-1.15.137-.353.3-.882.344-1.857.048-1.055.058-1.37.058-4.041v-.08c0-2.597-.01-2.917-.058-3.96-.045-.976-.207-1.505-.344-1.858a3.097 3.097 0 00-.748-1.15 3.098 3.098 0 00-1.15-.748c-.353-.137-.882-.3-1.857-.344-1.023-.047-1.351-.058-3.807-.058zM12 6.865a5.135 5.135 0 110 10.27 5.135 5.135 0 010-10.27zm0 1.802a3.333 3.333 0 100 6.666 3.333 3.333 0 000-6.666zm5.338-3.205a1.2 1.2 0 110 2.4 1.2 1.2 0 010-2.4z" />
               </svg>
             </motion.a>
           </div>
