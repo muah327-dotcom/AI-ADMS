@@ -56,8 +56,8 @@ const ContactPage = () => {
               info@ggctownship.edu.pk
             </a>
             <p className="text-gray-600 mt-3 mb-2">For admissions:</p>
-            <a href="mailto:admissions@ggctownship.edu.pk" className="text-cyan-600 hover:text-cyan-700 font-medium">
-              admissions@ggctownship.edu.pk
+            <a href="mailto:muah327@gmail.com" className="text-cyan-600 hover:text-cyan-700 font-medium">
+              muah327@gmail.com
             </a>
           </div>
 
@@ -69,8 +69,8 @@ const ContactPage = () => {
               <h3 className="text-lg font-semibold text-gray-900">Call Us</h3>
             </div>
             <p className="text-gray-600 mb-2">Main Office:</p>
-            <a href="tel:+924212345678" className="text-cyan-600 hover:text-cyan-700 font-medium">
-              +92 42 1234 5678
+            <a href="https://wa.me/923456572787" target="_blank" rel="noopener noreferrer" className="text-cyan-600 hover:text-cyan-700 font-medium">
+              0345 6572787
             </a>
             <p className="text-gray-600 mt-3 mb-2">Admissions Hotline:</p>
             <a href="tel:+924212345679" className="text-cyan-600 hover:text-cyan-700 font-medium">

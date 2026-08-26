@@ -874,14 +874,21 @@ const ContactSection = () => {
         >
           {/* Contact Info */}
           {[
-            { icon: "✉️", title: "Email", value: "admissions@ggctownship.edu.pk" },
-            { icon: "📞", title: "Phone", value: "+92 42 1234 5678" },
+            { icon: "✉️", title: "Email", value: "muah327@gmail.com" },
+            { icon: "📞", title: "Phone", value: "0345 6572787" },
             { icon: "📍", title: "Location", value: "Township, Lahore, Pakistan" }
           ].map((item, index) => (
             <motion.div
               key={index}
               variants={fadeInUp}
               whileHover={{ scale: 1.05, y: -4 }}
+              onClick={() => {
+                if (item.title === 'Phone') {
+                  window.open('https://wa.me/923456572787', '_blank');
+                } else if (item.title === 'Email') {
+                  window.location.href = 'mailto:muah327@gmail.com';
+                }
+              }}
               className="flex flex-col items-center gap-3 p-6 bg-gray-50 rounded-2xl hover:bg-cyan-50 transition-colors cursor-pointer text-center"
             >
               <div className="w-14 h-14 bg-cyan-100 rounded-xl flex items-center justify-center text-2xl">
@@ -937,10 +944,10 @@ const Footer = ({ onNavClick }) => {
             </p>
             <div className="space-y-2 text-sm text-gray-400">
               <div className="flex items-center gap-2">
-                <span>✉️</span> admissions@ggctownship.edu.pk
+                <span>✉️</span> muah327@gmail.com
               </div>
               <div className="flex items-center gap-2">
-                <span>📞</span> +92 42 1234 5678
+                <span>📞</span> 0345 6572787
               </div>
               <div className="flex items-center gap-2">
                 <span>📍</span> Township, Lahore, Pakistan
