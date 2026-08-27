@@ -26,6 +26,7 @@ import {
   X
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import SkeletonLoader from '../Common/SkeletonLoader';
 
 const StudentManagement = () => {
   const [students, setStudents] = useState([]);
@@ -240,9 +241,7 @@ const StudentManagement = () => {
       {/* Students Table */}
       <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 overflow-hidden">
         {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <Loader2 className="h-8 w-8 animate-spin text-cyan-500" />
-          </div>
+          <SkeletonLoader variant="table" theme="dark" />
         ) : filteredStudents.length === 0 ? (
           <div className="p-12 text-center">
             <Users className="h-16 w-16 text-gray-600 mx-auto mb-4" />

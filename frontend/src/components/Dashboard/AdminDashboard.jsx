@@ -11,6 +11,7 @@ import {
   ArrowRight,
   Download
 } from 'lucide-react';
+import SkeletonLoader from '../Common/SkeletonLoader';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -114,11 +115,7 @@ const AdminDashboard = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
-      </div>
-    );
+    return <SkeletonLoader variant="dashboard" theme="dark" />;
   }
 
   return (

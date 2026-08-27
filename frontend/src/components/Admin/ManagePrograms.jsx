@@ -12,10 +12,12 @@ import {
   BookOpen,
   Save,
   X,
+
   ArrowLeft,
   Building2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import SkeletonLoader from '../Common/SkeletonLoader';
 
 const ManagePrograms = () => {
   const [departments, setDepartments] = useState([]);
@@ -286,11 +288,7 @@ const ManagePrograms = () => {
     : departments.filter(d => d.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
-      </div>
-    );
+    return <SkeletonLoader variant="table" theme="dark" />;
   }
 
   return (

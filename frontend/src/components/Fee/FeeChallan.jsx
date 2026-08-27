@@ -17,6 +17,7 @@ import {
   HelpCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import SkeletonLoader from '../Common/SkeletonLoader';
 
 const FeeChallan = () => {
   const [challans, setChallans] = useState([]);
@@ -101,11 +102,7 @@ const FeeChallan = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-cyan-500" />
-      </div>
-    );
+    return <SkeletonLoader variant="card" theme="dark" />;
   }
 
   const currentChallan = challans[selectedChallanIndex];
