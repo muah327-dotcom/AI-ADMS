@@ -234,7 +234,7 @@ const AdminAnalytics = () => {
         {/* Monthly Trends */}
         <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-4">
           <h3 className="text-sm font-medium text-gray-300 mb-2">Monthly Trends</h3>
-          <div className="h-32">
+          <div className="relative w-full h-32">
             <Line
               data={monthlyChartData}
               options={{
@@ -265,7 +265,7 @@ const AdminAnalytics = () => {
         {/* Category Distribution */}
         <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-4">
           <h3 className="text-sm font-medium text-gray-300 mb-2">Admissions by Category</h3>
-          <div className="h-32">
+          <div className="relative w-full h-32">
             <Doughnut
               data={categoryChartData}
               options={{
@@ -273,7 +273,7 @@ const AdminAnalytics = () => {
                 maintainAspectRatio: false,
                 plugins: {
                   legend: { 
-                    position: 'right',
+                    position: 'bottom',
                     labels: { color: '#6b7280', boxWidth: 10, font: { size: 10 }, padding: 10 }
                   },
                 },
@@ -288,7 +288,7 @@ const AdminAnalytics = () => {
         {/* Program Distribution */}
         <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-4">
           <h3 className="text-sm font-medium text-gray-300 mb-2">Applications by Program</h3>
-          <div className="h-32">
+          <div className="relative w-full h-32">
             <Bar
               data={programChartData}
               options={{
