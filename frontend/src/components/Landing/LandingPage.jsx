@@ -885,6 +885,8 @@ const ContactSection = () => {
                   window.open('https://wa.me/923456572787', '_blank');
                 } else if (item.title === 'Email') {
                   window.open('https://mail.google.com/mail/?view=cm&fs=1&to=muah327@gmail.com', '_blank');
+                } else if (item.title === 'Location') {
+                  window.open('https://maps.google.com/?q=Government+Graduate+College+Township,+Lahore', '_blank');
                 }
               }}
               className="flex flex-col items-center gap-3 p-6 bg-gray-50 rounded-2xl hover:bg-cyan-50 transition-colors cursor-pointer text-center"
