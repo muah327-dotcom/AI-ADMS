@@ -204,7 +204,7 @@ const AdminDashboard = () => {
                 maintainAspectRatio: false,
                 plugins: {
                   legend: { 
-                    position: 'right', 
+                    position: 'bottom', 
                     labels: { 
                       color: '#6b7280',
                       boxWidth: 12, 
@@ -224,7 +224,7 @@ const AdminDashboard = () => {
         {/* Program Distribution */}
         <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-5">
           <h2 className="text-sm font-medium text-gray-300 mb-4">By Program</h2>
-          <div style={{ height: '180px' }}>
+          <div style={{ height: '280px' }}>
             <Pie
               data={programData}
               options={{
