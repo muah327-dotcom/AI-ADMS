@@ -14,42 +14,75 @@ router.use(requireRole(['admin']));
 
 router.get('/dashboard-stats', async (req, res) => {
   try {
-    const total = await Application.countDocuments();
-    const pending = await Application.countDocuments({ status: 'pending' });
-    const approved = await Application.countDocuments({ status: 'approved' });
-    const confirmed = await Application.countDocuments({ status: 'confirmed' });
-    const waitlisted = await Application.countDocuments({ status: 'waitlisted' });
-    const rejected = await Application.countDocuments({ status: 'rejected' });
-    const dropped = await Application.countDocuments({ status: 'dropped' });
-
-    const totalStudents = await User.countDocuments({ role: 'student' });
-    const totalPrograms = await Program.countDocuments();
+    const [
+      total,
+      pending,
+      approved,
+      confirmed,
+      waitlisted,
+      rejected,
+      dropped,
+      totalStudents,
+      totalPrograms,
+      programAgg,
+      quotaCount,
+      selfFinanceCount
+    ] = await Promise.all([
+      Application.countDocuments(),
+      Application.countDocuments({ status: 'pending' }),
+      Application.countDocuments({ status: 'approved' }),
+      Application.countDocuments({ status: 'confirmed' }),
+      Application.countDocuments({ status: 'waitlisted' }),
+      Application.countDocuments({ status: 'rejected' }),
+      Application.countDocuments({ status: 'dropped' }),
+      User.countDocuments({ role: 'student' }),
+      Program.countDocuments(),
+      
+      // Program distribution via aggregation
+      Application.aggregate([
+        {
+          $group: {
+            _id: '$program_id',
+            count: { $sum: 1 }
+          }
+        },
+        {
+          $lookup: {
+            from: 'programs',
+            localField: '_id',
+            foreignField: '_id',
+            as: 'program'
+          }
+        },
+        {
+          $unwind: '$program'
+        },
+        {
+          $project: {
+            name: '$program.name',
+            count: 1,
+            _id: 0
+          }
+        }
+      ]),
+      
+      // Category counts using regex
+      Application.countDocuments({
+        status: { $in: ['approved', 'confirmed', 'waitlisted'] },
+        remarks: { $regex: /quota/i }
+      }),
+      Application.countDocuments({
+        status: { $in: ['approved', 'confirmed', 'waitlisted'] },
+        remarks: { $regex: /self_finance/i }
+      })
+    ]);
 
     const admittedCount = approved + confirmed;
     const admissionRate = total > 0 ? (admittedCount / total) * 100 : 0;
-
-    // Real By-Program distribution
-    const allPrograms = await Program.find();
-    const programDistribution = [];
-    for (const prog of allPrograms) {
-      const count = await Application.countDocuments({ program_id: prog._id });
-      programDistribution.push({
-        name: prog.name,
-        count
-      });
-    }
-
-    // Real Category distribution
-    const allApps = await Application.find({ status: { $in: ['approved', 'confirmed', 'waitlisted'] } });
-    let meritCount = 0;
-    let quotaCount = 0;
-    let selfFinanceCount = 0;
-
-    for (const app of allApps) {
-      if (app.remarks?.toLowerCase().includes('category: quota') || app.remarks?.toLowerCase().includes('quota')) quotaCount++;
-      else if (app.remarks?.toLowerCase().includes('category: self_finance') || app.remarks?.toLowerCase().includes('self_finance')) selfFinanceCount++;
-      else meritCount++;
-    }
+    
+    // Calculate merit count
+    const totalAdmittedApps = approved + confirmed + waitlisted;
+    const meritCount = Math.max(0, totalAdmittedApps - quotaCount - selfFinanceCount);
 
     res.json({
       stats: {
@@ -64,7 +97,7 @@ router.get('/dashboard-stats', async (req, res) => {
         droppedApplications: dropped,
         totalStudents,
         totalPrograms,
-        programDistribution,
+        programDistribution: programAgg,
         categoryDistribution: {
           merit: meritCount,
           quota: quotaCount,
@@ -92,14 +125,15 @@ router.get('/all-applications', async (req, res) => {
       query = query.where('program_id').equals(program);
     }
 
-    const applications = await query
-      .populate('user_id', 'full_name email cnic phone father_name father_phone alternate_phone date_of_birth gender address permanent_address matric_board matric_passing_year matric_obtained_marks matric_total_marks inter_board inter_passing_year inter_obtained_marks inter_total_marks is_verified uploaded_documents avatar_url')
-      .populate('program_id', 'name department min_percentage required_subjects total_seats admission_fee tuition_fee total_fee')
-      .sort({ application_date: -1 })
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit));
-
-    const count = await Application.countDocuments(query.getFilter());
+    const [applications, count] = await Promise.all([
+      query
+        .populate('user_id', 'full_name email cnic phone father_name father_phone alternate_phone date_of_birth gender address permanent_address matric_board matric_passing_year matric_obtained_marks matric_total_marks inter_board inter_passing_year inter_obtained_marks inter_total_marks is_verified uploaded_documents avatar_url')
+        .populate('program_id', 'name department min_percentage required_subjects total_seats admission_fee tuition_fee total_fee')
+        .sort({ application_date: -1 })
+        .skip((page - 1) * limit)
+        .limit(parseInt(limit)),
+      Application.countDocuments(query.getFilter())
+    ]);
 
     // Fetch all documents for students in these applications
     const userIds = [...new Set(applications.map(app => app.user_id?._id || app.user_id).filter(Boolean))];
@@ -258,8 +292,10 @@ router.get('/students', async (req, res) => {
       query = query.where('program_id').equals(program);
     }
 
-    const students = await query;
-    const count = await User.countDocuments(query.getFilter());
+    const [students, count] = await Promise.all([
+      query,
+      User.countDocuments(query.getFilter())
+    ]);
 
     const studentIds = students.map(s => s._id);
     const [documents, userApplications] = await Promise.all([
