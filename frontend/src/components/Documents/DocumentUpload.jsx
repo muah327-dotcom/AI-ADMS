@@ -37,15 +37,41 @@ const cleanOcrText = (text) => {
     .trim();
 };
 
+// Collapse spaced digit runs, e.g. "9 5 0" -> "950", "1 1 0 0" -> "1100", "Marks 9 8 0" -> "Marks 980"
+const collapseSpacedDigits = (text) => {
+  if (!text) return '';
+  return text.replace((/\b\d(?:\s+\d)+\b/g), (m) => m.replace(/\s+/g, ''));
+};
+
 const fixOcrDigits = (str) => {
   if (!str) return '';
-  return String(str)
-    .replace(/[Oo]/g, '0')
-    .replace(/[Il|!ij]/g, '1')
-    .replace(/[Zz]/g, '2')
-    .replace(/[Ss]/g, '5')
-    .replace(/[Bb]/g, '8')
-    .replace(/[Gg]/g, '9');
+  const s = String(str);
+  // Count how many characters are digits to infer if this string is a numeric field
+  const digits = (s.match(/\d/g) || []).length;
+  // If the string is mostly digits (>= half), it is a numeric value like CNIC/marks/year.
+  // Aggressively remap letters that OCR confuses with digits.
+  if (digits >= Math.max(1, s.trim().length * 0.5)) {
+    return s
+      .replace(/[Oo]/g, '0')
+      .replace(/[Il|!ij]/g, '1')
+      .replace(/[Zz]/g, '2')
+      .replace(/[Ss]/g, '5')
+      .replace(/[Bb]/g, '8')
+      .replace(/[Gg]/g, '9');
+  }
+  // Otherwise treat it as a word (e.g. "Board", "Science", "Marks") and do NOT remap letters,
+  // only collapsing obvious spacing between digits.
+  return s;
+};
+
+/**
+ * Fix only the digit-like characters within a numeric run, leaving surrounding words intact.
+ * Used to clean marks/year numbers embedded in mixed text without corrupting words like "Board".
+ */
+const fixNumericRuns = (str) => {
+  if (!str) return '';
+  // Match runs that are mostly digits (may contain O/l/I/S/B ambiguities between digits)
+  return str.replace(/(?<![A-Za-z])([0-9OolISBZ]+)(?![A-Za-z])/gi, (m) => fixOcrDigits(m));
 };
 
 const CNIC_HEADER_NOISE = new Set([
