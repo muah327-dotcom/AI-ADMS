@@ -44,17 +44,16 @@ A comprehensive, full-stack admission management system powered by AI for automa
 - Express Validator for input validation
 
 ### Database
-- Supabase (PostgreSQL)
-- Row Level Security (RLS) policies
-- UUID primary keys
-- JSONB for flexible data storage
+- MongoDB (Mongoose ODM)
+- MongoDB Atlas (cloud hosted)
+- GridFS for file storage
 
 ## Getting Started
 
 ### Prerequisites
 - Node.js 18+ 
 - npm or yarn
-- Supabase account (free tier works)
+- MongoDB Atlas account (free tier works)
 
 ### Installation
 
@@ -74,24 +73,12 @@ cd ../backend && npm install
 
 Create `backend/.env`:
 ```env
-SUPABASE_URL=your_supabase_project_url
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+MONGODB_URI=your_mongodb_atlas_connection_string
 JWT_SECRET=your_jwt_secret_key_here
 PORT=3001
 ```
 
-Create `frontend/.env`:
-```env
-VITE_SUPABASE_URL=your_supabase_project_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-```
-
-4. **Set up the database**
-- Go to your Supabase dashboard
-- Open the SQL Editor
-- Run the contents of `database/schema.sql`
-
-5. **Start the development servers**
+4. **Start the development servers**
 
 From the root directory:
 ```bash
@@ -107,7 +94,7 @@ cd backend && npm run dev
 cd frontend && npm run dev
 ```
 
-6. **Access the application**
+5. **Access the application**
 - Frontend: http://localhost:5173
 - Backend API: http://localhost:3001
 
@@ -117,9 +104,16 @@ cd frontend && npm run dev
 ai-admission-system/
 ├── backend/
 │   ├── config/
-│   │   └── supabase.js
+│   │   └── db.js
 │   ├── middleware/
 │   │   └── auth.js
+│   ├── models/
+│   │   ├── User.js
+│   │   ├── Program.js
+│   │   ├── Application.js
+│   │   ├── Document.js
+│   │   ├── Department.js
+│   │   └── College.js
 │   ├── routes/
 │   │   ├── auth.js
 │   │   ├── applications.js
@@ -128,6 +122,9 @@ ai-admission-system/
 │   │   ├── analytics.js
 │   │   ├── ocr.js
 │   │   └── recommendations.js
+│   ├── utils/
+│   │   ├── gridfs.js
+│   │   └── recommendation_ml.js
 │   ├── server.js
 │   └── package.json
 ├── frontend/
@@ -154,6 +151,16 @@ ai-admission-system/
 │   │   │   │   ├── ManagePrograms.jsx
 │   │   │   │   ├── AllApplications.jsx
 │   │   │   │   └── StudentManagement.jsx
+│   │   │   ├── Fee/
+│   │   │   │   └── FeeChallan.jsx
+│   │   │   ├── Settings/
+│   │   │   │   └── Settings.jsx
+│   │   │   ├── Common/
+│   │   │   │   └── SkeletonLoader.jsx
+│   │   │   ├── Legal/
+│   │   │   │   ├── PrivacyPolicy.jsx
+│   │   │   │   ├── TermsOfService.jsx
+│   │   │   │   └── ContactPage.jsx
 │   │   │   └── Layout/
 │   │   │       └── Layout.jsx
 │   │   ├── contexts/
@@ -161,7 +168,7 @@ ai-admission-system/
 │   │   ├── hooks/
 │   │   │   └── useAuth.js
 │   │   ├── config/
-│   │   │   └── supabase.js
+│   │   │   └── api.js
 │   │   ├── App.jsx
 │   │   ├── main.jsx
 │   │   └── index.css
@@ -170,8 +177,6 @@ ai-admission-system/
 │   ├── vite.config.js
 │   ├── tailwind.config.js
 │   └── postcss.config.js
-├── database/
-│   └── schema.sql
 ├── package.json
 └── README.md
 ```
@@ -263,7 +268,6 @@ The application is fully responsive with breakpoints for:
 
 - JWT-based authentication
 - Password hashing with bcrypt
-- Row Level Security (RLS) in Supabase
 - Input validation with express-validator
 - File upload size limits
 - CORS protection
