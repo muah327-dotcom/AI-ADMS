@@ -937,13 +937,28 @@ const extractAcademicData = (text) => {
     }
   }
 
-  // b) Explicit field labels
+  // b) Same-line Total and Obtained (e.g. TOTAL MARKS: 1100 MARKS OBTAINED: 798)
+  if (!obtainedMarks || !totalMarks) {
+    const sameLinePattern = /(?:TOTAL(?:\s*MARKS)?|MAXIMUM(?:\s*MARKS)?)\s*[:\-]?\s*([0-9OolISBZ]{3,4})[\s\S]{1,30}?(?:MARKS\s*OBTAINED|OBTAINED(?:\s*MARKS)?|SECURED)\s*[:\-]?\s*([0-9OolISBZ]{3,4})/gi;
+    const sameLineMatches = [...cleanedNumText.matchAll(sameLinePattern)];
+    for (const match of sameLineMatches) {
+      const totCandidate = parseInt(fixOcrDigits(match[1]), 10);
+      const obtCandidate = parseInt(fixOcrDigits(match[2]), 10);
+      if (totCandidate >= 300 && totCandidate <= 1200 && obtCandidate >= 100 && obtCandidate <= totCandidate) {
+        totalMarks = totCandidate;
+        obtainedMarks = obtCandidate;
+        break;
+      }
+    }
+  }
+
+  // b.2) Explicit field labels
   if (!obtainedMarks) {
     const obtPatterns = [
-      /(?:Marks\s*Obtained|Obtained\s*Marks|Marks\s*Secured|Secured\s*Marks|Marks\s*Obt|Obt\s*Marks|Marks\s*in\s*Figures)[\s\S]{0,40}?([0-9OolISBZ]{3,4})\b/gi,
-      /(?:Total\s*Marks\s*Obtained)[\s\S]{0,40}?([0-9OolISBZ]{3,4})\b/gi,
+      /(?:Marks\s*Obtained|Obtained\s*Marks|Marks\s*Secured|Secured\s*Marks|Marks\s*Obt|Obt\s*Marks|Marks\s*in\s*Figures)[\s:\-\=]{1,5}([0-9OolISBZ]{3,4})\b/gi,
+      /(?:Total\s*Marks\s*Obtained)[\s:\-\=]{1,5}([0-9OolISBZ]{3,4})\b/gi,
       /(?:secured|obtained|passed\s*with|got|scored)[\s:\-]+([0-9OolISBZ]{3,4})\s*(?:marks)?\b/gi,
-      /(?:GRAND\s+TOTAL|G\.\s*TOTAL|AGGREGATE|GRAND)[\s\S]{0,30}?([0-9OolISBZ]{3,4})\b/gi
+      /(?:GRAND\s+TOTAL|G\.\s*TOTAL|AGGREGATE|GRAND)[\s:\-\=]{1,5}([0-9OolISBZ]{3,4})\b/gi
     ];
 
     for (const pat of obtPatterns) {
@@ -964,7 +979,7 @@ const extractAcademicData = (text) => {
   // c) Explicit TOTAL labels
   if (!totalMarks) {
     const totPatterns = [
-      /(?:Total\s*Marks|Maximum\s*Marks|Max\s*Marks|Grand\s*Total|Out\s*of)[\s\S]{0,35}?([0-9OolISBZ]{3,4})\b/gi
+      /(?:Total\s*Marks|Maximum\s*Marks|Max\s*Marks|Grand\s*Total|Out\s*of)[\s:\-\=]{1,5}([0-9OolISBZ]{3,4})\b/gi
     ];
 
     for (const pat of totPatterns) {
@@ -989,7 +1004,8 @@ const extractAcademicData = (text) => {
 
   // e) Summary row search (GRAND TOTAL / TOTAL / AGGREGATE row with two numbers in it)
   if (!obtainedMarks || !totalMarks) {
-    const totalRows = [...cleanedNumText.matchAll(/(?:GRAND\s+TOTAL|TOTAL\s+MARKS|TOTAL|AGGREGATE|RESULT)[\s:\-]+([0-9OolISBZ\s]{3,30})/gi)];
+    // Look for lines containing both numbers together
+    const totalRows = [...cleanedNumText.matchAll(/(?:GRAND\s+TOTAL|TOTAL\s+MARKS|TOTAL|AGGREGATE|RESULT)[\s:\-]+([0-9OolISBZ\s]+)/gi)];
     for (const rowMatch of totalRows) {
       const numbersInRow = rowMatch[1].split(/\s+/)
         .map(n => parseInt(fixOcrDigits(n), 10))
@@ -1017,7 +1033,7 @@ const extractAcademicData = (text) => {
   if (!obtainedMarks && totalMarks) {
     const allNums = [...cleanedNumText.matchAll(/\b([0-9OolISBZ]{3,4})\b/g)]
       .map(m => parseInt(fixOcrDigits(m[1]), 10))
-      .filter(n => !isNaN(n) && n >= 150 && n < totalMarks && n !== totalMarks);
+      .filter(n => !isNaN(n) && n >= 150 && n < totalMarks && n !== totalMarks && !STD_TOTALS.includes(n));
     if (allNums.length > 0) {
       obtainedMarks = Math.max(...allNums);
     }
@@ -1028,11 +1044,17 @@ const extractAcademicData = (text) => {
     totalMarks = obtainedMarks > 550 ? 1100 : 550;
   }
 
-  // Ensure obtainedMarks < totalMarks (a perfect score is not a "pass" with 0 margin)
+  // Only swap if obtained > total AND obtained is a standard total AND total is a plausible obtained score
   if (obtainedMarks && totalMarks && obtainedMarks > totalMarks) {
-    const temp = obtainedMarks;
-    obtainedMarks = totalMarks;
-    totalMarks = temp;
+    if (STD_TOTALS.includes(obtainedMarks) && totalMarks < obtainedMarks) {
+      const temp = obtainedMarks;
+      obtainedMarks = totalMarks;
+      totalMarks = temp;
+    } else {
+      // If we got absurd marks (e.g. 1100 obtained, 798 total) and 1100 is a standard total, we cap it.
+      totalMarks = obtainedMarks;
+      obtainedMarks = null; // We failed to find the real obtained marks
+    }
   }
 
   // Percentage & Grade calculation / extraction
