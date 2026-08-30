@@ -190,10 +190,36 @@ const AllApplications = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   };
 
-  const handleOpenDocViewer = (doc) => {
-    setPreviewDoc(doc);
-    setZoomLevel(1);
-    setRotation(0);
+  const handleOpenDocViewer = async (doc) => {
+    if (doc.file_data || doc.file_url || doc.url) {
+      setPreviewDoc(doc);
+      setZoomLevel(1);
+      setRotation(0);
+      return;
+    }
+
+    try {
+      const docId = doc._id || doc.id;
+      if (!docId) return;
+      
+      const toastId = toast.loading('Loading document...');
+      const response = await fetch(`/api/ocr/document/${docId}`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      
+      toast.dismiss(toastId);
+      if (response.ok) {
+        const data = await response.json();
+        setPreviewDoc(data.document || data);
+        setZoomLevel(1);
+        setRotation(0);
+      } else {
+        toast.error('Failed to load full document');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Network error while loading document');
+    }
   };
 
   const handleDownloadDoc = (doc) => {
@@ -224,7 +250,7 @@ const AllApplications = () => {
         const type = doc.type || doc._id || doc.id;
         if (!seenTypes.has(type)) {
           seenTypes.add(type);
-          list.push(doc);
+          list.push({ ...doc, is_from_db: true });
         }
       });
     }
@@ -739,7 +765,7 @@ const AllApplications = () => {
                     <div className="grid sm:grid-cols-2 gap-3">
                       {docs.map((doc, idx) => {
                         const label = getDocTypeLabel(doc.type);
-                        const hasPreview = !!(doc.file_data || doc.file_url || doc.url);
+                        const hasPreview = !!(doc.file_data || doc.file_url || doc.url || (doc._id && doc.is_from_db));
                         return (
                           <div
                             key={doc._id || idx}
@@ -788,7 +814,12 @@ const AllApplications = () => {
                             {/* Action Buttons */}
                             <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-800/80">
                               <button
-                                onClick={() => handleOpenDocViewer(doc)}
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  handleOpenDocViewer(doc);
+                                }}
                                 disabled={!hasPreview}
                                 className="flex-1 inline-flex items-center justify-center px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500 text-cyan-400 hover:text-white rounded-lg transition-colors text-xs font-semibold border border-cyan-500/20 disabled:opacity-40"
                               >
@@ -874,7 +905,7 @@ const AllApplications = () => {
 
       {/* Interactive Document Viewer Modal */}
       {previewDoc && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+        <div className="fixed inset-0 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md" style={{ zIndex: 9999 }}>
           <div className="bg-[#181818] rounded-2xl max-w-5xl w-full h-[90vh] flex flex-col border border-gray-700 shadow-2xl overflow-hidden animate-scale-in">
             {/* Viewer Header */}
             <div className="p-4 border-b border-gray-800 bg-[#121212] flex items-center justify-between flex-shrink-0">
