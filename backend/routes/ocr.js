@@ -69,7 +69,9 @@ router.post('/upload-document', async (req, res) => {
 router.get('/my-documents', async (req, res) => {
   try {
     const userId = req.user.id;
-    const documents = await Document.find({ user_id: userId }).sort({ uploaded_at: 1 });
+    const documents = await Document.find({ user_id: userId })
+      .select('-file_data')
+      .sort({ uploaded_at: 1 });
 
     const user = await User.findById(userId);
     const userDocTypes = user?.uploaded_documents || [];

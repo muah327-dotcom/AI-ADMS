@@ -135,9 +135,11 @@ router.get('/all-applications', async (req, res) => {
       Application.countDocuments(query.getFilter())
     ]);
 
-    // Fetch all documents for students in these applications
+    // Fetch documents for students in these applications (exclude heavy file_data)
     const userIds = [...new Set(applications.map(app => app.user_id?._id || app.user_id).filter(Boolean))];
-    const documents = await Document.find({ user_id: { $in: userIds } }).sort({ uploaded_at: 1 });
+    const documents = await Document.find({ user_id: { $in: userIds } })
+      .select('-file_data')
+      .sort({ uploaded_at: 1 });
 
     const mappedApplications = applications.map(app => {
       const appObj = app.toObject();
@@ -177,7 +179,9 @@ router.get('/applications/:id', async (req, res) => {
 
     const appObj = application.toObject();
     const studentId = (appObj.user_id?._id || appObj.user_id)?.toString();
-    const studentDocs = await Document.find({ user_id: studentId }).sort({ uploaded_at: 1 });
+    const studentDocs = await Document.find({ user_id: studentId })
+      .select('-file_data')
+      .sort({ uploaded_at: 1 });
 
     appObj.student = appObj.user_id;
     appObj.program = appObj.program_id;
@@ -195,7 +199,9 @@ router.get('/applications/:id', async (req, res) => {
 router.get('/student/:userId/documents', async (req, res) => {
   try {
     const { userId } = req.params;
-    const documents = await Document.find({ user_id: userId }).sort({ uploaded_at: 1 });
+    const documents = await Document.find({ user_id: userId })
+      .select('-file_data')
+      .sort({ uploaded_at: 1 });
     const user = await User.findById(userId).select('-password');
 
     res.json({
@@ -257,6 +263,7 @@ router.get('/all-users', async (req, res) => {
     const { page = 1, limit = 20 } = req.query;
     
     const students = await User.find({ role: 'student' })
+      .select('full_name email cnic phone father_name date_of_birth gender address is_verified created_at uploaded_documents avatar_url')
       .sort({ created_at: -1 })
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
@@ -280,6 +287,7 @@ router.get('/students', async (req, res) => {
     const { category, program, page = 1, limit = 20 } = req.query;
     
     let query = User.find({ role: 'student' })
+      .select('full_name email cnic phone father_name date_of_birth gender address admission_category program_id is_verified created_at uploaded_documents avatar_url')
       .sort({ created_at: -1 })
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
@@ -299,8 +307,10 @@ router.get('/students', async (req, res) => {
 
     const studentIds = students.map(s => s._id);
     const [documents, userApplications] = await Promise.all([
-      Document.find({ user_id: { $in: studentIds } }).sort({ uploaded_at: 1 }),
-      Application.find({ user_id: { $in: studentIds } }).populate('program_id', 'name department')
+      Document.find({ user_id: { $in: studentIds } }).select('-file_data').sort({ uploaded_at: 1 }),
+      Application.find({ user_id: { $in: studentIds } })
+        .select('program_id status application_date')
+        .populate('program_id', 'name department')
     ]);
 
     const mappedStudents = students.map(student => {
