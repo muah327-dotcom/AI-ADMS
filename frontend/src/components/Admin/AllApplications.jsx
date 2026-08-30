@@ -191,6 +191,7 @@ const AllApplications = () => {
   };
 
   const handleOpenDocViewer = async (doc) => {
+    // If the document already has inline data, show it immediately
     if (doc.file_data || doc.file_url || doc.url) {
       setPreviewDoc(doc);
       setZoomLevel(1);
@@ -198,26 +199,57 @@ const AllApplications = () => {
       return;
     }
 
+    const toastId = toast.loading('Loading document...');
+
     try {
+      // Try 1: Fetch by document ID from the Document collection
       const docId = doc._id || doc.id;
-      if (!docId) return;
-      
-      const toastId = toast.loading('Loading document...');
-      const response = await fetch(`/api/ocr/document/${docId}`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
-      
-      toast.dismiss(toastId);
-      if (response.ok) {
-        const data = await response.json();
-        setPreviewDoc(data.document || data);
-        setZoomLevel(1);
-        setRotation(0);
-      } else {
-        toast.error('Failed to load full document');
+      if (docId && doc.is_from_db) {
+        const response = await fetch(`/api/ocr/document/${docId}`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          toast.dismiss(toastId);
+          setPreviewDoc(data.document || data);
+          setZoomLevel(1);
+          setRotation(0);
+          return;
+        }
       }
+
+      // Try 2: Fetch all documents for this student and find matching type
+      const studentId = selectedApplication?.student?._id || selectedApplication?.user_id?._id || selectedApplication?.user_id;
+      if (studentId && doc.type) {
+        const response = await fetch(`/api/admin/student/${studentId}/documents`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const docs = data.documents || [];
+          const match = docs.find(d => d.type === doc.type);
+          if (match) {
+            // Now fetch the full document with file_data
+            const fullDocRes = await fetch(`/api/ocr/document/${match._id}`, {
+              headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            });
+            if (fullDocRes.ok) {
+              const fullData = await fullDocRes.json();
+              toast.dismiss(toastId);
+              setPreviewDoc(fullData.document || fullData);
+              setZoomLevel(1);
+              setRotation(0);
+              return;
+            }
+          }
+        }
+      }
+
+      toast.dismiss(toastId);
+      toast.error('Document file not available for preview');
     } catch (err) {
       console.error(err);
+      toast.dismiss(toastId);
       toast.error('Network error while loading document');
     }
   };
@@ -765,7 +797,7 @@ const AllApplications = () => {
                     <div className="grid sm:grid-cols-2 gap-3">
                       {docs.map((doc, idx) => {
                         const label = getDocTypeLabel(doc.type);
-                        const hasPreview = !!(doc.file_data || doc.file_url || doc.url || (doc._id && doc.is_from_db));
+                        const hasPreview = true;
                         return (
                           <div
                             key={doc._id || idx}

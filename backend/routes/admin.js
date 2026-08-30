@@ -135,10 +135,9 @@ router.get('/all-applications', async (req, res) => {
       Application.countDocuments(query.getFilter())
     ]);
 
-    // Fetch documents for students in these applications (exclude heavy file_data)
+    // Fetch documents for students in these applications (include file_data for admin preview)
     const userIds = [...new Set(applications.map(app => app.user_id?._id || app.user_id).filter(Boolean))];
     const documents = await Document.find({ user_id: { $in: userIds } })
-      .select('-file_data')
       .sort({ uploaded_at: 1 });
 
     const mappedApplications = applications.map(app => {
@@ -180,7 +179,6 @@ router.get('/applications/:id', async (req, res) => {
     const appObj = application.toObject();
     const studentId = (appObj.user_id?._id || appObj.user_id)?.toString();
     const studentDocs = await Document.find({ user_id: studentId })
-      .select('-file_data')
       .sort({ uploaded_at: 1 });
 
     appObj.student = appObj.user_id;
