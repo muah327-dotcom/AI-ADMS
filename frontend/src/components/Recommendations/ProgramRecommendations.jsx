@@ -80,18 +80,18 @@ const ProgramRecommendations = () => {
       const token = localStorage.getItem('token');
       const payload = isExternal
         ? {
-            college_name: item.college_name,
-            shift: item.shift,
-            is_external: true,
-            student_merit: studentMerit,
-            cutoff: item.min_merit_cutoff
-          }
+          college_name: item.college_name,
+          shift: item.shift,
+          is_external: true,
+          student_merit: studentMerit,
+          cutoff: item.min_merit_cutoff
+        }
         : {
-            program_id: item.id || item._id || item.program?._id || item.program?.id,
-            shift: item.shift || item.program?.shift || 'Morning',
-            student_merit: studentMerit,
-            cutoff: item.min_merit_cutoff || item.program?.min_percentage || 60
-          };
+          program_id: item.id || item._id || item.program?._id || item.program?.id,
+          shift: item.shift || item.program?.shift || 'Morning',
+          student_merit: studentMerit,
+          cutoff: item.min_merit_cutoff || item.program?.min_percentage || 60
+        };
 
       const response = await fetch('/api/recommendations/explain-match', {
         method: 'POST',
@@ -160,11 +160,10 @@ const ProgramRecommendations = () => {
       <div className="flex flex-wrap items-center gap-2 p-1.5 bg-[#121212] rounded-xl border border-gray-800">
         <button
           onClick={() => setActiveTab('smart')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-            activeTab === 'smart'
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${activeTab === 'smart'
               ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md shadow-cyan-500/20'
               : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
-          }`}
+            }`}
         >
           <Sparkles className="h-4 w-4" />
           <span>In-House Alternatives ({internalAlternatives.length})</span>
@@ -172,11 +171,10 @@ const ProgramRecommendations = () => {
 
         <button
           onClick={() => setActiveTab('colleges')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-            activeTab === 'colleges'
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${activeTab === 'colleges'
               ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-md shadow-purple-500/20'
               : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
-          }`}
+            }`}
         >
           <Building2 className="h-4 w-4" />
           <span>Partner Colleges ({partnerColleges.length})</span>
@@ -184,11 +182,10 @@ const ProgramRecommendations = () => {
 
         <button
           onClick={() => setActiveTab('all')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-            activeTab === 'all'
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${activeTab === 'all'
               ? 'bg-gray-800 text-white border border-gray-700'
               : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
-          }`}
+            }`}
         >
           <Layers className="h-4 w-4" />
           <span>All Programs ({recommendations.length})</span>
@@ -246,13 +243,12 @@ const ProgramRecommendations = () => {
                         <p className="text-xs text-gray-400">{prog.department}</p>
                       </div>
 
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold border whitespace-nowrap ${
-                        prog.match_level === 'high'
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold border whitespace-nowrap ${prog.match_level === 'high'
                           ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
                           : prog.match_level === 'medium'
-                          ? 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30'
-                          : 'bg-amber-500/10 text-amber-300 border-amber-500/30'
-                      }`}>
+                            ? 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30'
+                            : 'bg-amber-500/10 text-amber-300 border-amber-500/30'
+                        }`}>
                         {prog.admission_probability}% Acceptance
                       </span>
                     </div>
@@ -339,11 +335,10 @@ const ProgramRecommendations = () => {
                         </p>
                       </div>
 
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold border whitespace-nowrap ${
-                        college.match_level === 'high'
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold border whitespace-nowrap ${college.match_level === 'high'
                           ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
                           : 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30'
-                      }`}>
+                        }`}>
                         {college.admission_probability}% Acceptance
                       </span>
                     </div>
@@ -410,24 +405,22 @@ const ProgramRecommendations = () => {
             {recommendations.map((rec, index) => (
               <div
                 key={index}
-                className={`bg-[#1a1a1a] rounded-xl border p-5 transition-all ${
-                  rec.match_level === 'high'
+                className={`bg-[#1a1a1a] rounded-xl border p-5 transition-all ${rec.match_level === 'high'
                     ? 'border-emerald-500/30'
                     : rec.match_level === 'medium'
-                    ? 'border-cyan-500/30'
-                    : 'border-gray-800'
-                }`}
+                      ? 'border-cyan-500/30'
+                      : 'border-gray-800'
+                  }`}
               >
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <div>
                     <h4 className="text-base font-bold text-white">{rec.program.name}</h4>
                     <p className="text-xs text-gray-400">{rec.program.department}</p>
                   </div>
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${
-                    rec.details.meets_percentage
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${rec.details.meets_percentage
                       ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
                       : 'bg-rose-500/10 text-rose-300 border-rose-500/30'
-                  }`}>
+                    }`}>
                     {rec.details.meets_percentage ? 'Eligible' : 'Below Cutoff'}
                   </span>
                 </div>

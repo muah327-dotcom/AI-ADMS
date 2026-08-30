@@ -2627,16 +2627,6 @@ const DocumentUpload = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  {file.file_data && (
-                    <a
-                      href={file.file_data}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3 py-1.5 text-xs bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-lg transition-colors border border-cyan-500/30 font-medium"
-                    >
-                      View
-                    </a>
-                  )}
                   <button
                     onClick={() => removeFile(index)}
                     title="Delete document from database"
