@@ -12,6 +12,7 @@ import {
   ChevronUp
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import SkeletonLoader from '../Common/SkeletonLoader';
 
 const NewApplication = () => {
   const navigate = useNavigate();
@@ -179,11 +180,7 @@ const NewApplication = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
-      </div>
-    );
+    return <SkeletonLoader variant="card" theme="dark" />;
   }
 
   return (

@@ -37,15 +37,41 @@ const cleanOcrText = (text) => {
     .trim();
 };
 
+// Collapse spaced digit runs, e.g. "9 5 0" -> "950", "1 1 0 0" -> "1100", "Marks 9 8 0" -> "Marks 980"
+const collapseSpacedDigits = (text) => {
+  if (!text) return '';
+  return text.replace((/\b\d(?:\s+\d)+\b/g), (m) => m.replace(/\s+/g, ''));
+};
+
 const fixOcrDigits = (str) => {
   if (!str) return '';
-  return String(str)
-    .replace(/[Oo]/g, '0')
-    .replace(/[Il|!ij]/g, '1')
-    .replace(/[Zz]/g, '2')
-    .replace(/[Ss]/g, '5')
-    .replace(/[Bb]/g, '8')
-    .replace(/[Gg]/g, '9');
+  const s = String(str);
+  // Count how many characters are digits to infer if this string is a numeric field
+  const digits = (s.match(/\d/g) || []).length;
+  // If the string is mostly digits (>= half), it is a numeric value like CNIC/marks/year.
+  // Aggressively remap letters that OCR confuses with digits.
+  if (digits >= Math.max(1, s.trim().length * 0.5)) {
+    return s
+      .replace(/[Oo]/g, '0')
+      .replace(/[Il|!ij]/g, '1')
+      .replace(/[Zz]/g, '2')
+      .replace(/[Ss]/g, '5')
+      .replace(/[Bb]/g, '8')
+      .replace(/[Gg]/g, '9');
+  }
+  // Otherwise treat it as a word (e.g. "Board", "Science", "Marks") and do NOT remap letters,
+  // only collapsing obvious spacing between digits.
+  return s;
+};
+
+/**
+ * Fix only the digit-like characters within a numeric run, leaving surrounding words intact.
+ * Used to clean marks/year numbers embedded in mixed text without corrupting words like "Board".
+ */
+const fixNumericRuns = (str) => {
+  if (!str) return '';
+  // Match runs that are mostly digits (may contain O/l/I/S/B ambiguities between digits)
+  return str.replace(/(?<![A-Za-z])([0-9OolISBZ]+)(?![A-Za-z])/gi, (m) => fixOcrDigits(m));
 };
 
 const CNIC_HEADER_NOISE = new Set([
@@ -64,6 +90,8 @@ const CNIC_HEADER_NOISE = new Set([
   'candidate', 'student', 'examinee', 'applicant', 'guardian', 'parent',
   'examination', 'certificate', 'secondary', 'intermediate', 'session', 'annual',
   'passed', 'promoted', 'group', 'science', 'arts', 'general', 'result', 'roll',
+  'pre', 'engineering', 'technology', 'commerce', 'humanities', 'faculty',
+  'fot', 'serial', 'photo', 'for', 'the', 'reg', 'ref', 'page', 'part', 'note',
   'in', 'at', 'on', 'to', 'by', 'is', 'as', 'an', 'cnicno', 'nicno', 'idno',
   'occupation', 'profession', 'income', 'salary', 'deceased', 'alive', 'cell', 'mobile'
 ]);
@@ -75,7 +103,12 @@ const URDU_OCR_NOISE_TOKENS = new Set([
   'trn', 'trq', 'zhd', 'md', 'amd', 'mhd', 'mhm', 'fsh', 'psh', 'kzn', 'gzn',
   'hzn', 'yzn', 'wld', 'wly', 'jld', 'ald', 'bld', 'kld', 'ild', 'fld', 'cld',
   'sod', 'tod', 'mod', 'pod', 'lah', 'mdh', 'fath', 'fthr', 'fthrname',
-  'ur', 'pk', 'pkr', 'govt', 'nadra', 'card', 'cnic', 'smart', 'nic', 'holder'
+  'ur', 'pk', 'pkr', 'govt', 'nadra', 'card', 'cnic', 'smart', 'nic', 'holder',
+  // Common 2-char OCR garble from Urdu script (CNIC-specific)
+  'hy', 'ee', 'oo', 'nee', 'naa', 'laa', 'raa', 'haa', 'daa', 'baa', 'kaa',
+  'taa', 'faa', 'maa', 'zaa', 'sa', 'ya', 'ga', 'pa', 'cha', 'ja',
+  'bm', 'cm', 'dm', 'hm', 'km', 'lm', 'nm', 'pm', 'rm', 'sm', 'tm', 'zm',
+  'ah', 'eh', 'oh', 'uh', 'yh'
 ]);
 
 /**
@@ -190,7 +223,8 @@ const cleanNameCandidate = (rawStr) => {
     const lower = word.toLowerCase();
     if (CNIC_HEADER_NOISE.has(lower)) return false;
     if (URDU_OCR_NOISE_TOKENS.has(lower)) return false;
-    if (word.length < 2) return false;
+    // Words must be ≥ 3 chars UNLESS they're in the Pakistani name dictionary (e.g. "ali", "mir", "jan")
+    if (word.length < 3 && !PAKISTANI_NAME_PARTS.has(lower)) return false;
     // Must contain at least one vowel or vowel sound (a, e, i, o, u, y)
     const vowels = (lower.match(/[aeiouy]/g) || []).length;
     if (vowels === 0) return false;
@@ -340,36 +374,70 @@ const extractCNICData = (rawText) => {
     if (/\b(?:Name|Narne|Namo|Nene|Holder|Neme|Nama)\b/i.test(line) &&
       !/\b(?:Father|Husband|Mother|Date|Birth|CNIC|Identity|Gender|Sex|Country|Expiry|Issue|National|Database|Stay)\b/i.test(line)) {
       name = cleanNameCandidate(line);
-      if (name) {
+      if (name && scoreNameCandidate(name) > 0) {
+        // High-quality match on same line — accept immediately
         nameLineIndex = i;
         break;
       }
 
+      // Try lookahead up to 3 lines (the name may be on the next line in Urdu/English dual CNICs)
       for (let j = 1; j <= 3; j++) {
         const nextLine = lines[i + j];
         if (!nextLine) break;
         if (/\b(?:Father|Husband|Mother|Date|Birth|CNIC|Identity|Gender|Sex|Country|Expiry|Issue|National|Republic|Database|Stay)\b/i.test(nextLine)) break;
         const cand = cleanNameCandidate(nextLine);
-        if (cand) {
+        if (cand && scoreNameCandidate(cand) > 0) {
           name = cand;
           nameLineIndex = i + j;
           break;
         }
       }
       if (name) break;
+
+      // If label found but candidate was garbage, still accept it as last resort
+      // (the label "Name" is a strong structural signal even when value is garbled)
+      if (!name) {
+        const fallbackCand = cleanNameCandidate(line);
+        if (fallbackCand && fallbackCand.length >= 3) {
+          name = fallbackCand;
+          nameLineIndex = i;
+          break;
+        }
+        for (let j = 1; j <= 3; j++) {
+          const nextLine = lines[i + j];
+          if (!nextLine) break;
+          if (/\b(?:Father|Husband|Mother|Date|Birth|CNIC|Identity|Gender|Sex|Country|Expiry|Issue|National|Republic|Database|Stay)\b/i.test(nextLine)) break;
+          const cand = cleanNameCandidate(nextLine);
+          if (cand && cand.length >= 3) {
+            name = cand;
+            nameLineIndex = i + j;
+            break;
+          }
+        }
+      }
+      if (name) break;
     }
   }
 
-  // Fallback for Name: scan top 8 lines
+  // Fallback for Name: scan top 8 lines for a high-quality name candidate
   if (!name) {
     for (let i = 0; i < Math.min(lines.length, 8); i++) {
       const line = lines[i];
       if (/(?:Republic|Pakistan|National|Identity|Card|Islamic|Address|Expiry|Issue|Birth|Gender|Father|Husband|NADRA|Database|Country|Stay)/i.test(line)) continue;
       const cand = cleanNameCandidate(line);
       if (cand && cand.split(' ').length >= 2) {
-        name = cand;
-        nameLineIndex = i;
-        break;
+        // Reject if no word matches any known Pakistani name part (prevents "Hy Ee" garbage)
+        if (scoreNameCandidate(cand) > 0) {
+          name = cand;
+          nameLineIndex = i;
+          break;
+        }
+        // Accept anyway if it's at least 3 words (strong structural signal even without dictionary match)
+        if (cand.split(' ').length >= 3) {
+          name = cand;
+          nameLineIndex = i;
+          break;
+        }
       }
     }
   }
@@ -642,7 +710,63 @@ const normalizeBoardName = (rawText) => {
   if (/cambridge|cie|edexcel|igcse|gce|o\s*level|o-level|a\s*level|a-level|pearson/i.test(str)) return "Cambridge Board";
   if (/wafaq|madaris|tanzeem/i.test(str)) return "Wafaq-ul-Madaris";
 
+  // Fuzzy fallback: match OCR-garbled city names against known board cities
+  const boardCities = [
+    'lahore', 'gujranwala', 'gujrat', 'sialkot', 'rawalpindi', 'multan',
+    'faisalabad', 'sargodha', 'sahiwal', 'bahawalpur', 'dg khan', 'dera ghazi khan',
+    'karachi', 'hyderabad', 'sukkur', 'larkana', 'mirpurkhas', 'benazirabad', 'nawabshah',
+    'peshawar', 'abbottabad', 'swat', 'malakand', 'mardan', 'kohat', 'bannu', 'di khan',
+    'quetta', 'turbat', 'khuzdar', 'loralai', 'mirpur', 'islamabad'
+  ];
+  const CITY_TO_BOARD = {
+    lahore: 'BISE Lahore', gujranwala: 'BISE Gujranwala', gujrat: 'BISE Gujranwala',
+    sialkot: 'BISE Gujranwala', rawalpindi: 'BISE Rawalpindi', multan: 'BISE Multan',
+    faisalabad: 'BISE Faisalabad', sargodha: 'BISE Sargodha', sahiwal: 'BISE Sahiwal',
+    bahawalpur: 'BISE Bahawalpur', 'dg khan': 'BISE DG Khan', 'dera ghazi khan': 'BISE DG Khan',
+    karachi: 'BISE Karachi', hyderabad: 'BISE Hyderabad', sukkur: 'BISE Sukkur',
+    larkana: 'BISE Larkana', mirpurkhas: 'BISE Mirpurkhas', benazirabad: 'BISE Shaheed Benazirabad',
+    nawabshah: 'BISE Shaheed Benazirabad', peshawar: 'BISE Peshawar', abbottabad: 'BISE Abbottabad',
+    swat: 'BISE Swat', malakand: 'BISE Malakand', mardan: 'BISE Mardan', kohat: 'BISE Kohat',
+    bannu: 'BISE Bannu', 'di khan': 'BISE DI Khan', quetta: 'BISE Quetta', turbat: 'BISE Turbat',
+    khuzdar: 'BISE Khuzdar', loralai: 'BISE Loralai', mirpur: 'BISE Mirpur (AJK)', islamabad: 'FBISE Islamabad'
+  };
+
+  const cleanCityInput = str.replace(/[^a-z\s&]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (cleanCityInput.length >= 4) {
+    let bestCity = null;
+    let bestDist = Infinity;
+    for (const city of boardCities) {
+      const dist = levenshteinDistance(cleanCityInput, city);
+      if (dist < bestDist) { bestDist = dist; bestCity = city; }
+    }
+    // Accept if within ~30% of the city's length (tolerates minor OCR garbling)
+    if (bestCity && bestDist <= Math.max(2, Math.round(bestCity.length * 0.3)) && cleanCityInput.length >= bestCity.length - 2) {
+      return CITY_TO_BOARD[bestCity];
+    }
+  }
+
   return null;
+};
+
+// Levenshtein distance for fuzzy OCR board-city matching
+const levenshteinDistance = (a, b) => {
+  if (a === b) return 0;
+  const m = a.length;
+  const n = b.length;
+  if (m === 0) return n;
+  if (n === 0) return m;
+  const prev = new Array(n + 1).fill(0);
+  const curr = new Array(n + 1).fill(0);
+  for (let j = 0; j <= n; j++) prev[j] = j;
+  for (let i = 1; i <= m; i++) {
+    curr[0] = i;
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
+    }
+    for (let j = 0; j <= n; j++) prev[j] = curr[j];
+  }
+  return prev[n];
 };
 
 // Convert number words in English (e.g., "Nine Hundred Fifty") to digits
@@ -699,37 +823,61 @@ const extractAcademicData = (text) => {
 
   // 1. Board Name Detection & Normalization
   let board = null;
-  const biseMatch = text.match(/(?:Board\s+of\s+Intermediate(?:\s+(?:and|&|&amp;)?\s+Secondary\s+Education)?|BISE)[\s,:]*([A-Za-z\s]+?)(?:,|\.|\n|$)/i);
+  const textForBoard = text;
+
+  // a) Look for "Board of Intermediate/Secondary Education <City>"
+  const biseMatch = textForBoard.match(/(?:Board\s+of\s+Intermediate(?:\s+(?:and|&|&amp;)?\s+Secondary\s+Education)?|BISE|Board\s+of\s+Secondary\s+Education)[\s,:]*([A-Za-z\s]+?)(?:,|\.|\n|$)/i);
   if (biseMatch) {
     const rawCity = biseMatch[1].trim();
     board = normalizeBoardName(rawCity);
   }
+
+  // b) If that failed, scan line-by-line and normalize the candidate that is most board-like
   if (!board) {
-    board = normalizeBoardName(text);
+    const lines = cleanText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    for (const line of lines) {
+      // Only consider lines mentioning a board and not obviously unrelated
+      if (!/board|bise|biek|bsek|pbte|sbte|federal|examination\s+(?:board|authority)|secondary\s+education|intermediate\s+education/i.test(line)) continue;
+      if (/\b(?:roll\s*no|total|obtained|marks|grade|result|subject|group)\b/i.test(line)) continue;
+      const norm = normalizeBoardName(line.replace(/\bboard\b/gi, ' ').replace(/\bof\b/gi, ' ').replace(/\b(?:for|the|education|secondary|intermediate|and|&)\b/gi, ' ').replace(/[0-9]+/g, ' '));
+      if (norm) { board = norm; break; }
+    }
+  }
+
+  // c) Whole-text fallback
+  if (!board) {
+    board = normalizeBoardName(textForBoard);
   }
 
   // 2. Passing Year Extraction
   let passingYear = null;
-  const cleanedForYear = text.replace(/([12])([OolISBZ])([0-9OolISBZ]{2})/g, (m, p1, p2, p3) => `${p1}${fixOcrDigits(p2)}${fixOcrDigits(p3)}`);
+  // Collapse spaced digit runs and fix letter/digit ambiguities inside numeric runs only
+  const cleanedForYear = fixNumericRuns(collapseSpacedDigits(text));
 
-  const annualExamMatch = cleanedForYear.match(/(?:Annual|Supplementary|Special|Bi-Annual|Spring|Fall)\s+(?:Exam(?:ination)?\s+)?([12][09]\d{2})/i);
-  const examMatch = cleanedForYear.match(/(?:Examination|Exam|Session|Passing|Held\s+in|Year|Dated)[\s,:]+([12][09]\d{2})/i);
-  const rangeMatch = cleanedForYear.match(/(?:20\d{2}|19\d{2})\s*-\s*(20\d{2}|19\d{2})/);
-  const rangeShortMatch = cleanedForYear.match(/\b(20\d{2})\s*-\s*(\d{2})\b/);
+  const annualExamMatch = cleanedForYear.match(/(?:Annual|Supplementary|Special|Bi-Annual|Bi\s*Annual|Spring|Fall|March|May|June|August|October)\s+(?:Exam(?:ination)?\s+)?([12][09]\d{2})/i);
+  const examMatch = cleanedForYear.match(/(?:Examination|Exam|Session|Passing|Held\s+in|Held\s*on|Year|Dated|Date)[\s,:]+\s*([12][09]\d{2})/i);
+  const rangeMatch = cleanedForYear.match(/(?:20\d{2}|19\d{2})\s*[-–—]\s*(20\d{2}|19\d{2})/);
+  const rangeShortMatch = cleanedForYear.match(/\b(20\d{2})\s*[-–—]\s*(\d{2})\b/);
 
-  if (annualExamMatch) {
+  const currentYear = new Date().getFullYear();
+  const isValidYear = (y) => y >= 1990 && y <= currentYear + 1;
+
+  if (annualExamMatch && isValidYear(parseInt(annualExamMatch[1], 10))) {
     passingYear = annualExamMatch[1];
-  } else if (examMatch) {
+  } else if (examMatch && isValidYear(parseInt(examMatch[1], 10))) {
     passingYear = examMatch[1];
-  } else if (rangeMatch) {
-    passingYear = rangeMatch[1];
   } else if (rangeShortMatch) {
-    passingYear = `20${rangeShortMatch[2]}`;
+    // "2022-23" -> 2023 (the passing year is the end of the session)
+    const endYear = parseInt(`20${rangeShortMatch[2]}`, 10);
+    if (isValidYear(endYear)) passingYear = String(endYear);
+  } else if (rangeMatch) {
+    // "2019-2020" -> end year
+    const endYear = parseInt(rangeMatch[2], 10);
+    if (isValidYear(endYear)) passingYear = String(endYear);
   } else {
     const yearMatches = [...cleanedForYear.matchAll(/\b(199\d|20[0-2]\d)\b/g)];
     if (yearMatches.length > 0) {
-      const currentYear = new Date().getFullYear();
-      const validYears = yearMatches.map(m => parseInt(m[1])).filter(y => y >= 1995 && y <= currentYear + 1);
+      const validYears = yearMatches.map(m => parseInt(m[1])).filter(isValidYear);
       if (validYears.length > 0) {
         passingYear = Math.max(...validYears).toString();
       }
@@ -750,35 +898,52 @@ const extractAcademicData = (text) => {
   let obtainedMarks = null;
   let totalMarks = null;
 
-  // Pre-clean text: collapse spaced digits (e.g. "9 5 0" -> "950", "1 1 0 0" -> "1100")
-  let cleanSpacedDigits = text.replace(/(?<=\b\d)\s+(?=\d\b)/g, '');
+  // Pre-clean: collapse spaced digits so "9 8 0" -> "980" and "1 1 0 0" -> "1100"
+  const cleanSpacedDigits = collapseSpacedDigits(text);
+  // Fix letter/digit ambiguity ONLY inside numeric runs (never corrupts words like "Board")
+  const cleanedNumText = fixNumericRuns(cleanSpacedDigits);
 
-  const cleanedNumText = cleanSpacedDigits
-    .replace(/([0-9])([OolISBZ])([0-9])/gi, (m, p1, p2, p3) => `${p1}${fixOcrDigits(p2)}${p3}`)
-    .replace(/([0-9]{2,3})([OolISBZ])\b/gi, (m, p1, p2) => `${p1}${fixOcrDigits(p2)}`);
+  // Standard Pakistani board totals, ordered by how frequently they appear as TOTAL
+  const STD_TOTALS = [1100, 1050, 1200, 850, 800, 550, 600, 500, 400];
 
-  // a) Ratio patterns (e.g. 980/1100, 980 / 1100, 0980/1100, 980|1100, 980 I 1100, 980 out of 1100)
-  const ratioPattern = /\b([0-9OolISBZ]{3,4})\s*(?:\/|\\|\||I|l|out\s+of|\bof\b|:|-)\s*([0-9OolISBZ]{3,4})\b/gi;
+  // Sanity: a plausible Obtained marks value (must be < total; never a standard TOTAL itself)
+  const looksLikeObtained = (val, total) =>
+    !isNaN(val) && val >= 100 && val <= 1200 &&
+    val !== 1100 && val !== 1050 && val !== 1200 && val !== 850 && val !== 800 &&
+    val !== 550 && val !== 500 && val !== 600 &&
+    (!total ? true : val < total);
+
+  // a) Ratio patterns (e.g. 980/1100, 0980/1100, 980 out of 1100, 980 / 1100)
+  // Reject ambiguous separators like "-" or ":" that could be dates/ranges.
+  const ratioPattern = /\b([0-9OolISBZ]{3,4})\s*(?:\/|\\|\||I\s*\|?|out\s+of|\bof\b|out\s*of)\s*([0-9OolISBZ]{3,4})\b/gi;
   const ratioMatches = [...cleanedNumText.matchAll(ratioPattern)];
   for (const match of ratioMatches) {
     const obtCandidate = parseInt(fixOcrDigits(match[1]), 10);
     const totCandidate = parseInt(fixOcrDigits(match[2]), 10);
-    if (!isNaN(obtCandidate) && !isNaN(totCandidate)) {
-      if (totCandidate >= 300 && totCandidate <= 1200 && obtCandidate <= totCandidate && obtCandidate >= 100) {
-        obtainedMarks = obtCandidate;
-        totalMarks = totCandidate;
-        break;
-      }
+    if (obtCandidate >= 100 && obtCandidate <= 1200 &&
+        STD_TOTALS.includes(totCandidate) &&
+        obtCandidate < totCandidate) {
+      obtainedMarks = obtCandidate;
+      totalMarks = totCandidate;
+      break;
+    }
+    // Fallback: total is in range but not an exact standard value
+    if (obtCandidate >= 100 && obtCandidate <= 1200 &&
+        totCandidate >= 300 && totCandidate <= 1200 &&
+        obtCandidate < totCandidate) {
+      obtainedMarks = obtCandidate;
+      totalMarks = totCandidate;
+      break;
     }
   }
 
-  // b) Explicit field labels (handling "(in figures)", "(in words)", newlines, etc.)
+  // b) Explicit field labels
   if (!obtainedMarks) {
     const obtPatterns = [
-      /(?:Marks\s*Obtained|Obtained\s*Marks|Total\s*Marks\s*Obtained|Marks\s*Secured|Secured\s*Marks|Marks\s*Obt|Obt\s*Marks)[\s\S]{0,35}?([0-9OolISBZ]{3,4})\b/gi,
-      /(?:(?<!Total\s+|Max\s+|Maximum\s+)Marks\s*[\(]?in\s+figures[\)]?|Marks\s*in\s*Figures)[\s:\-.\n]*([0-9OolISBZ]{3,4})\b/gi,
-      /(?:secured|obtained|passed\s+with|with)[\s:\-]*([0-9OolISBZ]{3,4})\s*(?:marks)?\b/gi,
-      /(?:GRAND\s+TOTAL|G\.\s*TOTAL|AGGREGATE)[\s\S]{0,25}?([0-9OolISBZ]{3,4})\b/gi
+      /(?:Marks\s*Obtained|Obtained\s*Marks|Marks\s*Secured|Secured\s*Marks|Marks\s*Obt|Obt\s*Marks|Marks\s*in\s*Figures)[\s\S]{0,40}?([0-9OolISBZ]{3,4})\b/gi,
+      /(?:Total\s*Marks\s*Obtained)[\s\S]{0,40}?([0-9OolISBZ]{3,4})\b/gi,
+      /(?:secured|obtained|passed\s*with|got|scored)[\s:\-]+([0-9OolISBZ]{3,4})\s*(?:marks)?\b/gi,
+      /(?:GRAND\s+TOTAL|G\.\s*TOTAL|AGGREGATE|GRAND)[\s\S]{0,30}?([0-9OolISBZ]{3,4})\b/gi
     ];
 
     for (const pat of obtPatterns) {
@@ -786,7 +951,7 @@ const extractAcademicData = (text) => {
       for (const m of matches) {
         if (m && m[1]) {
           const val = parseInt(fixOcrDigits(m[1]), 10);
-          if (!isNaN(val) && val >= 100 && val <= 1200 && val !== 1100 && val !== 1050) {
+          if (looksLikeObtained(val, totalMarks)) {
             obtainedMarks = val;
             break;
           }
@@ -796,10 +961,10 @@ const extractAcademicData = (text) => {
     }
   }
 
+  // c) Explicit TOTAL labels
   if (!totalMarks) {
     const totPatterns = [
-      /(?:Total\s*Marks|Maximum\s*Marks|Max\s*Marks|Out\s*of|Total)[\s\S]{0,30}?(?:\(in\s+figures\))?[\s:\-.\n]*([0-9OolISBZ]{3,4})\b/gi,
-      /\b(1100|1050|550|500|850|1200)\b/
+      /(?:Total\s*Marks|Maximum\s*Marks|Max\s*Marks|Grand\s*Total|Out\s*of)[\s\S]{0,35}?([0-9OolISBZ]{3,4})\b/gi
     ];
 
     for (const pat of totPatterns) {
@@ -814,7 +979,7 @@ const extractAcademicData = (text) => {
     }
   }
 
-  // c) English Word-based marks parsing (e.g., "Nine Hundred Fifty")
+  // d) English Word-based marks parsing (e.g., "Nine Hundred Fifty")
   if (!obtainedMarks) {
     const wordNum = wordsToNumber(text);
     if (wordNum && wordNum >= 100 && wordNum <= 1200) {
@@ -822,25 +987,25 @@ const extractAcademicData = (text) => {
     }
   }
 
-  // d) Summary row search (GRAND TOTAL / TOTAL / AGGREGATE row)
+  // e) Summary row search (GRAND TOTAL / TOTAL / AGGREGATE row with two numbers in it)
   if (!obtainedMarks || !totalMarks) {
     const totalRows = [...cleanedNumText.matchAll(/(?:GRAND\s+TOTAL|TOTAL\s+MARKS|TOTAL|AGGREGATE|RESULT)[\s:\-]+([0-9OolISBZ\s]{3,30})/gi)];
     for (const rowMatch of totalRows) {
-      const numbersInRow = rowMatch[1].split(/\s+/).map(n => parseInt(fixOcrDigits(n), 10)).filter(n => !isNaN(n) && n >= 100 && n <= 1200);
+      const numbersInRow = rowMatch[1].split(/\s+/)
+        .map(n => parseInt(fixOcrDigits(n), 10))
+        .filter(n => !isNaN(n) && n >= 100 && n <= 1200);
       if (numbersInRow.length >= 2) {
-        const stdTotals = [1100, 1050, 850, 550, 500, 600, 1200, 800, 400];
-        const foundTotal = numbersInRow.find(n => stdTotals.includes(n)) || Math.max(...numbersInRow);
-        const foundObt = numbersInRow.find(n => n !== foundTotal && n <= foundTotal && n >= 100);
+        const foundTotal = numbersInRow.find(n => STD_TOTALS.includes(n)) || Math.max(...numbersInRow);
+        const foundObt = numbersInRow.find(n => n !== foundTotal && n < foundTotal && n >= 100);
         if (foundTotal && !totalMarks) totalMarks = foundTotal;
         if (foundObt && !obtainedMarks) obtainedMarks = foundObt;
       }
     }
   }
 
-  // e) Generic Pakistani standard total marks scan if total is still missing
+  // f) Generic Pakistani standard total marks scan if total is still missing
   if (!totalMarks) {
-    const stdTotals = [1100, 550, 1050, 500, 1200, 850, 800, 600];
-    for (const stdTot of stdTotals) {
+    for (const stdTot of STD_TOTALS) {
       if (new RegExp(`\\b${stdTot}\\b`).test(cleanedNumText)) {
         totalMarks = stdTot;
         break;
@@ -848,7 +1013,7 @@ const extractAcademicData = (text) => {
     }
   }
 
-  // f) Fallback: If obtained is missing but there are numbers <= totalMarks in text
+  // g) Fallback: If obtained is missing but there are plausible numbers < totalMarks
   if (!obtainedMarks && totalMarks) {
     const allNums = [...cleanedNumText.matchAll(/\b([0-9OolISBZ]{3,4})\b/g)]
       .map(m => parseInt(fixOcrDigits(m[1]), 10))
@@ -858,12 +1023,12 @@ const extractAcademicData = (text) => {
     }
   }
 
-  // g) Auto-deduce standard total marks if obtained is found
+  // h) Auto-deduce standard total marks if obtained is found and total still missing
   if (obtainedMarks && !totalMarks) {
     totalMarks = obtainedMarks > 550 ? 1100 : 550;
   }
 
-  // Ensure obtainedMarks <= totalMarks
+  // Ensure obtainedMarks < totalMarks (a perfect score is not a "pass" with 0 margin)
   if (obtainedMarks && totalMarks && obtainedMarks > totalMarks) {
     const temp = obtainedMarks;
     obtainedMarks = totalMarks;
@@ -893,6 +1058,7 @@ const extractAcademicData = (text) => {
 
   // Extract candidate name from academic certificate
   let name = null;
+  let nameLineIndex = -1;
   const lines = cleanText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -901,7 +1067,7 @@ const extractAcademicData = (text) => {
       const sameLineMatch = line.match(/(?:Name\s*(?:of\s+)?(?:Candidate|Student|Examinee)|Student\s*Name|Candidate\s*Name)\s*[:\-]?\s*(.+)$/i);
       if (sameLineMatch && sameLineMatch[1]) {
         const val = cleanNameCandidate(sameLineMatch[1]);
-        if (val && val.length >= 3) name = val;
+        if (val && val.length >= 3 && scoreNameCandidate(val) > 0) name = val;
       }
       if (!name) {
         for (let j = 1; j <= 3; j++) {
@@ -909,10 +1075,54 @@ const extractAcademicData = (text) => {
           if (!nextLine) break;
           if (/(?:Father|Husband|Mother|Guardian|Board|Institution|School|College|Roll|Marks)/i.test(nextLine)) break;
           const val = cleanNameCandidate(nextLine);
-          if (val && val.length >= 3) { name = val; break; }
+          if (val && val.length >= 3 && scoreNameCandidate(val) > 0) { name = val; break; }
         }
       }
       if (name) break;
+    }
+  }
+
+  // Academic name fallback: look for S/O line and take the name on the line above or same line before S/O
+  if (!name) {
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (/\b(?:S\/O|D\/O|W\/O|Son\s+of|Daughter\s+of|Wife\s+of)\b/i.test(line)) {
+        // Check same line before the S/O marker
+        const beforeSdo = line.split(/\b(?:S\/O|D\/O|W\/O|Son\s+of|Daughter\s+of|Wife\s+of)\b/i)[0];
+        const sameLineName = cleanNameCandidate(beforeSdo);
+        if (sameLineName && sameLineName.split(' ').length >= 2 && scoreNameCandidate(sameLineName) > 0) {
+          name = sameLineName;
+          nameLineIndex = i;
+          break;
+        }
+        // Check the line above the S/O line
+        if (i > 0) {
+          const prevLine = lines[i - 1];
+          if (!/(?:Father|Husband|Mother|Board|Roll|Marks|Total|Obtained|Grade|College|School|Institution)/i.test(prevLine)) {
+            const prevName = cleanNameCandidate(prevLine);
+            if (prevName && prevName.split(' ').length >= 2 && scoreNameCandidate(prevName) > 0) {
+              name = prevName;
+              nameLineIndex = i - 1;
+              break;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Academic name fallback: scan first 10 lines for a high-quality standalone name
+  if (!name) {
+    for (let i = 0; i < Math.min(lines.length, 10); i++) {
+      const line = lines[i];
+      if (/(?:Board|Roll|Marks|Total|Obtained|Grade|Result|College|School|Institution|Examination|Session|Annual|Supplementary)/i.test(line)) continue;
+      if (/(?:Father|Husband|Mother|Guardian|S\/O|D\/O|W\/O)/i.test(line)) continue;
+      const cand = cleanNameCandidate(line);
+      if (cand && cand.split(' ').length >= 2 && scoreNameCandidate(cand) > 0) {
+        name = cand;
+        nameLineIndex = i;
+        break;
+      }
     }
   }
 

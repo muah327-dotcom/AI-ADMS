@@ -105,6 +105,7 @@ applicationSchema.index({ user_id: 1 });
 applicationSchema.index({ program_id: 1 });
 applicationSchema.index({ status: 1 });
 applicationSchema.index({ application_date: -1 });
+applicationSchema.index({ program_id: 1, status: 1 }); // compound for seat-occupancy and analytics
 
 const Application = mongoose.model('Application', applicationSchema);
 

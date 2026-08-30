@@ -24,6 +24,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import SkeletonLoader from '../Common/SkeletonLoader';
 
 const ProgramRecommendations = () => {
   const [recommendations, setRecommendations] = useState([]);
@@ -115,11 +116,7 @@ const ProgramRecommendations = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-cyan-400" />
-      </div>
-    );
+    return <SkeletonLoader variant="list" theme="dark" />;
   }
 
   const internalAlternatives = lowMeritData?.internal_alternatives || [];

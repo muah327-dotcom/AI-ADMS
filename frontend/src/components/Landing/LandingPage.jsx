@@ -112,9 +112,16 @@ const Navigation = ({ onNavClick }) => {
     { name: 'Contact', href: '#contact' },
   ];
 
-  const handleClick = (e, href) => {
+  const handleDesktopClick = (e, href) => {
     onNavClick(e, href);
+  };
+
+  const handleMobileClick = (e, href) => {
+    e.preventDefault();
     setIsMobileMenuOpen(false);
+    setTimeout(() => {
+      onNavClick({ preventDefault: () => {} }, href);
+    }, 300);
   };
 
   return (
@@ -151,7 +158,7 @@ const Navigation = ({ onNavClick }) => {
               <motion.a
                 key={link.name}
                 href={link.href}
-                onClick={(e) => handleClick(e, link.href)}
+                onClick={(e) => handleDesktopClick(e, link.href)}
                 className={`text-sm font-medium transition-colors cursor-pointer ${isScrolled ? 'text-gray-700 hover:text-cyan-600' : 'text-gray-700 hover:text-cyan-600'
                   }`}
                 whileHover={{ y: -2 }}
@@ -199,7 +206,7 @@ const Navigation = ({ onNavClick }) => {
                   key={link.name}
                   href={link.href}
                   className="block py-2 text-gray-700 hover:text-cyan-600 font-medium"
-                  onClick={(e) => handleClick(e, link.href)}
+                  onClick={(e) => handleMobileClick(e, link.href)}
                 >
                   {link.name}
                 </a>

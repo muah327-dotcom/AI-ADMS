@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import path from 'path';
@@ -59,8 +60,12 @@ app.use(cors({
 
 // Explicitly handle preflight OPTIONS for all routes
 app.options('*', cors());
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Enable gzip compression for all responses
+app.use(compression({ level: 6, threshold: 1024 }));
+
+app.use(express.json({ limit: '5mb' }));
+app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
 // Ensure database connection is ready before processing API requests
 app.use(async (req, res, next) => {

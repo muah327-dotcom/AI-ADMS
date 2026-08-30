@@ -11,6 +11,7 @@ import {
   UserCheck,
   XCircle
 } from 'lucide-react';
+import SkeletonLoader from '../Common/SkeletonLoader';
 
 const ApplicationTracking = () => {
   const { id } = useParams();
@@ -87,11 +88,7 @@ const ApplicationTracking = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
-      </div>
-    );
+    return <SkeletonLoader variant="card" theme="dark" />;
   }
 
   return (

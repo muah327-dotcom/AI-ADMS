@@ -80,7 +80,7 @@ const Layout = () => {
   };
 
   return (
-    <div className="h-screen bg-[#0f0f0f] flex overflow-hidden">
+    <div className="h-[100dvh] w-full bg-[#0f0f0f] flex overflow-hidden">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div
@@ -91,7 +91,7 @@ const Layout = () => {
 
       {/* Sidebar - Same height as viewport using flex */}
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-[#1a1a1a] flex flex-col h-screen transform transition-transform duration-300 ease-in-out lg:transform-none ${
+        className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-[#1a1a1a] flex flex-col h-full transform transition-transform duration-300 ease-in-out lg:transform-none ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -186,7 +186,7 @@ const Layout = () => {
         </aside>
 
       {/* Main content - Flex to fill remaining space, same height as sidebar */}
-      <div className="flex-1 flex flex-col h-screen bg-[#0f0f0f] min-w-0">
+      <div className="flex-1 flex flex-col h-full bg-[#0f0f0f] min-w-0 w-full overflow-hidden">
         {/* Top header */}
         <header className="h-16 bg-[#1a1a1a] border-b border-gray-800 flex items-center justify-between px-4 lg:px-6 flex-shrink-0">
           <button
@@ -202,7 +202,7 @@ const Layout = () => {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 px-4 lg:px-6 py-4 overflow-y-auto bg-[#0f0f0f]">
+        <main className="flex-1 px-4 lg:px-6 py-4 overflow-y-auto overflow-x-hidden bg-[#0f0f0f]">
           <Outlet />
         </main>
       </div>

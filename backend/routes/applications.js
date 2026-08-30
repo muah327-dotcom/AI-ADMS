@@ -89,7 +89,7 @@ router.post('/', [
     });
 
     if (sanitizedDocuments.length === 0) {
-      const userStoredDocs = await Document.find({ user_id: userId });
+      const userStoredDocs = await Document.find({ user_id: userId }).select('-file_data');
       if (userStoredDocs && userStoredDocs.length > 0) {
         sanitizedDocuments = userStoredDocs.map(doc => {
           let docType = doc.type;

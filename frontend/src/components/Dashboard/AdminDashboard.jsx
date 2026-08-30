@@ -11,6 +11,7 @@ import {
   ArrowRight,
   Download
 } from 'lucide-react';
+import SkeletonLoader from '../Common/SkeletonLoader';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -114,11 +115,7 @@ const AdminDashboard = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
-      </div>
-    );
+    return <SkeletonLoader variant="dashboard" theme="dark" />;
   }
 
   return (
@@ -168,7 +165,7 @@ const AdminDashboard = () => {
         {/* Application Trend */}
         <div className="lg:col-span-2 bg-[#1a1a1a] rounded-xl border border-gray-800 p-5">
           <h2 className="text-sm font-medium text-gray-300 mb-4">Application Trend</h2>
-          <div style={{ height: '200px' }}>
+          <div className="relative w-full" style={{ height: '200px' }}>
             <Bar
               data={monthlyData}
               options={{
@@ -196,7 +193,7 @@ const AdminDashboard = () => {
         {/* Admissions by Category */}
         <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-5">
           <h2 className="text-sm font-medium text-gray-300 mb-4">Admissions by Category</h2>
-          <div style={{ height: '200px' }}>
+          <div className="relative w-full" style={{ height: '200px' }}>
             <Doughnut
               data={admissionData}
               options={{
@@ -204,7 +201,7 @@ const AdminDashboard = () => {
                 maintainAspectRatio: false,
                 plugins: {
                   legend: { 
-                    position: 'right', 
+                    position: 'bottom', 
                     labels: { 
                       color: '#6b7280',
                       boxWidth: 12, 
@@ -224,7 +221,7 @@ const AdminDashboard = () => {
         {/* Program Distribution */}
         <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-5">
           <h2 className="text-sm font-medium text-gray-300 mb-4">By Program</h2>
-          <div style={{ height: '180px' }}>
+          <div className="relative w-full" style={{ height: '280px' }}>
             <Pie
               data={programData}
               options={{

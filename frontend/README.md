@@ -16,7 +16,7 @@ This is the frontend application for the GGC Township AI-Enhanced Admission Mana
 - **Notifications**: React Hot Toast
 - **File Uploads**: React Dropzone
 - **OCR**: Tesseract.js
-- **Backend Integration**: Supabase
+- **Backend Integration**: REST API (Express + MongoDB)
 - **Build Tool**: Vite
 
 ## Project Structure
@@ -63,7 +63,7 @@ frontend/
 │   ├── hooks/
 │   │   └── useAuth.js           # Authentication hook
 │   ├── config/
-│   │   └── supabase.js          # Supabase configuration
+│   │   └── api.js               # API client configuration
 │   ├── App.jsx                  # Main app component with routing
 │   ├── main.jsx                 # App entry point
 │   └── index.css                # Global styles
