@@ -937,181 +937,225 @@ const AllApplications = () => {
 
       {/* Interactive Document Viewer Modal */}
       {previewDoc && (
-        <div className="fixed inset-0 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md" style={{ zIndex: 9999 }}>
-          <div className="bg-[#181818] rounded-2xl max-w-5xl w-full h-[90vh] flex flex-col border border-gray-700 shadow-2xl overflow-hidden animate-scale-in">
+        <div className="fixed inset-0 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md" style={{ zIndex: 9999 }} onClick={() => setPreviewDoc(null)}>
+          <div
+            className="bg-gradient-to-b from-[#1a1a2e] to-[#16162a] rounded-3xl max-w-6xl w-full h-[92vh] flex flex-col border border-gray-700/50 shadow-2xl overflow-hidden"
+            style={{ animation: 'fadeInScale 0.3s ease-out' }}
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Viewer Header */}
-            <div className="p-4 border-b border-gray-800 bg-[#121212] flex items-center justify-between flex-shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+            <div className="px-6 py-4 border-b border-white/5 bg-white/[0.02] flex items-center justify-between flex-shrink-0">
+              <div className="flex items-center gap-4">
+                <div className="p-2.5 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 text-cyan-400 border border-cyan-500/10 shadow-lg shadow-cyan-500/5">
                   {getDocIcon(previewDoc.type)}
                 </div>
                 <div>
-                  <h3 className="font-bold text-white text-base flex items-center gap-2">
+                  <h3 className="font-bold text-white text-lg tracking-tight">
                     {getDocTypeLabel(previewDoc.type)}
+                  </h3>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <p className="text-xs text-gray-400 truncate max-w-[250px]">{previewDoc.name || 'Document File'}</p>
                     {previewDoc.confidence && (
-                      <span className="text-xs font-normal text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-full border border-cyan-500/20">
-                        OCR Confidence: {Math.round(previewDoc.confidence)}%
+                      <span className="inline-flex items-center text-[10px] font-semibold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-full border border-cyan-500/15">
+                        <Sparkles className="h-2.5 w-2.5 mr-1" />
+                        {Math.round(previewDoc.confidence)}% OCR
                       </span>
                     )}
-                  </h3>
-                  <p className="text-xs text-gray-400">{previewDoc.name || 'Document File'}</p>
+                  </div>
                 </div>
               </div>
 
-              {/* Viewer Controls */}
+              {/* Header Actions */}
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setZoomLevel(z => Math.max(0.5, z - 0.25))}
-                  className="p-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors"
-                  title="Zoom Out"
-                >
-                  <ZoomOut className="h-4 w-4" />
-                </button>
-                <span className="text-xs text-gray-400 font-mono w-12 text-center">{Math.round(zoomLevel * 100)}%</span>
-                <button
-                  onClick={() => setZoomLevel(z => Math.min(3, z + 0.25))}
-                  className="p-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors"
-                  title="Zoom In"
-                >
-                  <ZoomIn className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => setRotation(r => (r + 90) % 360)}
-                  className="p-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors"
-                  title="Rotate"
-                >
-                  <RotateCw className="h-4 w-4" />
-                </button>
-                <button
                   onClick={() => handleDownloadDoc(previewDoc)}
-                  className="flex items-center px-3 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg transition-colors text-xs font-semibold"
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl transition-all text-xs font-bold shadow-lg shadow-cyan-900/20 hover:shadow-cyan-900/40"
                 >
-                  <Download className="h-4 w-4 mr-1.5" />
+                  <Download className="h-3.5 w-3.5" />
                   Download
                 </button>
                 <button
                   onClick={() => setPreviewDoc(null)}
-                  className="p-2 bg-gray-800 hover:bg-red-600 text-gray-300 hover:text-white rounded-lg transition-colors ml-2"
+                  className="p-2.5 rounded-xl bg-white/5 hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-all border border-white/5 hover:border-red-500/20"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="h-4 w-4" />
                 </button>
               </div>
             </div>
 
-            {/* Viewer Body & OCR Sidebar */}
+            {/* Viewer Body — Side-by-Side */}
             <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-              {/* Document Canvas Area */}
-              <div className="flex-1 bg-[#0a0a0a] p-4 flex items-center justify-center overflow-auto relative">
-                {(() => {
-                  const src = previewDoc.file_data || previewDoc.file_url || previewDoc.url;
-                  const isPdf = previewDoc.mime_type === 'application/pdf' ||
-                    previewDoc.name?.toLowerCase().endsWith('.pdf') ||
-                    (src && src.startsWith('data:application/pdf'));
+              {/* Left: Document Canvas */}
+              <div className="flex-1 bg-[#0d0d1a] relative flex items-center justify-center overflow-auto">
+                {/* Floating Zoom/Rotate Toolbar */}
+                <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10 shadow-2xl" style={{ zIndex: 10 }}>
+                  <button
+                    onClick={() => setZoomLevel(z => Math.max(0.25, z - 0.25))}
+                    className="p-2 rounded-lg hover:bg-white/10 text-gray-300 hover:text-white transition-colors"
+                    title="Zoom Out"
+                  >
+                    <ZoomOut className="h-4 w-4" />
+                  </button>
+                  <div className="w-px h-5 bg-white/10 mx-0.5" />
+                  <span className="text-[11px] text-gray-400 font-mono w-10 text-center select-none">{Math.round(zoomLevel * 100)}%</span>
+                  <div className="w-px h-5 bg-white/10 mx-0.5" />
+                  <button
+                    onClick={() => setZoomLevel(z => Math.min(3, z + 0.25))}
+                    className="p-2 rounded-lg hover:bg-white/10 text-gray-300 hover:text-white transition-colors"
+                    title="Zoom In"
+                  >
+                    <ZoomIn className="h-4 w-4" />
+                  </button>
+                  <div className="w-px h-5 bg-white/10 mx-0.5" />
+                  <button
+                    onClick={() => setRotation(r => (r + 90) % 360)}
+                    className="p-2 rounded-lg hover:bg-white/10 text-gray-300 hover:text-white transition-colors"
+                    title="Rotate"
+                  >
+                    <RotateCw className="h-4 w-4" />
+                  </button>
+                  <div className="w-px h-5 bg-white/10 mx-0.5" />
+                  <button
+                    onClick={() => { setZoomLevel(1); setRotation(0); }}
+                    className="px-2.5 py-1.5 rounded-lg hover:bg-white/10 text-[10px] text-gray-400 hover:text-white font-semibold tracking-wide transition-colors"
+                    title="Reset View"
+                  >
+                    RESET
+                  </button>
+                </div>
 
-                  if (!src) {
+                {/* Document Render */}
+                <div className="w-full h-full flex items-center justify-center p-6">
+                  {(() => {
+                    const src = previewDoc.file_data || previewDoc.file_url || previewDoc.url;
+                    const isPdf = previewDoc.mime_type === 'application/pdf' ||
+                      previewDoc.name?.toLowerCase().endsWith('.pdf') ||
+                      (src && src.startsWith('data:application/pdf'));
+
+                    if (!src) {
+                      return (
+                        <div className="text-center py-20">
+                          <div className="p-4 rounded-2xl bg-gray-800/30 inline-block mb-4">
+                            <AlertCircle className="h-10 w-10 text-gray-600" />
+                          </div>
+                          <p className="text-gray-500 text-sm font-medium">No preview available for this document.</p>
+                          <p className="text-gray-600 text-xs mt-1">The file may not have been uploaded correctly.</p>
+                        </div>
+                      );
+                    }
+
+                    if (isPdf) {
+                      const pdfSrc = src.includes('?') ? `${src}&toolbar=0&navpanes=0` : `${src}#toolbar=0&navpanes=0`;
+                      return (
+                        <iframe
+                          src={pdfSrc}
+                          title={previewDoc.name || 'PDF Document'}
+                          className="w-full h-full rounded-2xl border border-white/5 bg-white shadow-2xl"
+                        />
+                      );
+                    }
+
                     return (
-                      <div className="text-center text-gray-500">
-                        <AlertCircle className="h-12 w-12 mx-auto mb-2 text-gray-600" />
-                        <p>No document preview available.</p>
+                      <div
+                        className="transition-transform duration-300 ease-out flex items-center justify-center cursor-grab active:cursor-grabbing"
+                        style={{
+                          transform: `scale(${zoomLevel}) rotate(${rotation}deg)`,
+                          transformOrigin: 'center center'
+                        }}
+                      >
+                        <img
+                          src={src}
+                          alt={previewDoc.name || 'Document'}
+                          className="max-h-[78vh] max-w-full object-contain rounded-2xl shadow-2xl border border-white/5"
+                          draggable={false}
+                        />
                       </div>
                     );
-                  }
-
-                  if (isPdf) {
-                    return (
-                      <iframe
-                        src={src}
-                        title={previewDoc.name || 'PDF Document'}
-                        className="w-full h-full rounded-xl border border-gray-800 bg-white shadow-2xl"
-                      />
-                    );
-                  }
-
-                  return (
-                    <div
-                      className="transition-transform duration-200 flex items-center justify-center"
-                      style={{
-                        transform: `scale(${zoomLevel}) rotate(${rotation}deg)`,
-                        transformOrigin: 'center center'
-                      }}
-                    >
-                      <img
-                        src={src}
-                        alt={previewDoc.name || 'Document'}
-                        className="max-h-[75vh] max-w-full object-contain rounded-lg shadow-2xl border border-gray-800"
-                      />
-                    </div>
-                  );
-                })()}
+                  })()}
+                </div>
               </div>
 
-              {/* OCR Information Sidebar */}
+              {/* Right: OCR Sidebar */}
               {previewDoc.extracted_data && Object.keys(previewDoc.extracted_data).length > 0 && (
-                <div className="w-full lg:w-80 bg-[#121212] border-t lg:border-t-0 lg:border-l border-gray-800 p-5 overflow-y-auto flex-shrink-0">
-                  <div className="flex items-center gap-2 text-cyan-400 mb-4 font-bold text-sm pb-2 border-b border-gray-800">
-                    <Sparkles className="h-4 w-4" />
-                    OCR Extracted Key Details
+                <div className="w-full lg:w-[340px] bg-[#12121f] border-t lg:border-t-0 lg:border-l border-white/5 flex flex-col flex-shrink-0 overflow-hidden">
+                  {/* Sidebar Header */}
+                  <div className="px-5 py-4 border-b border-white/5 bg-white/[0.02]">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-lg bg-gradient-to-br from-purple-500/20 to-cyan-500/20">
+                        <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
+                      </div>
+                      <span className="font-bold text-sm text-white tracking-tight">Extracted Details</span>
+                    </div>
+                    <p className="text-[10px] text-gray-500 mt-1 ml-8">AI-powered OCR extraction results</p>
                   </div>
-                  <div className="space-y-3 text-xs">
+
+                  {/* Sidebar Content */}
+                  <div className="flex-1 overflow-y-auto p-5 space-y-2.5">
                     {previewDoc.extracted_data.name && (
-                      <div className="p-2.5 bg-[#181818] rounded-lg border border-gray-800">
-                        <span className="text-gray-500 block">Applicant Name</span>
-                        <span className="font-semibold text-white">{previewDoc.extracted_data.name}</span>
+                      <div className="group p-3.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 hover:border-white/10 transition-all">
+                        <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest block mb-1">Applicant Name</span>
+                        <span className="font-semibold text-white text-sm">{previewDoc.extracted_data.name}</span>
                       </div>
                     )}
                     {previewDoc.extracted_data.father_name && (
-                      <div className="p-2.5 bg-[#181818] rounded-lg border border-gray-800">
-                        <span className="text-gray-500 block">Father's Name</span>
-                        <span className="font-semibold text-white">{previewDoc.extracted_data.father_name}</span>
+                      <div className="group p-3.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 hover:border-white/10 transition-all">
+                        <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest block mb-1">Father's Name</span>
+                        <span className="font-semibold text-white text-sm">{previewDoc.extracted_data.father_name}</span>
                       </div>
                     )}
                     {previewDoc.extracted_data.cnic && (
-                      <div className="p-2.5 bg-[#181818] rounded-lg border border-gray-800">
-                        <span className="text-gray-500 block">CNIC / B-Form Number</span>
-                        <span className="font-mono font-bold text-cyan-400">{previewDoc.extracted_data.cnic}</span>
+                      <div className="group p-3.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 hover:border-white/10 transition-all">
+                        <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest block mb-1">CNIC / B-Form</span>
+                        <span className="font-mono font-bold text-cyan-400 text-sm tracking-wide">{previewDoc.extracted_data.cnic}</span>
                       </div>
                     )}
                     {previewDoc.extracted_data.date_of_birth && (
-                      <div className="p-2.5 bg-[#181818] rounded-lg border border-gray-800">
-                        <span className="text-gray-500 block">Date of Birth</span>
-                        <span className="font-semibold text-white">{previewDoc.extracted_data.date_of_birth}</span>
+                      <div className="group p-3.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 hover:border-white/10 transition-all">
+                        <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest block mb-1">Date of Birth</span>
+                        <span className="font-semibold text-white text-sm">{previewDoc.extracted_data.date_of_birth}</span>
                       </div>
                     )}
                     {previewDoc.extracted_data.gender && (
-                      <div className="p-2.5 bg-[#181818] rounded-lg border border-gray-800">
-                        <span className="text-gray-500 block">Gender</span>
-                        <span className="font-semibold text-white capitalize">{previewDoc.extracted_data.gender}</span>
+                      <div className="group p-3.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 hover:border-white/10 transition-all">
+                        <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest block mb-1">Gender</span>
+                        <span className="font-semibold text-white text-sm capitalize">{previewDoc.extracted_data.gender}</span>
                       </div>
                     )}
                     {previewDoc.extracted_data.board && (
-                      <div className="p-2.5 bg-[#181818] rounded-lg border border-gray-800">
-                        <span className="text-gray-500 block">Board Name</span>
-                        <span className="font-semibold text-white">{previewDoc.extracted_data.board}</span>
+                      <div className="group p-3.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 hover:border-white/10 transition-all">
+                        <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest block mb-1">Board Name</span>
+                        <span className="font-semibold text-white text-sm">{previewDoc.extracted_data.board}</span>
                       </div>
                     )}
                     {previewDoc.extracted_data.passing_year && (
-                      <div className="p-2.5 bg-[#181818] rounded-lg border border-gray-800">
-                        <span className="text-gray-500 block">Passing Year</span>
-                        <span className="font-semibold text-white">{previewDoc.extracted_data.passing_year}</span>
+                      <div className="group p-3.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 hover:border-white/10 transition-all">
+                        <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest block mb-1">Passing Year</span>
+                        <span className="font-semibold text-white text-sm">{previewDoc.extracted_data.passing_year}</span>
                       </div>
                     )}
                     {previewDoc.extracted_data.obtained_marks !== undefined && previewDoc.extracted_data.obtained_marks !== null && (
-                      <div className="p-2.5 bg-[#181818] rounded-lg border border-gray-800">
-                        <span className="text-gray-500 block">Marks Obtained / Total</span>
-                        <span className="font-bold text-emerald-400">
-                          {previewDoc.extracted_data.obtained_marks} / {previewDoc.extracted_data.total_marks || 1100}
+                      <div className="group p-3.5 rounded-xl bg-gradient-to-r from-emerald-500/[0.05] to-transparent hover:from-emerald-500/[0.1] border border-emerald-500/10 hover:border-emerald-500/20 transition-all">
+                        <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest block mb-1">Marks Obtained / Total</span>
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="font-bold text-emerald-400 text-lg">
+                            {previewDoc.extracted_data.obtained_marks}
+                          </span>
+                          <span className="text-gray-500 text-sm">/</span>
+                          <span className="font-semibold text-gray-300 text-sm">
+                            {previewDoc.extracted_data.total_marks || 1100}
+                          </span>
                           {previewDoc.extracted_data.total_marks && (
-                            <span className="text-gray-400 ml-1 font-normal">
-                              ({((previewDoc.extracted_data.obtained_marks / previewDoc.extracted_data.total_marks) * 100).toFixed(1)}%)
+                            <span className="ml-1.5 text-xs font-semibold text-emerald-400/70 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                              {((previewDoc.extracted_data.obtained_marks / previewDoc.extracted_data.total_marks) * 100).toFixed(1)}%
                             </span>
                           )}
-                        </span>
+                        </div>
                       </div>
                     )}
                     {previewDoc.extracted_data.address && (
-                      <div className="p-2.5 bg-[#181818] rounded-lg border border-gray-800">
-                        <span className="text-gray-500 block">Address</span>
-                        <span className="text-gray-300">{previewDoc.extracted_data.address}</span>
+                      <div className="group p-3.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 hover:border-white/10 transition-all">
+                        <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest block mb-1">Address</span>
+                        <span className="text-gray-300 text-sm leading-relaxed">{previewDoc.extracted_data.address}</span>
                       </div>
                     )}
                   </div>
