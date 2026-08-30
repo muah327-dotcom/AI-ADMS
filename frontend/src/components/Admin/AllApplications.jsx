@@ -987,43 +987,6 @@ const AllApplications = () => {
             <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
               {/* Left: Document Canvas */}
               <div className="flex-1 bg-[#0d0d1a] relative flex items-center justify-center overflow-auto">
-                {/* Floating Zoom/Rotate Toolbar */}
-                <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10 shadow-2xl" style={{ zIndex: 10 }}>
-                  <button
-                    onClick={() => setZoomLevel(z => Math.max(0.25, z - 0.25))}
-                    className="p-2 rounded-lg hover:bg-white/10 text-gray-300 hover:text-white transition-colors"
-                    title="Zoom Out"
-                  >
-                    <ZoomOut className="h-4 w-4" />
-                  </button>
-                  <div className="w-px h-5 bg-white/10 mx-0.5" />
-                  <span className="text-[11px] text-gray-400 font-mono w-10 text-center select-none">{Math.round(zoomLevel * 100)}%</span>
-                  <div className="w-px h-5 bg-white/10 mx-0.5" />
-                  <button
-                    onClick={() => setZoomLevel(z => Math.min(3, z + 0.25))}
-                    className="p-2 rounded-lg hover:bg-white/10 text-gray-300 hover:text-white transition-colors"
-                    title="Zoom In"
-                  >
-                    <ZoomIn className="h-4 w-4" />
-                  </button>
-                  <div className="w-px h-5 bg-white/10 mx-0.5" />
-                  <button
-                    onClick={() => setRotation(r => (r + 90) % 360)}
-                    className="p-2 rounded-lg hover:bg-white/10 text-gray-300 hover:text-white transition-colors"
-                    title="Rotate"
-                  >
-                    <RotateCw className="h-4 w-4" />
-                  </button>
-                  <div className="w-px h-5 bg-white/10 mx-0.5" />
-                  <button
-                    onClick={() => { setZoomLevel(1); setRotation(0); }}
-                    className="px-2.5 py-1.5 rounded-lg hover:bg-white/10 text-[10px] text-gray-400 hover:text-white font-semibold tracking-wide transition-colors"
-                    title="Reset View"
-                  >
-                    RESET
-                  </button>
-                </div>
-
                 {/* Document Render */}
                 <div className="w-full h-full flex items-center justify-center p-6">
                   {(() => {
