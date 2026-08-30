@@ -90,6 +90,8 @@ const CNIC_HEADER_NOISE = new Set([
   'candidate', 'student', 'examinee', 'applicant', 'guardian', 'parent',
   'examination', 'certificate', 'secondary', 'intermediate', 'session', 'annual',
   'passed', 'promoted', 'group', 'science', 'arts', 'general', 'result', 'roll',
+  'pre', 'engineering', 'technology', 'commerce', 'humanities', 'faculty',
+  'fot', 'serial', 'photo', 'for', 'the', 'reg', 'ref', 'page', 'part', 'note',
   'in', 'at', 'on', 'to', 'by', 'is', 'as', 'an', 'cnicno', 'nicno', 'idno',
   'occupation', 'profession', 'income', 'salary', 'deceased', 'alive', 'cell', 'mobile'
 ]);
@@ -1056,6 +1058,7 @@ const extractAcademicData = (text) => {
 
   // Extract candidate name from academic certificate
   let name = null;
+  let nameLineIndex = -1;
   const lines = cleanText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -1064,7 +1067,7 @@ const extractAcademicData = (text) => {
       const sameLineMatch = line.match(/(?:Name\s*(?:of\s+)?(?:Candidate|Student|Examinee)|Student\s*Name|Candidate\s*Name)\s*[:\-]?\s*(.+)$/i);
       if (sameLineMatch && sameLineMatch[1]) {
         const val = cleanNameCandidate(sameLineMatch[1]);
-        if (val && val.length >= 3) name = val;
+        if (val && val.length >= 3 && scoreNameCandidate(val) > 0) name = val;
       }
       if (!name) {
         for (let j = 1; j <= 3; j++) {
@@ -1072,7 +1075,7 @@ const extractAcademicData = (text) => {
           if (!nextLine) break;
           if (/(?:Father|Husband|Mother|Guardian|Board|Institution|School|College|Roll|Marks)/i.test(nextLine)) break;
           const val = cleanNameCandidate(nextLine);
-          if (val && val.length >= 3) { name = val; break; }
+          if (val && val.length >= 3 && scoreNameCandidate(val) > 0) { name = val; break; }
         }
       }
       if (name) break;
