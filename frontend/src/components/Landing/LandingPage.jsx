@@ -141,15 +141,21 @@ const Navigation = ({ onNavClick }) => {
             className="flex items-center gap-2"
             whileHover={{ scale: 1.05 }}
           >
-            <div className="w-10 h-10 flex items-center justify-center">
-              <img src="/logo.png" alt="GGC Township Logo" className="w-10 h-10 object-contain" />
-            </div>
-            <div>
-              <span className={`font-bold text-lg ${isScrolled ? 'text-gray-900' : 'text-gray-900'}`}>
-                GGC Township
-              </span>
-              <p className="text-xs text-gray-500">AI-Enhanced Admissions</p>
-            </div>
+            <a href="/" className="flex items-center gap-2">
+              <div className="w-10 h-10 flex items-center justify-center">
+                <img
+                  src="/logo.png"
+                  alt="GGC Township Logo"
+                  className="w-10 h-10 object-contain"
+                />
+              </div>
+              <div>
+                <span className={`font-bold text-lg ${isScrolled ? 'text-gray-900' : 'text-gray-900'}`}>
+                  GGC Township
+                </span>
+                <p className="text-xs text-gray-500">AI-Enhanced Admissions</p>
+              </div>
+            </a>
           </motion.div>
 
           {/* Desktop Navigation */}
@@ -941,20 +947,28 @@ const Footer = ({ onNavClick }) => {
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 flex items-center justify-center">
-                <img src="/logo.png" alt="GGC Township Logo" className="w-10 h-10 object-contain" />
-              </div>
-              <span className="font-bold text-lg">GGC Township</span>
+              <a href="/" className="flex items-center gap-2">
+                <div className="w-10 h-10 flex items-center justify-center">
+                  <img
+                    src="/logo.png"
+                    alt="GGC Township Logo"
+                    className="w-10 h-10 object-contain"
+                  />
+                </div>
+                <span className="font-bold text-lg">GGC Township</span>
+              </a>
             </div>
             <p className="text-gray-400 text-sm mb-4">
               Leading the future of education with AI-enhanced admission management, ensuring transparency, efficiency, and excellence.
             </p>
             <div className="space-y-2 text-sm text-gray-400">
               <div className="flex items-center gap-2">
-                <span>✉️</span> muah327@gmail.com
+                <span>✉️</span>
+                <a href="mailto:muah327@gmail.com" className="hover:underline">muah327@gmail.com</a>
               </div>
               <div className="flex items-center gap-2">
-                <span>📞</span> 03456572787
+                <span>📞</span>
+                <a href="tel:03456572787" className="hover:underline">03456572787</a>
               </div>
               <div className="flex items-center gap-2">
                 <span>📍</span> Township, Lahore, Pakistan
