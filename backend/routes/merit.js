@@ -176,6 +176,7 @@ router.post('/generate/:programId', requireRole(['admin']), async (req, res) => 
 
 // 3. Generate Next (2nd / 3rd) Merit List (Admin)
 // Drops unpaid students whose deadline has passed & promotes waitlisted students into vacant seats
+// Limited to a maximum of 3 merit lists per program
 router.post('/generate-next/:programId', requireRole(['admin']), async (req, res) => {
   try {
     const { programId } = req.params;
@@ -186,7 +187,13 @@ router.post('/generate-next/:programId', requireRole(['admin']), async (req, res
       return res.status(404).json({ error: `Program '${programId}' not found` });
     }
 
-    const nextListNum = (program.current_merit_list || 1) + 1;
+    // Enforce maximum of 3 merit lists per program
+    const currentList = program.current_merit_list || 1;
+    if (currentList >= 3) {
+      return res.status(400).json({ error: 'Maximum of 3 merit lists have already been generated for this program. Please reset merit lists to start over.' });
+    }
+
+    const nextListNum = currentList + 1;
     const newDeadline = fee_deadline ? new Date(fee_deadline) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
     program.current_merit_list = nextListNum;
@@ -281,6 +288,45 @@ const getOrdinal = (n) => {
   } catch (error) {
     console.error('Generate next merit list error:', error);
     res.status(500).json({ error: 'Failed to generate next merit list: ' + error.message });
+  }
+});
+
+// 3b. Reset Merit Lists for a Program (Admin)
+// Resets all application statuses back to pending and sets current_merit_list to 0
+router.post('/reset-merit/:programId', requireRole(['admin']), async (req, res) => {
+  try {
+    const { programId } = req.params;
+
+    const program = await findProgram(programId);
+    if (!program) {
+      return res.status(404).json({ error: `Program '${programId}' not found` });
+    }
+
+    // Reset all applications for this program back to pending
+    await Application.updateMany(
+      { program_id: program._id, status: { $in: ['approved', 'confirmed', 'waitlisted', 'dropped'] } },
+      {
+        $set: {
+          status: 'pending',
+          merit_list_number: 1,
+          fee_status: 'unpaid',
+          fee_deadline: null,
+          remarks: null
+        }
+      }
+    );
+
+    // Reset the program merit list counter
+    program.current_merit_list = 0;
+    await program.save();
+
+    res.json({
+      message: `Merit lists for ${program.name} have been reset. You can now generate the 1st merit list again.`,
+      program: program.name
+    });
+  } catch (error) {
+    console.error('Reset merit list error:', error);
+    res.status(500).json({ error: 'Failed to reset merit lists: ' + error.message });
   }
 });
 

@@ -31,6 +31,7 @@ const MeritList = ({ admin = false }) => {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [generatingNext, setGeneratingNext] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [showFeeConfig, setShowFeeConfig] = useState(false);
   const [stats, setStats] = useState({ selected: 0, waitlisted: 0, confirmed: 0, dropped: 0 });
 
@@ -183,6 +184,40 @@ const MeritList = ({ admin = false }) => {
     }
   };
 
+  const resetMeritLists = async () => {
+    if (!selectedProgram) return;
+
+    if (!window.confirm('Are you sure you want to reset all merit lists for this program? This will set all applicants back to pending status.')) {
+      return;
+    }
+
+    setResetting(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/merit/reset-merit/${selectedProgram}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(data.message || 'Merit lists reset successfully');
+        fetchMeritList(selectedProgram);
+      } else {
+        const error = await response.json();
+        toast.error(error.error || 'Failed to reset merit lists');
+      }
+    } catch (error) {
+      console.error('Reset merit lists error:', error);
+      toast.error('Error resetting merit lists');
+    } finally {
+      setResetting(false);
+    }
+  };
+
   const getOrdinal = (n) => {
     if (!n || isNaN(n)) return '';
     const s = ['th', 'st', 'nd', 'rd'];
@@ -278,12 +313,33 @@ const MeritList = ({ admin = false }) => {
               Configure Fee & Deadline
             </button>
 
-            {/* Single Dynamic Action Button: 1st Merit List -> 2nd Merit List -> 3rd Merit List */}
+            {/* Single Dynamic Action Button: 1st Merit List -> 2nd -> 3rd -> Reset */}
             {(() => {
               const currentListNum = programDetails?.current_merit_list || 0;
               const isFirstGen = currentListNum === 0 || meritList.length === 0;
+              const isMaxReached = currentListNum >= 3;
 
-              if (isFirstGen) {
+              if (isMaxReached) {
+                return (
+                  <button
+                    onClick={resetMeritLists}
+                    disabled={resetting || !selectedProgram}
+                    className="inline-flex items-center px-4 py-2 bg-amber-600 text-white font-medium rounded-lg hover:bg-amber-700 transition-colors disabled:opacity-50"
+                  >
+                    {resetting ? (
+                      <>
+                        <Loader2 className="animate-spin -ml-1 mr-2 h-5 w-5" />
+                        Resetting Merit Lists...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="h-5 w-5 mr-2" />
+                        Refresh &amp; Reset Merit Lists
+                      </>
+                    )}
+                  </button>
+                );
+              } else if (isFirstGen) {
                 return (
                   <button
                     onClick={generateMeritList}
