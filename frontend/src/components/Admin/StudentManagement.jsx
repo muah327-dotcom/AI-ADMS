@@ -35,6 +35,8 @@ const StudentManagement = () => {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalStudents, setTotalStudents] = useState(0);
+  const [categoryStats, setCategoryStats] = useState({ merit: 0, quota: 0, self_finance: 0 });
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
@@ -64,6 +66,10 @@ const StudentManagement = () => {
         const data = await response.json();
         setStudents(data.students || []);
         setTotalPages(data.totalPages || 1);
+        setTotalStudents(data.total || 0);
+        if (data.stats) {
+          setCategoryStats(data.stats);
+        }
       }
     } catch (error) {
       console.error('Fetch students error:', error);
@@ -171,7 +177,7 @@ const StudentManagement = () => {
               <Users className="h-5 w-5 text-cyan-400" />
             </div>
           </div>
-          <p className="mt-3 text-2xl font-bold text-white">{students.length}</p>
+          <p className="mt-3 text-2xl font-bold text-white">{totalStudents}</p>
           <p className="text-sm text-gray-400">Total Students</p>
         </div>
         <div className="bg-[#1a1a1a] rounded-xl p-4 border border-gray-800">
@@ -181,7 +187,7 @@ const StudentManagement = () => {
             </div>
           </div>
           <p className="mt-3 text-2xl font-bold text-white">
-            {students.filter(s => s.admission_category === 'merit').length}
+            {categoryStats.merit}
           </p>
           <p className="text-sm text-gray-400">Merit Category</p>
         </div>
@@ -192,7 +198,7 @@ const StudentManagement = () => {
             </div>
           </div>
           <p className="mt-3 text-2xl font-bold text-white">
-            {students.filter(s => s.admission_category === 'quota').length}
+            {categoryStats.quota}
           </p>
           <p className="text-sm text-gray-400">Quota Category</p>
         </div>
@@ -203,7 +209,7 @@ const StudentManagement = () => {
             </div>
           </div>
           <p className="mt-3 text-2xl font-bold text-white">
-            {students.filter(s => s.admission_category === 'self_finance').length}
+            {categoryStats.self_finance}
           </p>
           <p className="text-sm text-gray-400">Self Finance</p>
         </div>

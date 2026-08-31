@@ -298,9 +298,16 @@ router.get('/students', async (req, res) => {
       query = query.where('program_id').equals(program);
     }
 
-    const [students, count] = await Promise.all([
+    const baseFilter = query.getFilter();
+    const baseFilterNoCategory = { ...baseFilter };
+    delete baseFilterNoCategory.admission_category;
+
+    const [students, count, meritCount, quotaCount, selfFinanceCount] = await Promise.all([
       query,
-      User.countDocuments(query.getFilter())
+      User.countDocuments(baseFilter),
+      User.countDocuments({ ...baseFilterNoCategory, admission_category: 'merit' }),
+      User.countDocuments({ ...baseFilterNoCategory, admission_category: 'quota' }),
+      User.countDocuments({ ...baseFilterNoCategory, admission_category: 'self_finance' })
     ]);
 
     const studentIds = students.map(s => s._id);
@@ -322,6 +329,11 @@ router.get('/students', async (req, res) => {
     res.json({
       students: mappedStudents,
       total: count,
+      stats: {
+        merit: meritCount,
+        quota: quotaCount,
+        self_finance: selfFinanceCount
+      },
       page: parseInt(page),
       totalPages: Math.ceil(count / limit)
     });
