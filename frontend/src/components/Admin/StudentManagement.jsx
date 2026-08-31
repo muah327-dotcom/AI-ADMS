@@ -261,8 +261,8 @@ const StudentManagement = () => {
               </thead>
               <tbody className="divide-y divide-gray-800">
                 {filteredStudents.map((student) => (
-                  <tr 
-                    key={student.id} 
+                  <tr
+                    key={student.id}
                     className="hover:bg-gray-800/50 transition-colors cursor-pointer"
                     onClick={() => { setSelectedStudent(student); setShowModal(true); }}
                   >
@@ -282,11 +282,10 @@ const StudentManagement = () => {
                     </td>
                     <td className="px-6 py-4">
                       {student.admission_category ? (
-                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                          student.admission_category === 'merit' ? 'bg-yellow-500/20 text-yellow-400' :
-                          student.admission_category === 'quota' ? 'bg-cyan-500/20 text-cyan-400' :
-                          'bg-green-500/20 text-green-400'
-                        }`}>
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${student.admission_category === 'merit' ? 'bg-yellow-500/20 text-yellow-400' :
+                            student.admission_category === 'quota' ? 'bg-cyan-500/20 text-cyan-400' :
+                              'bg-green-500/20 text-green-400'
+                          }`}>
                           {getCategoryIcon(student.admission_category)}
                           <span className="ml-2 capitalize">{student.admission_category.replace('_', ' ')}</span>
                         </span>
@@ -298,11 +297,10 @@ const StudentManagement = () => {
                       <div className="space-y-1">
                         {student.applications?.slice(0, 2).map((app, idx) => (
                           <div key={idx} className="flex items-center gap-2">
-                            <span className={`w-2 h-2 rounded-full ${
-                              app.status === 'approved' ? 'bg-green-500' :
-                              app.status === 'rejected' ? 'bg-red-500' :
-                              'bg-yellow-500'
-                            }`} />
+                            <span className={`w-2 h-2 rounded-full ${app.status === 'approved' ? 'bg-green-500' :
+                                app.status === 'rejected' ? 'bg-red-500' :
+                                  'bg-yellow-500'
+                              }`} />
                             <span className="text-sm text-gray-400">{app.program?.name}</span>
                           </div>
                         ))}
@@ -374,11 +372,10 @@ const StudentManagement = () => {
                   <h3 className="text-xl font-semibold text-white">{selectedStudent.full_name}</h3>
                   <p className="text-gray-400">{selectedStudent.email}</p>
                   {selectedStudent.admission_category && (
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium mt-2 ${
-                      selectedStudent.admission_category === 'merit' ? 'bg-yellow-500/20 text-yellow-400' :
-                      selectedStudent.admission_category === 'quota' ? 'bg-cyan-500/20 text-cyan-400' :
-                      'bg-green-500/20 text-green-400'
-                    }`}>
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium mt-2 ${selectedStudent.admission_category === 'merit' ? 'bg-yellow-500/20 text-yellow-400' :
+                        selectedStudent.admission_category === 'quota' ? 'bg-cyan-500/20 text-cyan-400' :
+                          'bg-green-500/20 text-green-400'
+                      }`}>
                       {getCategoryIcon(selectedStudent.admission_category)}
                       <span className="ml-2 capitalize">{selectedStudent.admission_category.replace('_', ' ')}</span>
                     </span>
@@ -500,11 +497,10 @@ const StudentManagement = () => {
                           <p className="font-medium text-white">{app.program?.name || app.program_id?.name}</p>
                           <p className="text-xs text-gray-400">{app.program?.department || app.program_id?.department}</p>
                         </div>
-                        <span className={`px-2 py-1 rounded text-xs font-medium capitalize ${
-                          app.status === 'approved' || app.status === 'confirmed' ? 'bg-green-500/20 text-green-400' :
-                          app.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
-                          'bg-yellow-500/20 text-yellow-400'
-                        }`}>
+                        <span className={`px-2 py-1 rounded text-xs font-medium capitalize ${app.status === 'approved' || app.status === 'confirmed' ? 'bg-green-500/20 text-green-400' :
+                            app.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
+                              'bg-yellow-500/20 text-yellow-400'
+                          }`}>
                           {app.status}
                         </span>
                       </div>

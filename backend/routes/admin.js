@@ -37,7 +37,7 @@ router.get('/dashboard-stats', async (req, res) => {
       Application.countDocuments({ status: 'dropped' }),
       User.countDocuments({ role: 'student' }),
       Program.countDocuments(),
-      
+
       // Program distribution via aggregation
       Application.aggregate([
         {
@@ -65,7 +65,7 @@ router.get('/dashboard-stats', async (req, res) => {
           }
         }
       ]),
-      
+
       // Category counts using regex
       Application.countDocuments({
         status: { $in: ['approved', 'confirmed', 'waitlisted'] },
@@ -79,7 +79,7 @@ router.get('/dashboard-stats', async (req, res) => {
 
     const admittedCount = approved + confirmed;
     const admissionRate = total > 0 ? (admittedCount / total) * 100 : 0;
-    
+
     // Calculate merit count
     const totalAdmittedApps = approved + confirmed + waitlisted;
     const meritCount = Math.max(0, totalAdmittedApps - quotaCount - selfFinanceCount);
@@ -114,9 +114,9 @@ router.get('/dashboard-stats', async (req, res) => {
 router.get('/all-applications', async (req, res) => {
   try {
     const { status, program, page = 1, limit = 20 } = req.query;
-    
+
     let query = Application.find();
-    
+
     if (status && status !== 'all') {
       query = query.where('status').equals(status);
     }
@@ -153,8 +153,8 @@ router.get('/all-applications', async (req, res) => {
       return appObj;
     });
 
-    res.json({ 
-      applications: mappedApplications, 
+    res.json({
+      applications: mappedApplications,
       total: count,
       page: parseInt(page),
       totalPages: Math.ceil(count / limit)
@@ -227,12 +227,12 @@ router.patch('/applications/:id/status', [
 
     const application = await Application.findByIdAndUpdate(
       id,
-      { 
-        status, 
+      {
+        status,
         remarks: notes ? notes : undefined,
         reviewed_by: req.user.id,
         reviewed_at: new Date(),
-        updated_at: new Date() 
+        updated_at: new Date()
       },
       { new: true }
     )
@@ -259,7 +259,7 @@ router.patch('/applications/:id/status', [
 router.get('/all-users', async (req, res) => {
   try {
     const { page = 1, limit = 20 } = req.query;
-    
+
     const students = await User.find({ role: 'student' })
       .select('full_name email cnic phone father_name date_of_birth gender address is_verified created_at uploaded_documents avatar_url')
       .sort({ created_at: -1 })
@@ -268,8 +268,8 @@ router.get('/all-users', async (req, res) => {
 
     const count = await User.countDocuments({ role: 'student' });
 
-    res.json({ 
-      students, 
+    res.json({
+      students,
       total: count,
       page: parseInt(page),
       totalPages: Math.ceil(count / limit)
@@ -283,7 +283,7 @@ router.get('/all-users', async (req, res) => {
 router.get('/students', async (req, res) => {
   try {
     const { category, program, page = 1, limit = 20 } = req.query;
-    
+
     let query = User.find({ role: 'student' })
       .select('full_name email cnic phone father_name date_of_birth gender address admission_category program_id is_verified created_at uploaded_documents avatar_url')
       .sort({ created_at: -1 })
@@ -307,7 +307,7 @@ router.get('/students', async (req, res) => {
     const [documents, userApplications] = await Promise.all([
       Document.find({ user_id: { $in: studentIds } }).select('-file_data').sort({ uploaded_at: 1 }),
       Application.find({ user_id: { $in: studentIds } })
-        .select('program_id status application_date')
+        .select('user_id program_id status application_date')
         .populate('program_id', 'name department')
     ]);
 
@@ -319,8 +319,8 @@ router.get('/students', async (req, res) => {
       return sObj;
     });
 
-    res.json({ 
-      students: mappedStudents, 
+    res.json({
+      students: mappedStudents,
       total: count,
       page: parseInt(page),
       totalPages: Math.ceil(count / limit)

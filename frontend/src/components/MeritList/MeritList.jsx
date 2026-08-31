@@ -79,10 +79,10 @@ const MeritList = ({ admin = false }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const url = admin 
+      const url = admin
         ? `/api/merit/program/${programId}?category=${categoryFilter}`
         : `/api/merit/program/${programId}`;
-      
+
       const response = await fetch(url, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -118,7 +118,7 @@ const MeritList = ({ admin = false }) => {
 
   const generateMeritList = async () => {
     if (!selectedProgram) return;
-    
+
     setGenerating(true);
     try {
       const token = localStorage.getItem('token');
@@ -152,7 +152,7 @@ const MeritList = ({ admin = false }) => {
 
   const generateNextMeritList = async () => {
     if (!selectedProgram) return;
-    
+
     setGeneratingNext(true);
     try {
       const token = localStorage.getItem('token');
@@ -491,8 +491,8 @@ const MeritList = ({ admin = false }) => {
             <Award className="h-16 w-16 text-gray-600 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-white mb-2">No Merit List Available</h3>
             <p className="text-gray-400">
-              {admin 
-                ? "Generate a merit list to see the rankings" 
+              {admin
+                ? "Generate a merit list to see the rankings"
                 : "Merit list has not been published yet"}
             </p>
           </div>
@@ -514,9 +514,8 @@ const MeritList = ({ admin = false }) => {
                 {meritList.map((entry) => (
                   <tr key={entry.id} className="hover:bg-gray-800/50 transition-colors">
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full font-bold ${
-                        entry.rank <= 3 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-gray-700 text-gray-300'
-                      }`}>
+                      <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full font-bold ${entry.rank <= 3 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-gray-700 text-gray-300'
+                        }`}>
                         {entry.rank}
                       </span>
                     </td>
@@ -534,11 +533,10 @@ const MeritList = ({ admin = false }) => {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                        entry.category === 'merit' ? 'bg-yellow-500/20 text-yellow-400' :
-                        entry.category === 'quota' ? 'bg-cyan-500/20 text-cyan-400' :
-                        'bg-green-500/20 text-green-400'
-                      }`}>
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${entry.category === 'merit' ? 'bg-yellow-500/20 text-yellow-400' :
+                          entry.category === 'quota' ? 'bg-cyan-500/20 text-cyan-400' :
+                            'bg-green-500/20 text-green-400'
+                        }`}>
                         {getCategoryIcon(entry.category)}
                         <span className="ml-2 capitalize">{entry.category.replace('_', ' ')}</span>
                       </span>
@@ -555,15 +553,14 @@ const MeritList = ({ admin = false }) => {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                        entry.status === 'confirmed' 
-                          ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${entry.status === 'confirmed'
+                          ? 'bg-green-500/20 text-green-400 border border-green-500/30'
                           : entry.status === 'selected'
-                          ? 'bg-cyan-500/20 text-cyan-400'
-                          : entry.status === 'dropped'
-                          ? 'bg-red-500/20 text-red-400'
-                          : 'bg-yellow-500/20 text-yellow-400'
-                      }`}>
+                            ? 'bg-cyan-500/20 text-cyan-400'
+                            : entry.status === 'dropped'
+                              ? 'bg-red-500/20 text-red-400'
+                              : 'bg-yellow-500/20 text-yellow-400'
+                        }`}>
                         {entry.status === 'confirmed' ? (
                           <CheckCircle className="h-3.5 w-3.5 mr-1" />
                         ) : entry.status === 'selected' ? (
@@ -579,16 +576,15 @@ const MeritList = ({ admin = false }) => {
 
                     {/* Fee Payment Column */}
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-medium ${
-                        entry.fee_status === 'verified' ? 'bg-green-500/20 text-green-400' :
-                        entry.fee_status === 'submitted' ? 'bg-yellow-500/20 text-yellow-400' :
-                        entry.fee_status === 'rejected' ? 'bg-red-500/20 text-red-400' :
-                        'bg-gray-800 text-gray-400'
-                      }`}>
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-medium ${entry.fee_status === 'verified' ? 'bg-green-500/20 text-green-400' :
+                          entry.fee_status === 'submitted' ? 'bg-yellow-500/20 text-yellow-400' :
+                            entry.fee_status === 'rejected' ? 'bg-red-500/20 text-red-400' :
+                              'bg-gray-800 text-gray-400'
+                        }`}>
                         {entry.fee_status === 'verified' ? 'Paid & Verified' :
-                         entry.fee_status === 'submitted' ? 'Receipt Uploaded' :
-                         entry.fee_status === 'rejected' ? 'Receipt Rejected' :
-                         'Unpaid'}
+                          entry.fee_status === 'submitted' ? 'Receipt Uploaded' :
+                            entry.fee_status === 'rejected' ? 'Receipt Rejected' :
+                              'Unpaid'}
                       </span>
                     </td>
 
