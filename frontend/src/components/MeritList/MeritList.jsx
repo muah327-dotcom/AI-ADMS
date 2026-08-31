@@ -17,7 +17,8 @@ import {
   Check,
   X,
   Clock,
-  DollarSign
+  DollarSign,
+  History
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import SkeletonLoader from '../Common/SkeletonLoader';
@@ -33,6 +34,7 @@ const MeritList = ({ admin = false }) => {
   const [generatingNext, setGeneratingNext] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [showFeeConfig, setShowFeeConfig] = useState(false);
+  const [showPreviousListsModal, setShowPreviousListsModal] = useState(false);
   const [stats, setStats] = useState({ selected: 0, waitlisted: 0, confirmed: 0, dropped: 0 });
 
   // Fee Config Form State
@@ -218,6 +220,38 @@ const MeritList = ({ admin = false }) => {
     }
   };
 
+  const exportToCSV = (listNumber) => {
+    const filteredList = meritList.filter(entry => entry.merit_list_number <= listNumber);
+    
+    if (filteredList.length === 0) {
+      toast.error(`No students found for Merit List #${listNumber}`);
+      return;
+    }
+
+    const headers = ['Rank', 'Student Name', 'CNIC', 'Category', 'Score', 'Status', 'Fee Status', 'List Number'];
+    
+    const csvContent = [
+      headers.join(','),
+      ...filteredList.map(e => [
+        e.rank,
+        `"${e.student?.full_name || ''}"`,
+        e.student?.cnic || '',
+        e.category,
+        e.score,
+        e.status,
+        e.fee_status,
+        e.merit_list_number
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${selectedProgramData?.name || 'Program'}_Merit_List_${listNumber}.csv`;
+    link.click();
+    toast.success(`Merit List #${listNumber} exported successfully`);
+  };
+
   const getOrdinal = (n) => {
     if (!n || isNaN(n)) return '';
     const s = ['th', 'st', 'nd', 'rd'];
@@ -312,6 +346,16 @@ const MeritList = ({ admin = false }) => {
               <DollarSign className="h-5 w-5 mr-2 text-green-400" />
               Configure Fee & Deadline
             </button>
+
+            {programDetails?.current_merit_list > 0 && (
+              <button
+                onClick={() => setShowPreviousListsModal(true)}
+                className="inline-flex items-center px-4 py-2 bg-[#1a1a1a] border border-gray-700 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors"
+              >
+                <History className="h-5 w-5 mr-2 text-cyan-400" />
+                View Merit Lists
+              </button>
+            )}
 
             {/* Single Dynamic Action Button: 1st Merit List -> 2nd -> 3rd -> Reset */}
             {(() => {
@@ -687,6 +731,55 @@ const MeritList = ({ admin = false }) => {
           </div>
         )}
       </div>
+
+      {/* Previous Merit Lists Modal */}
+      {showPreviousListsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-[#1a1a1a] rounded-xl max-w-md w-full border border-gray-800 shadow-2xl p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-white flex items-center">
+                <History className="h-6 w-6 text-cyan-400 mr-2" />
+                Generated Merit Lists
+              </h3>
+              <button
+                onClick={() => setShowPreviousListsModal(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-3">
+              {programDetails?.current_merit_list > 0 ? (
+                Array.from({ length: programDetails.current_merit_list }).map((_, i) => (
+                  <div key={i} className="flex items-center justify-between p-4 bg-[#0f0f0f] border border-gray-800 rounded-lg">
+                    <div className="flex items-center">
+                      <div className="h-10 w-10 rounded-full bg-cyan-500/10 flex items-center justify-center mr-3 border border-cyan-500/20">
+                        <Award className="h-5 w-5 text-cyan-400" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-white">Merit List #{i + 1}</p>
+                        <p className="text-xs text-gray-400">{selectedProgramData?.name}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => exportToCSV(i + 1)}
+                      className="p-2 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg transition-colors border border-gray-700"
+                      title="Export CSV"
+                    >
+                      <Download className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-6 text-gray-500">
+                  No merit lists have been generated yet.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
