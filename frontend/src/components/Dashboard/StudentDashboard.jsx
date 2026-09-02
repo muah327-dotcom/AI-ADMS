@@ -234,34 +234,6 @@ const StudentDashboard = () => {
 
         {/* Quick Actions & Recommendations */}
         <div className="space-y-6">
-          {/* AI Recommendations */}
-          <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-6">
-            <h2 className="text-lg font-semibold text-white mb-4 flex items-center">
-              <Sparkles className="h-5 w-5 mr-2 text-purple-400" />
-              AI Recommendations
-            </h2>
-            {recommendations.length === 0 ? (
-              <p className="text-sm text-gray-400">Upload your documents to get personalized recommendations</p>
-            ) : (
-              <div className="space-y-3">
-                {recommendations.map((rec, index) => (
-                  <div key={index} className="p-3 bg-purple-500/10 rounded-lg border border-purple-500/20">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-white">{rec.name}</p>
-                      <span className="text-xs bg-purple-500/20 text-purple-400 px-2 py-1 rounded">
-                        {rec.match_score}% match
-                      </span>
-                    </div>
-                    <p className="text-xs text-gray-400 mt-1">{rec.department}</p>
-                  </div>
-                ))}
-                <Link to="/dashboard/recommendations" className="text-sm text-cyan-400 hover:text-cyan-300 flex items-center justify-center mt-2">
-                  View All Recommendations
-                  <ArrowRight className="h-4 w-4 ml-1" />
-                </Link>
-              </div>
-            )}
-          </div>
 
           {/* Quick Actions */}
           <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-6">
