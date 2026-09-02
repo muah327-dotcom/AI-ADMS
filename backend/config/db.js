@@ -65,7 +65,7 @@ const connectDB = async () => {
       const bcrypt = (await import('bcryptjs')).default;
       const hashedPassword = await bcrypt.hash('admin123', 10);
       await User.create({
-        email: 'admin@pucit.edu.pk',
+        email: 'admin@university.edu',
         password: hashedPassword,
         full_name: 'System Administrator',
         role: 'admin',
@@ -74,7 +74,7 @@ const connectDB = async () => {
         address: 'University Campus',
         is_active: true
       });
-      console.log('✅ Admin user created: admin@pucit.edu.pk / admin123');
+      console.log('✅ Admin user created: admin@university.edu / admin123');
     }
 
     const programCount = await Program.countDocuments();

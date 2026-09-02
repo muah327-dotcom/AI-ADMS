@@ -13,14 +13,14 @@ async function fixAdminPassword() {
     console.log('Generated hash:', hashedPassword);
 
     const result = await mongoose.connection.db.collection('users').updateOne(
-      { email: 'admin@pucit.edu.pk' },
+      { email: 'admin@university.edu' },
       { $set: { password_hash: hashedPassword } }
     );
 
     if (result.modifiedCount > 0) {
       console.log('Admin password updated successfully!');
     } else {
-      console.log('No admin user found with email admin@pucit.edu.pk');
+      console.log('No admin user found with email admin@university.edu');
     }
   } catch (error) {
     console.error('Error:', error);

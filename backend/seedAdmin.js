@@ -12,11 +12,11 @@ const createAdminUser = async () => {
     console.log('Connected to MongoDB');
 
     // Check if admin already exists
-    const existingAdmin = await User.findOne({ email: 'admin@pucit.edu.pk' });
+    const existingAdmin = await User.findOne({ email: 'admin@university.edu' });
     
     if (existingAdmin) {
       console.log('Admin user already exists');
-      console.log('Email: admin@pucit.edu.pk');
+      console.log('Email: admin@university.edu');
       console.log('Password: admin123');
       process.exit(0);
     }
@@ -25,7 +25,7 @@ const createAdminUser = async () => {
     const hashedPassword = await bcrypt.hash('admin123', 10);
     
     const adminUser = await User.create({
-      email: 'admin@pucit.edu.pk',
+      email: 'admin@university.edu',
       password: hashedPassword,
       full_name: 'System Administrator',
       role: 'admin',
@@ -37,7 +37,7 @@ const createAdminUser = async () => {
 
     console.log('✅ Admin user created successfully!');
     console.log('');
-    console.log('📧 Email: admin@pucit.edu.pk');
+    console.log('📧 Email: admin@university.edu');
     console.log('🔑 Password: admin123');
     console.log('');
     console.log('You can now login with these credentials.');
