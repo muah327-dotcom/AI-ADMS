@@ -30,7 +30,7 @@ const StudentDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       const token = localStorage.getItem('token');
-      
+
       const [appsRes, recsRes] = await Promise.all([
         fetch('/api/applications/my-applications', {
           headers: { 'Authorization': `Bearer ${token}` }
@@ -214,12 +214,11 @@ const StudentDashboard = () => {
                       </div>
                     </div>
                     <div className="text-right">
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                        app.status === 'approved' ? 'bg-green-500/20 text-green-400' :
-                        app.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
-                        app.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
-                        'bg-cyan-500/20 text-cyan-400'
-                      }`}>
+                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${app.status === 'approved' ? 'bg-green-500/20 text-green-400' :
+                          app.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
+                            app.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
+                              'bg-cyan-500/20 text-cyan-400'
+                        }`}>
                         {app.status}
                       </span>
                       <p className="text-xs text-gray-500 mt-1">
