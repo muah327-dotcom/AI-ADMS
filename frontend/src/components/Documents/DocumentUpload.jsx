@@ -887,6 +887,70 @@ const performTargetedFieldOcr = async (canvas, lines, docCategory, fieldType = '
 
 
 /**
+ * Extract Subject Marks from Academic Document Table
+ */
+const extractSubjectMarks = (text) => {
+  const subjects = [];
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  
+  const knownSubjects = [
+    'URDU', 'ENGLISH', 'ISLAMIYAT', 'ISLAMIC EDUCATION', 'PAKISTAN STUDIES', 
+    'MATHEMATICS', 'PHYSICS', 'CHEMISTRY', 'BIOLOGY', 'COMPUTER SCIENCE',
+    'GENERAL SCIENCE', 'ISLAMIC STUDIES', 'PUNJABI', 'ARABIC', 'EDUCATION',
+    'ECONOMICS', 'CIVICS', 'HISTORY', 'GEOGRAPHY', 'STATISTICS', 'ACCOUNTING'
+  ];
+
+  for (let line of lines) {
+    if (/(?:DETAIL\s*OF\s*MARKS|MARKS\s*OBTAINED|SUBJECTS?|TOTAL|MAXIMUM|ROLL\s*NO|NAME|DATE|GRADE|RESULT|BOARD|BISE)/i.test(line)) {
+      continue;
+    }
+    
+    // Allow optional leading serial number e.g. "1. URDU"
+    // Capture subject name (letters/spaces) and then a sequence of numbers (with spaces)
+    // Ignore optional trailing grade like A+, B, PASS, FAIL
+    const match = line.match(/^(?:[\d\s\.\)\-]*)([A-Za-z\s&]+)[\s=:\-]+([\d\sOolISBZ]{2,})(?:[A-F][+-]?|A-1|PASS|FAIL)?\s*$/i);
+    
+    if (match) {
+      let subjName = match[1].replace(/[^A-Za-z\s]/g, '').replace(/\s+/g, ' ').trim().toUpperCase();
+      let numsStr = match[2].trim();
+      
+      if (subjName.length < 3 || ['THE', 'AND', 'FOR', 'PART', 'OBTAINED', 'GRAND', 'AGGREGATE'].includes(subjName)) {
+        continue;
+      }
+
+      const isKnown = knownSubjects.some(ks => subjName.includes(ks));
+      if (isKnown || subjName.length >= 4) {
+        // Fix OCR digits
+        const fixedNums = fixNumericRuns(numsStr);
+        const numbers = fixedNums.split(/\s+/).map(n => parseInt(n, 10)).filter(n => !isNaN(n));
+        
+        if (numbers.length > 0) {
+          // The last number is typically the Total Obtained Marks for that subject
+          let obtainedMarks = numbers[numbers.length - 1];
+          
+          if (obtainedMarks >= 0 && obtainedMarks <= 250) {
+             subjects.push({ name: subjName, obtainedMarks });
+          }
+        }
+      }
+    }
+  }
+  
+  // Clean duplicates (in case of double read)
+  const uniqueSubjects = [];
+  const seenNames = new Set();
+  for (const sub of subjects) {
+    if (!seenNames.has(sub.name)) {
+      seenNames.add(sub.name);
+      uniqueSubjects.push(sub);
+    }
+  }
+  
+  return uniqueSubjects;
+};
+
+
+/**
  * Extract Academic Data (Matric / Intermediate / Transcript) with high precision
  */
 const extractAcademicData = (text) => {
@@ -894,7 +958,15 @@ const extractAcademicData = (text) => {
 
   // 1. Board Name Detection & Normalization
   let board = null;
+  let documentLevel = null;
   const textForBoard = text;
+
+  // Detect Level
+  if (/(?:SECONDARY\s+SCHOOL\s+CERTIFICATE|MATRIC|SSC\b)/i.test(textForBoard)) {
+    documentLevel = 'matric';
+  } else if (/(?:INTERMEDIATE|HIGHER\s+SECONDARY|HSSC\b)/i.test(textForBoard)) {
+    documentLevel = 'intermediate';
+  }
 
   // a) Look for "Board of Intermediate/Secondary Education <City>"
   const biseMatch = textForBoard.match(/(?:Board\s+of\s+Intermediate(?:\s+(?:and|&|&amp;)?\s+Secondary\s+Education)?|BISE|Board\s+of\s+Secondary\s+Education)[\s,:]*([A-Za-z\s]+?)(?:,|\.|\n|$)/i);
@@ -1295,7 +1367,20 @@ const extractAcademicData = (text) => {
     fatherName = unique[0].name;
   }
 
+  // Extract subject marks
+  const subjects = extractSubjectMarks(text);
+
+  // Cross-validate total obtained marks with subject marks
+  if (subjects.length > 0) {
+    const sumMarks = subjects.reduce((sum, s) => sum + s.obtainedMarks, 0);
+    // If the extracted obtained_marks is missing or completely wrong, but the sum makes sense:
+    if (!obtainedMarks || (Math.abs(obtainedMarks - sumMarks) > 50 && sumMarks > 100 && sumMarks <= (totalMarks || 1200))) {
+      obtainedMarks = sumMarks;
+    }
+  }
+
   return {
+    document_level: documentLevel,
     percentage: percentage,
     grade: grade,
     passing_year: passingYear,
@@ -1303,6 +1388,7 @@ const extractAcademicData = (text) => {
     roll_number: rollNumber,
     obtained_marks: obtainedMarks,
     total_marks: totalMarks,
+    subjects: subjects,
     name: name,
     father_name: fatherName,
     raw_text: text
@@ -2698,6 +2784,21 @@ const DocumentUpload = () => {
     setSaving(true);
     try {
       const token = localStorage.getItem('token');
+      
+      const educationPayload = { matric: {}, intermediate: {} };
+      uploadedFiles.forEach(file => {
+        if ((file.type === 'matric' || file.extractedData?.document_level === 'matric') && file.extractedData?.subjects) {
+          educationPayload.matric.subjects = file.extractedData.subjects;
+          educationPayload.matric.totalMarks = file.extractedData.total_marks || formData.matric_total_marks;
+          educationPayload.matric.obtainedMarks = file.extractedData.obtained_marks || formData.matric_obtained_marks;
+        }
+        if ((file.type === 'intermediate' || file.type === 'transcript' || file.extractedData?.document_level === 'intermediate') && file.extractedData?.subjects) {
+          educationPayload.intermediate.subjects = file.extractedData.subjects;
+          educationPayload.intermediate.totalMarks = file.extractedData.total_marks || formData.inter_total_marks;
+          educationPayload.intermediate.obtainedMarks = file.extractedData.obtained_marks || formData.inter_obtained_marks;
+        }
+      });
+      
       const payload = {
         full_name: sanitizeToEnglishName(formData.full_name),
         phone: formData.phone,
@@ -2718,7 +2819,8 @@ const DocumentUpload = () => {
         inter_obtained_marks: formData.inter_obtained_marks ? parseInt(formData.inter_obtained_marks) : undefined,
         inter_total_marks: formData.inter_total_marks ? parseInt(formData.inter_total_marks) : undefined,
         is_verified: true,
-        uploaded_documents: uploadedFiles.map(f => f.type)
+        uploaded_documents: uploadedFiles.map(f => f.type),
+        education: educationPayload
       };
 
       const response = await fetch('/api/auth/profile', {
@@ -2758,6 +2860,22 @@ const DocumentUpload = () => {
     missingMandatoryDocs.length === 0 &&
     uploadedFiles.length >= mandatoryDocTypes.length
   );
+  const renderSubjects = (subjects) => {
+    if (!subjects || subjects.length === 0) return null;
+    return (
+      <div className="mt-4 col-span-1 sm:col-span-2">
+        <h5 className="text-xs font-semibold text-gray-500 uppercase mb-2">Extracted Subjects (Auto-Parsed from Document)</h5>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+          {subjects.map((sub, idx) => (
+            <div key={idx} className="bg-gray-50 dark:bg-gray-800 p-2 rounded-lg border border-gray-200 dark:border-gray-700">
+              <div className="text-[10px] text-gray-500 dark:text-gray-400 font-medium truncate" title={sub.name}>{sub.name}</div>
+              <div className="text-sm font-semibold text-gray-900 dark:text-white">{sub.obtainedMarks} <span className="text-[10px] text-gray-400 font-normal">marks</span></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
 
   // Input field helper with OCR indicator
   const renderField = (label, field, type = 'text', options = {}) => {
@@ -3086,6 +3204,7 @@ const DocumentUpload = () => {
                   {renderField('Passing Year', 'matric_passing_year', 'number', { placeholder: 'e.g., 2022' })}
                   {renderField('Marks Obtained', 'matric_obtained_marks', 'number', { placeholder: 'e.g., 950' })}
                   {renderField('Total Marks', 'matric_total_marks', 'number', { placeholder: 'e.g., 1100' })}
+                  {renderSubjects(uploadedFiles.find(f => f.type === 'matric' || f.extractedData?.document_level === 'matric')?.extractedData?.subjects || user?.education?.matric?.subjects)}
                 </div>
               </div>
 
@@ -3100,6 +3219,7 @@ const DocumentUpload = () => {
                   {renderField('Passing Year', 'inter_passing_year', 'number', { placeholder: 'e.g., 2024' })}
                   {renderField('Marks Obtained', 'inter_obtained_marks', 'number', { placeholder: 'e.g., 450' })}
                   {renderField('Total Marks', 'inter_total_marks', 'number', { placeholder: 'e.g., 550' })}
+                  {renderSubjects(uploadedFiles.find(f => f.type === 'intermediate' || f.type === 'transcript' || f.extractedData?.document_level === 'intermediate')?.extractedData?.subjects || user?.education?.intermediate?.subjects)}
                 </div>
               </div>
             </div>

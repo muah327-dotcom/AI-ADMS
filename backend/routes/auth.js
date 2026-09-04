@@ -342,7 +342,7 @@ router.put('/profile', authenticateToken, [
       father_name, date_of_birth, gender, alternate_phone, father_phone, permanent_address,
       matric_board, matric_passing_year, matric_obtained_marks, matric_total_marks,
       inter_board, inter_passing_year, inter_obtained_marks, inter_total_marks,
-      is_verified, uploaded_documents
+      is_verified, uploaded_documents, education
     } = req.body;
     const updates = {};
 
@@ -367,6 +367,12 @@ router.put('/profile', authenticateToken, [
     if (inter_total_marks !== undefined) updates.inter_total_marks = inter_total_marks || null;
     if (is_verified !== undefined) updates.is_verified = is_verified;
     if (uploaded_documents !== undefined) updates.uploaded_documents = uploaded_documents;
+    
+    if (education !== undefined) {
+      // Fetch current user to merge the education fields instead of overwriting completely
+      const currentUser = await User.findById(req.user.id);
+      updates.education = { ...currentUser?.education?.toObject(), ...education };
+    }
     updates.updated_at = new Date().toISOString();
 
     const user = await User.findByIdAndUpdate(

@@ -89,6 +89,18 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: null
   },
+  education: {
+    matric: {
+      totalMarks: { type: Number, default: null },
+      obtainedMarks: { type: Number, default: null },
+      subjects: [{ name: String, obtainedMarks: Number }]
+    },
+    intermediate: {
+      totalMarks: { type: Number, default: null },
+      obtainedMarks: { type: Number, default: null },
+      subjects: [{ name: String, obtainedMarks: Number }]
+    }
+  },
   avatar_url: {
     type: String,
     default: null
