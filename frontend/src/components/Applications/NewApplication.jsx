@@ -201,19 +201,19 @@ const NewApplication = () => {
 
       {/* Mandatory Document & Profile Verification Advisory Banner */}
       {(!user?.is_verified || !['cnic', 'photograph', 'matric', 'intermediate'].every(t => (user?.uploaded_documents || []).includes(t))) && (
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg">
+        <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg">
           <div className="flex items-start gap-3">
-            <AlertCircle className="h-6 w-6 text-amber-400 flex-shrink-0 mt-0.5" />
+            <AlertCircle className="h-6 w-6 text-amber-500 dark:text-amber-400 flex-shrink-0 mt-0.5" />
             <div>
-              <h4 className="text-sm font-bold text-amber-200">Mandatory Document Upload & Profile Verification Required</h4>
-              <p className="text-xs text-amber-300/80 mt-1 leading-relaxed">
+              <h4 className="text-sm font-bold text-amber-700 dark:text-amber-300">Mandatory Document Upload & Profile Verification Required</h4>
+              <p className="text-xs text-amber-600/80 dark:text-amber-300/80 mt-1 leading-relaxed">
                 All non-optional documents (CNIC / B-Form, Recent Photograph, Matric Certificate, Intermediate Certificate) are mandatory. You must upload them and verify your profile before submitting admission applications.
               </p>
             </div>
           </div>
           <button
             onClick={() => navigate('/dashboard/documents')}
-            className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs transition-colors whitespace-nowrap flex-shrink-0 shadow-md"
+            className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-white dark:text-slate-950 font-bold rounded-lg text-xs transition-colors whitespace-nowrap flex-shrink-0 shadow-md"
           >
             Upload Non-Optional Documents
           </button>
@@ -336,7 +336,7 @@ const NewApplication = () => {
                       </>
                     ) : (
                       <>
-                        <AlertCircle className="h-5 w-5 text-red-500" />
+                        <AlertCircle className="h-5 w-5 text-red-500 dark:text-red-400" />
                         <span className="font-medium text-red-800 dark:text-red-300">You do not meet minimum percentage requirements</span>
                       </>
                     )}

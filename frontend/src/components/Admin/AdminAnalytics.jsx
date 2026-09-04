@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTheme } from '../../contexts/ThemeContext';
 import {
   BarChart3,
   PieChart,
@@ -38,6 +39,8 @@ ChartJS.register(
 );
 
 const AdminAnalytics = () => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState('6months');
   const [analyticsData, setAnalyticsData] = useState({
@@ -240,18 +243,18 @@ const AdminAnalytics = () => {
                 plugins: {
                   legend: { 
                     position: 'bottom',
-                    labels: { color: '#6b7280', boxWidth: 10, font: { size: 10 } }
+                    labels: { color: isDark ? '#9ca3af' : '#6b7280', boxWidth: 10, font: { size: 10 } }
                   },
                 },
                 scales: {
                   y: { 
                     beginAtZero: true, 
-                    grid: { color: '#2a2a2a' },
-                    ticks: { color: '#6b7280', font: { size: 10 } }
+                    grid: { color: isDark ? '#374151' : '#e5e7eb' },
+                    ticks: { color: isDark ? '#9ca3af' : '#6b7280', font: { size: 10 } }
                   },
                   x: { 
                     grid: { display: false },
-                    ticks: { color: '#6b7280', font: { size: 10 } }
+                    ticks: { color: isDark ? '#9ca3af' : '#6b7280', font: { size: 10 } }
                   },
                 },
               }}
@@ -271,7 +274,7 @@ const AdminAnalytics = () => {
                 plugins: {
                   legend: { 
                     position: 'bottom',
-                    labels: { color: '#6b7280', boxWidth: 10, font: { size: 10 }, padding: 10 }
+                    labels: { color: isDark ? '#9ca3af' : '#6b7280', boxWidth: 10, font: { size: 10 }, padding: 10 }
                   },
                 },
               }}
@@ -297,12 +300,12 @@ const AdminAnalytics = () => {
                 scales: {
                   y: { 
                     beginAtZero: true, 
-                    grid: { color: '#2a2a2a' },
-                    ticks: { color: '#6b7280', font: { size: 10 } }
+                    grid: { color: isDark ? '#374151' : '#e5e7eb' },
+                    ticks: { color: isDark ? '#9ca3af' : '#6b7280', font: { size: 10 } }
                   },
                   x: { 
                     grid: { display: false },
-                    ticks: { color: '#6b7280', font: { size: 10 } }
+                    ticks: { color: isDark ? '#9ca3af' : '#6b7280', font: { size: 10 } }
                   },
                 },
               }}
@@ -325,12 +328,12 @@ const AdminAnalytics = () => {
                 scales: {
                   y: { 
                     beginAtZero: true, 
-                    grid: { color: '#2a2a2a' },
-                    ticks: { color: '#6b7280', font: { size: 10 } }
+                    grid: { color: isDark ? '#374151' : '#e5e7eb' },
+                    ticks: { color: isDark ? '#9ca3af' : '#6b7280', font: { size: 10 } }
                   },
                   x: { 
                     grid: { display: false },
-                    ticks: { color: '#6b7280', font: { size: 10 } }
+                    ticks: { color: isDark ? '#9ca3af' : '#6b7280', font: { size: 10 } }
                   },
                 },
               }}

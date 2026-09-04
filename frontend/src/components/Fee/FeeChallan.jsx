@@ -245,53 +245,53 @@ const FeeChallan = () => {
           </div>
 
           {/* Printable Official Fee Challan (3-Copy Layout) */}
-          <div id="printable-challan" className="bg-white text-gray-900 rounded-xl p-6 shadow-2xl border border-gray-300">
+          <div id="printable-challan" className="bg-white text-gray-900 dark:bg-gray-800 dark:text-white rounded-xl p-6 shadow-2xl border border-gray-300 dark:border-gray-600">
             {/* Challan Title Banner */}
-            <div className="text-center border-b-2 border-gray-900 pb-3 mb-4">
-              <h2 className="text-xl font-bold uppercase tracking-wider text-gray-900">University Admission Office</h2>
-              <p className="text-xs font-semibold text-gray-700">Official Bank Challan for Admission Fee Deposit</p>
+            <div className="text-center border-b-2 border-gray-900 dark:border-gray-300 pb-3 mb-4">
+              <h2 className="text-xl font-bold uppercase tracking-wider text-gray-900 dark:text-white">University Admission Office</h2>
+              <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">Official Bank Challan for Admission Fee Deposit</p>
               <p className="text-xs text-gray-500">Deposit in any online branch of {currentChallan.challan.bank_name}</p>
             </div>
 
             {/* 3 Copy Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 divide-y md:divide-y-0 md:divide-x divide-gray-400">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 divide-y md:divide-y-0 md:divide-x divide-gray-400 dark:divide-gray-600">
               {['Bank Copy', 'University Copy', 'Student Copy'].map((copyName, cIdx) => (
                 <div key={copyName} className={`${cIdx > 0 ? 'pt-4 md:pt-0 md:pl-4' : ''} text-xs space-y-3`}>
                   {/* Copy Header */}
-                  <div className="flex justify-between items-center bg-gray-100 p-2 rounded border border-gray-300">
-                    <span className="font-bold text-gray-900 uppercase tracking-wide">{copyName}</span>
-                    <span className="font-mono text-gray-700 font-semibold">{currentChallan.challan.challan_number}</span>
+                  <div className="flex justify-between items-center bg-gray-100 dark:bg-gray-700 p-2 rounded border border-gray-300 dark:border-gray-600">
+                    <span className="font-bold text-gray-900 dark:text-white uppercase tracking-wide">{copyName}</span>
+                    <span className="font-mono text-gray-700 dark:text-gray-300 font-semibold">{currentChallan.challan.challan_number}</span>
                   </div>
 
                   {/* Bank & Account Info */}
-                  <div className="bg-primary-50 p-2 rounded border border-primary-200">
-                    <p className="font-bold text-primary-900">{currentChallan.challan.bank_name}</p>
-                    <p className="text-gray-700">A/C Title: <span className="font-medium text-gray-900">{currentChallan.challan.account_title}</span></p>
-                    <p className="text-gray-700 font-mono">A/C No: <span className="font-bold text-gray-900">{currentChallan.challan.account_number}</span></p>
+                  <div className="bg-primary-50 dark:bg-primary-900/20 p-2 rounded border border-primary-200 dark:border-primary-800">
+                    <p className="font-bold text-primary-900 dark:text-primary-300">{currentChallan.challan.bank_name}</p>
+                    <p className="text-gray-700 dark:text-gray-300">A/C Title: <span className="font-medium text-gray-900 dark:text-white">{currentChallan.challan.account_title}</span></p>
+                    <p className="text-gray-700 dark:text-gray-300 font-mono">A/C No: <span className="font-bold text-gray-900 dark:text-white">{currentChallan.challan.account_number}</span></p>
                   </div>
 
                   {/* Student Particulars */}
                   <table className="w-full text-left border-collapse">
                     <tbody>
-                      <tr className="border-b border-gray-200">
-                        <td className="py-1 font-semibold text-gray-600">App ID / Student:</td>
-                        <td className="py-1 font-bold text-gray-900">{currentChallan.student.full_name}</td>
+                      <tr className="border-b border-gray-200 dark:border-gray-600">
+                        <td className="py-1 font-semibold text-gray-600 dark:text-gray-400">App ID / Student:</td>
+                        <td className="py-1 font-bold text-gray-900 dark:text-white">{currentChallan.student.full_name}</td>
                       </tr>
-                      <tr className="border-b border-gray-200">
-                        <td className="py-1 font-semibold text-gray-600">Father Name:</td>
-                        <td className="py-1 text-gray-800">{currentChallan.student.father_name || 'N/A'}</td>
+                      <tr className="border-b border-gray-200 dark:border-gray-600">
+                        <td className="py-1 font-semibold text-gray-600 dark:text-gray-400">Father Name:</td>
+                        <td className="py-1 text-gray-800 dark:text-gray-200">{currentChallan.student.father_name || 'N/A'}</td>
                       </tr>
-                      <tr className="border-b border-gray-200">
-                        <td className="py-1 font-semibold text-gray-600">CNIC:</td>
-                        <td className="py-1 font-mono text-gray-800">{currentChallan.student.cnic}</td>
+                      <tr className="border-b border-gray-200 dark:border-gray-600">
+                        <td className="py-1 font-semibold text-gray-600 dark:text-gray-400">CNIC:</td>
+                        <td className="py-1 font-mono text-gray-800 dark:text-gray-200">{currentChallan.student.cnic}</td>
                       </tr>
-                      <tr className="border-b border-gray-200">
-                        <td className="py-1 font-semibold text-gray-600">Program:</td>
-                        <td className="py-1 font-bold text-primary-800">{currentChallan.program_name}</td>
+                      <tr className="border-b border-gray-200 dark:border-gray-600">
+                        <td className="py-1 font-semibold text-gray-600 dark:text-gray-400">Program:</td>
+                        <td className="py-1 font-bold text-primary-800 dark:text-primary-300">{currentChallan.program_name}</td>
                       </tr>
-                      <tr className="border-b border-gray-200">
-                        <td className="py-1 font-semibold text-gray-600">Due Date:</td>
-                        <td className="py-1 font-bold text-red-600">
+                      <tr className="border-b border-gray-200 dark:border-gray-600">
+                        <td className="py-1 font-semibold text-gray-600 dark:text-gray-400">Due Date:</td>
+                        <td className="py-1 font-bold text-red-600 dark:text-red-400">
                           {new Date(currentChallan.challan.due_date).toLocaleDateString()}
                         </td>
                       </tr>
@@ -299,33 +299,33 @@ const FeeChallan = () => {
                   </table>
 
                   {/* Fee Breakdown Table */}
-                  <div className="border border-gray-300 rounded overflow-hidden">
-                    <div className="bg-gray-200 px-2 py-1 font-bold text-gray-800 text-[11px] flex justify-between">
+                  <div className="border border-gray-300 dark:border-gray-600 rounded overflow-hidden">
+                    <div className="bg-gray-200 dark:bg-gray-600 px-2 py-1 font-bold text-gray-800 dark:text-gray-200 text-[11px] flex justify-between">
                       <span>Particulars</span>
                       <span>Amount (PKR)</span>
                     </div>
-                    <div className="divide-y divide-gray-200">
-                      <div className="px-2 py-1 flex justify-between text-gray-700">
+                    <div className="divide-y divide-gray-200 dark:divide-gray-600">
+                      <div className="px-2 py-1 flex justify-between text-gray-700 dark:text-gray-300">
                         <span>Admission Fee</span>
                         <span>Rs. {currentChallan.challan.admission_fee.toLocaleString()}</span>
                       </div>
-                      <div className="px-2 py-1 flex justify-between text-gray-700">
+                      <div className="px-2 py-1 flex justify-between text-gray-700 dark:text-gray-300">
                         <span>Semester Tuition Fee</span>
                         <span>Rs. {currentChallan.challan.tuition_fee.toLocaleString()}</span>
                       </div>
-                      <div className="px-2 py-1 flex justify-between font-bold bg-gray-100 text-gray-900">
+                      <div className="px-2 py-1 flex justify-between font-bold bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white">
                         <span>Total Payable</span>
-                        <span className="text-primary-900">Rs. {currentChallan.challan.total_fee.toLocaleString()}</span>
+                        <span className="text-primary-900 dark:text-primary-300">Rs. {currentChallan.challan.total_fee.toLocaleString()}</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Stamp & Signatures Mockup */}
-                  <div className="pt-4 flex justify-between items-end text-[10px] text-gray-500">
-                    <div className="border-t border-gray-400 pt-1 text-center w-24">
+                  <div className="pt-4 flex justify-between items-end text-[10px] text-gray-500 dark:text-gray-400">
+                    <div className="border-t border-gray-400 dark:border-gray-600 pt-1 text-center w-24">
                       Bank Officer
                     </div>
-                    <div className="border-t border-gray-400 pt-1 text-center w-24">
+                    <div className="border-t border-gray-400 dark:border-gray-600 pt-1 text-center w-24">
                       Depositor Sign
                     </div>
                   </div>
@@ -334,7 +334,7 @@ const FeeChallan = () => {
             </div>
 
             {/* Footer Notice */}
-            <div className="mt-4 pt-2 border-t border-gray-300 text-center text-[10px] text-gray-500">
+            <div className="mt-4 pt-2 border-t border-gray-300 dark:border-gray-600 text-center text-[10px] text-gray-500 dark:text-gray-400">
               Note: Non-refundable fee. Payments must be submitted via bank stamp and receipt uploaded online before due date.
             </div>
           </div>

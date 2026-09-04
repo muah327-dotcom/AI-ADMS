@@ -215,7 +215,7 @@ const ProgramRecommendations = () => {
 
           {internalAlternatives.length === 0 ? (
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-12 text-center">
-              <BookOpen className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+              <BookOpen className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
               <h4 className="text-base font-semibold text-gray-900 dark:text-white">No internal alternative programs found</h4>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Please verify your documents to compute your profile score.</p>
             </div>
@@ -305,7 +305,7 @@ const ProgramRecommendations = () => {
 
           {partnerColleges.length === 0 ? (
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-12 text-center">
-              <Building2 className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+              <Building2 className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
               <h4 className="text-base font-semibold text-gray-900 dark:text-white">No partner colleges currently registered</h4>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Please check back or contact admissions for external affiliation lists.</p>
             </div>
@@ -322,7 +322,7 @@ const ProgramRecommendations = () => {
                         <span className="text-[11px] font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2 py-0.5 rounded border border-purple-200 dark:border-purple-800">
                           {college.field_category}
                         </span>
-                        <h4 className="text-base font-bold text-gray-900 dark:text-white mt-1.5 group-hover:text-purple-700 transition-colors">
+                        <h4 className="text-base font-bold text-gray-900 dark:text-white mt-1.5 group-hover:text-purple-700 dark:group-hover:text-purple-300 transition-colors">
                           {college.program_name}
                         </h4>
                         <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mt-0.5">{college.college_name}</p>
