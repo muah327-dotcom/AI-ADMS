@@ -233,21 +233,7 @@ const cleanNameCandidate = (rawStr) => {
 
   if (validWords.length < 1) return null;
 
-  // 3. NOISE STRIPPING:
-  // If the candidate contains known Pakistani name dictionary words,
-  // trim away any leading or trailing words that are NOT recognized in the name dictionary.
-  // For example: ["Anty", "Muhammad", "Zahid"] -> "Anty" is stripped -> ["Muhammad", "Zahid"]!
-  const hasRecognizedPart = validWords.some(w => PAKISTANI_NAME_PARTS.has(w.toLowerCase()));
-  if (hasRecognizedPart) {
-    // Strip leading non-dictionary words (e.g. "Anty", "Namo", Urdu artifacts)
-    while (validWords.length > 0 && !PAKISTANI_NAME_PARTS.has(validWords[0].toLowerCase())) {
-      validWords.shift();
-    }
-    // Strip trailing non-dictionary words (e.g. Urdu artifacts on right edge)
-    while (validWords.length > 0 && !PAKISTANI_NAME_PARTS.has(validWords[validWords.length - 1].toLowerCase())) {
-      validWords.pop();
-    }
-  }
+  // (Removed aggressive dictionary-based trimming to avoid truncating real names like 'Nadeem' that aren't in the list)
 
   if (validWords.length < 1) return null;
   const trimmed = validWords.slice(0, 4);
@@ -814,6 +800,91 @@ const wordsToNumber = (text) => {
   }
   return null;
 };
+
+/**
+ * Perform targeted OCR on cropped region for specific fields
+ */
+const performTargetedFieldOcr = async (canvas, lines, docCategory, fieldType = 'name') => {
+  if (!lines || lines.length === 0) return null;
+
+  let labelLine = null;
+  for (const line of lines) {
+    const text = line.text || '';
+    if (fieldType === 'name') {
+      if (docCategory === 'cnic') {
+        if (/(?:Name|Narne|Namo|Nene|Holder|Neme|Nama)\b/i.test(text) &&
+          !/(?:Father|Husband|Mother|Date|Birth|CNIC|Identity|Gender|Sex|Country|Expiry|Issue|National|Database|Stay)/i.test(text)) {
+          labelLine = line;
+          break;
+        }
+      } else {
+        if (/(?:Name\s*(?:of\s+)?(?:Candidate|Student|Examinee)|Student\s*Name|Candidate\s*Name)/i.test(text) &&
+          !/(?:Father|Husband|Mother|Guardian|Board|Institution|School|College)/i.test(text)) {
+          labelLine = line;
+          break;
+        }
+      }
+    } else if (fieldType === 'father_name') {
+       if (docCategory === 'cnic') {
+         if (/(?:Father(?:[''`]?s)?(?:\s*[\/\&]\s*(?:Husband|Guardian|Mother)(?:[''`]?s)?)?|Husband(?:[''`]?s)?|Name\s*of\s*Father|FatherName|F\/Name|Walad)/i.test(text) &&
+             !/(?:Name|Narne|Namo)/i.test(text.replace(/(?:Father|Husband|Name)/gi, ''))) {
+           labelLine = line;
+           break;
+         }
+       } else {
+         if (/(?:Father|Husband|S\/O|D\/O|W\/O|Son\s+of|Daughter\s+of|Name\s*of\s*Father)/i.test(text)) {
+           labelLine = line;
+           break;
+         }
+       }
+    }
+  }
+
+  if (!labelLine || !labelLine.bbox) return null;
+
+  const bbox = labelLine.bbox;
+  let cropX, cropY, cropWidth, cropHeight;
+
+  if (docCategory === 'cnic') {
+    // CNIC field is usually below or right below the label
+    cropX = Math.max(0, bbox.x0 - 20);
+    cropY = bbox.y1 - 5;
+    cropWidth = Math.min(canvas.width - cropX, 800);
+    cropHeight = 100; // Enough for one or two lines
+  } else {
+    // Academic certificates: often right of the label on the same line or just below
+    cropX = bbox.x1 + 10;
+    cropY = Math.max(0, bbox.y0 - 15);
+    cropWidth = Math.min(canvas.width - cropX, 1200);
+    cropHeight = bbox.y1 - bbox.y0 + 30;
+  }
+
+  // Ensure dimensions are positive
+  cropWidth = Math.max(0, Math.min(canvas.width - cropX, cropWidth));
+  cropHeight = Math.max(0, Math.min(canvas.height - cropY, cropHeight));
+
+  if (cropWidth <= 10 || cropHeight <= 10) return null;
+
+  const croppedCanvas = document.createElement('canvas');
+  croppedCanvas.width = cropWidth;
+  croppedCanvas.height = cropHeight;
+  const ctx = croppedCanvas.getContext('2d');
+  ctx.drawImage(canvas, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+
+  try {
+    const result = await Tesseract.recognize(croppedCanvas, 'eng', {
+      tessedit_pageseg_mode: Tesseract.PSM ? Tesseract.PSM.SINGLE_LINE : '7'
+    });
+    return {
+      text: result?.data?.text || '',
+      confidence: result?.data?.confidence || 0
+    };
+  } catch (err) {
+    console.error('Targeted OCR failed:', err);
+    return null;
+  }
+};
+
 
 /**
  * Extract Academic Data (Matric / Intermediate / Transcript) with high precision
@@ -2148,12 +2219,34 @@ const DocumentUpload = () => {
         });
         extractedText = result?.data?.text || '';
         confidence = result?.data?.confidence || 0;
+        const ocrLines = result?.data?.lines || [];
 
         // Map document types and check if key fields are missing
         const docCategory = (documentType === 'matric' || documentType === 'intermediate' || documentType === 'transcript')
           ? 'academic' : documentType === 'cnic' ? 'cnic' : 'other';
+          
+        let targetedNameData = await performTargetedFieldOcr(processedCanvas, ocrLines, docCategory, 'name');
+        let targetedFatherNameData = await performTargetedFieldOcr(processedCanvas, ocrLines, docCategory, 'father_name');
 
         let pass1Data = docCategory === 'cnic' ? extractCNICData(extractedText) : extractAcademicData(extractedText);
+        
+        if (targetedNameData && targetedNameData.text) {
+           const cleanedTargetedName = cleanNameCandidate(targetedNameData.text);
+           if (cleanedTargetedName && cleanedTargetedName.length >= 3) {
+               pass1Data.name = cleanedTargetedName;
+               if (targetedNameData.confidence < confidence) {
+                   pass1Data.name_verification_needed = true;
+               }
+           }
+        }
+        
+        if (targetedFatherNameData && targetedFatherNameData.text) {
+           const cleanedTargetedFatherName = cleanNameCandidate(targetedFatherNameData.text);
+           if (cleanedTargetedFatherName && cleanedTargetedFatherName.length >= 3) {
+               pass1Data.father_name = cleanedTargetedFatherName;
+           }
+        }
+
         const pass1Incomplete = (docCategory === 'cnic' && (!pass1Data.cnic || !pass1Data.name)) ||
           (docCategory === 'academic' && (!pass1Data.obtained_marks || !pass1Data.board));
 
@@ -2191,16 +2284,34 @@ const DocumentUpload = () => {
       }
 
       // Map document types and run extraction
-      const docCategory = (documentType === 'matric' || documentType === 'intermediate' || documentType === 'transcript')
+      const docCategoryFinal = (documentType === 'matric' || documentType === 'intermediate' || documentType === 'transcript')
         ? 'academic' : documentType === 'cnic' ? 'cnic' : 'other';
 
       let extractedData;
-      if (docCategory === 'cnic') {
+      if (docCategoryFinal === 'cnic') {
         extractedData = extractCNICData(extractedText);
-      } else if (docCategory === 'academic') {
+      } else if (docCategoryFinal === 'academic') {
         extractedData = extractAcademicData(extractedText);
       } else {
         extractedData = { ...extractCNICData(extractedText), ...extractAcademicData(extractedText) };
+      }
+      
+      // Override fields with targeted extraction if available
+      if (!isPdf && typeof targetedNameData !== 'undefined' && targetedNameData && targetedNameData.text) {
+          const cleanedTargetedName = cleanNameCandidate(targetedNameData.text);
+          if (cleanedTargetedName && cleanedTargetedName.length >= 3) {
+              extractedData.name = cleanedTargetedName;
+              if (targetedNameData.confidence < confidence) {
+                  extractedData.name_verification_needed = true;
+              }
+          }
+      }
+      
+      if (!isPdf && typeof targetedFatherNameData !== 'undefined' && targetedFatherNameData && targetedFatherNameData.text) {
+          const cleanedTargetedFatherName = cleanNameCandidate(targetedFatherNameData.text);
+          if (cleanedTargetedFatherName && cleanedTargetedFatherName.length >= 3) {
+              extractedData.father_name = cleanedTargetedFatherName;
+          }
       }
 
       // Auto-Reject Blurry / Unreadable Documents with Formal Centered Modal
