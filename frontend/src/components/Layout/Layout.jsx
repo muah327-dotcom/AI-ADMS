@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { useTheme } from '../../contexts/ThemeContext';
 import {
   LayoutDashboard,
   FileText,
@@ -16,35 +17,34 @@ import {
   X,
   GraduationCap,
   ChevronDown,
-  Bell
+  Sun,
+  Moon
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Layout = () => {
   const { user, logout, isAdmin } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
   React.useEffect(() => {
-    // Save original styles
     const originalHtmlOverflow = document.documentElement.style.overflow;
     const originalBodyOverflow = document.body.style.overflow;
     const originalBodyBg = document.body.style.backgroundColor;
 
-    // Set styles for dashboard layout
     document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
-    document.body.style.backgroundColor = '#f8fafc';
+    document.body.style.backgroundColor = theme === 'dark' ? '#111827' : '#f8fafc';
 
     return () => {
-      // Restore original styles on unmount
       document.documentElement.style.overflow = originalHtmlOverflow;
       document.body.style.overflow = originalBodyOverflow;
       document.body.style.backgroundColor = originalBodyBg;
     };
-  }, []);
+  }, [theme]);
 
   const handleLogout = () => {
     logout();
@@ -80,7 +80,7 @@ const Layout = () => {
   };
 
   return (
-    <div className="h-[100dvh] w-full bg-gray-50 flex overflow-hidden">
+    <div className="h-[100dvh] w-full bg-gray-50 dark:bg-gray-900 flex overflow-hidden">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div
@@ -89,25 +89,25 @@ const Layout = () => {
         />
       )}
 
-      {/* Sidebar - Same height as viewport using flex */}
+      {/* Sidebar */}
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white flex flex-col h-full transform transition-transform duration-300 ease-in-out lg:transform-none shadow-lg lg:shadow-none border-r border-gray-200 ${
+        className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 flex flex-col h-full transform transition-transform duration-300 ease-in-out lg:transform-none shadow-lg lg:shadow-none border-r border-gray-200 dark:border-gray-700 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Logo */}
-        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 flex-shrink-0">
+        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
             <Link to={isAdmin ? '/admin' : '/dashboard'} className="flex items-center space-x-2">
               <div className="w-10 h-10 flex items-center justify-center">
                 <img src="/logo.png" alt="GGC Township Logo" className="w-10 h-10 object-contain" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-gray-900 leading-tight">GGC Township</h1>
-                <p className="text-xs text-gray-500">AI-Enhanced Admissions</p>
+                <h1 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">GGC Township</h1>
+                <p className="text-xs text-gray-500 dark:text-gray-400">AI-Enhanced Admissions</p>
               </div>
             </Link>
             <button
-              className="lg:hidden text-gray-400 hover:text-gray-600"
+              className="lg:hidden text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
               onClick={() => setSidebarOpen(false)}
             >
               <X className="h-6 w-6" />
@@ -125,11 +125,11 @@ const Layout = () => {
                   className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
                     isActive(item.path)
                       ? 'bg-primary-600 text-white'
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
                   }`}
                   onClick={() => setSidebarOpen(false)}
                 >
-                  <Icon className={`h-5 w-5 mr-3 ${isActive(item.path) ? 'text-white' : 'text-gray-400'}`} />
+                  <Icon className={`h-5 w-5 mr-3 ${isActive(item.path) ? 'text-white' : 'text-gray-400 dark:text-gray-500'}`} />
                   {item.name}
                 </Link>
               );
@@ -137,11 +137,11 @@ const Layout = () => {
           </nav>
 
           {/* User profile section */}
-          <div className="border-t border-gray-200 p-4 flex-shrink-0">
+          <div className="border-t border-gray-200 dark:border-gray-700 p-4 flex-shrink-0">
             <div className="relative">
               <button
                 onClick={() => setProfileOpen(!profileOpen)}
-                className="flex items-center w-full px-4 py-3 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+                className="flex items-center w-full px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               >
                 <div className="h-8 w-8 rounded-full bg-primary-600 flex items-center justify-center mr-3 overflow-hidden">
                   {user?.avatar_url ? (
@@ -157,24 +157,24 @@ const Layout = () => {
                   )}
                 </div>
                 <div className="flex-1 text-left">
-                  <p className="text-sm font-medium text-gray-900 truncate">{user?.full_name}</p>
-                  <p className="text-xs text-gray-500 capitalize">{user?.role}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{user?.full_name}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{user?.role}</p>
                 </div>
-                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${profileOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`h-4 w-4 text-gray-400 dark:text-gray-500 transition-transform ${profileOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {profileOpen && (
-                <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg shadow-lg border border-gray-200 py-1">
+                <div className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1">
                   <Link
                     to={isAdmin ? '/admin/settings' : '/dashboard/settings'}
-                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                   >
                     <Settings className="h-4 w-4 mr-2" />
                     Settings
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                    className="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
                   >
                     <LogOut className="h-4 w-4 mr-2" />
                     Logout
@@ -185,24 +185,35 @@ const Layout = () => {
           </div>
         </aside>
 
-      {/* Main content - Flex to fill remaining space, same height as sidebar */}
-      <div className="flex-1 flex flex-col h-full bg-gray-50 min-w-0 w-full overflow-hidden">
+      {/* Main content */}
+      <div className="flex-1 flex flex-col h-full bg-gray-50 dark:bg-gray-900 min-w-0 w-full overflow-hidden">
         {/* Top header */}
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 lg:px-6 flex-shrink-0">
+        <header className="h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-4 lg:px-6 flex-shrink-0">
           <button
-            className="lg:hidden text-gray-400 hover:text-gray-600"
+            className="lg:hidden text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
             onClick={() => setSidebarOpen(true)}
           >
             <Menu className="h-6 w-6" />
           </button>
 
-          <div className="flex items-center space-x-4">
-            {/* Notification bell removed */}
+          <div className="flex items-center space-x-4 ml-auto">
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {theme === 'dark' ? (
+                <Sun className="h-5 w-5" />
+              ) : (
+                <Moon className="h-5 w-5" />
+              )}
+            </button>
           </div>
         </header>
 
         {/* Page content */}
-        <main className="flex-1 px-4 lg:px-6 py-4 overflow-y-auto overflow-x-hidden bg-gray-50">
+        <main className="flex-1 px-4 lg:px-6 py-4 overflow-y-auto overflow-x-hidden bg-gray-50 dark:bg-gray-900">
           <Outlet />
         </main>
       </div>

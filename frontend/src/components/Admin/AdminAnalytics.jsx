@@ -146,14 +146,14 @@ const AdminAnalytics = () => {
       {/* Header - Dark Theme */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h1>
-          <p className="text-gray-500 mt-1">Comprehensive insights into admissions and performance</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Analytics Dashboard</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">Comprehensive insights into admissions and performance</p>
         </div>
         <div className="flex items-center gap-3">
           <select
             value={timeRange}
             onChange={(e) => setTimeRange(e.target.value)}
-            className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-gray-700 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+            className="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
           >
             <option value="1month">Last Month</option>
             <option value="3months">Last 3 Months</option>
@@ -162,11 +162,11 @@ const AdminAnalytics = () => {
           </select>
           <button
             onClick={fetchAnalyticsData}
-            className="p-2 text-gray-500 hover:text-gray-900 border border-gray-200 rounded-lg bg-white"
+            className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700"
           >
             <RefreshCw className="h-5 w-5" />
           </button>
-          <button className="inline-flex items-center px-3 py-2 bg-white border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors text-sm">
+          <button className="inline-flex items-center px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors text-sm">
             <Download className="h-4 w-4 mr-2" />
             Export Report
           </button>
@@ -210,11 +210,11 @@ const AdminAnalytics = () => {
         ].map((stat, index) => {
           const Icon = stat.icon;
           return (
-            <div key={index} className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+            <div key={index} className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wider">{stat.label}</p>
-                  <p className="mt-2 text-2xl font-bold text-gray-900">{stat.value}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">{stat.label}</p>
+                  <p className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">{stat.value}</p>
                   <p className={`text-xs mt-1 ${stat.subtext.startsWith('+') ? 'text-green-400' : 'text-red-400'}`}>
                     {stat.subtext}
                   </p>
@@ -229,8 +229,8 @@ const AdminAnalytics = () => {
       {/* Charts Row 1 - Dark Theme */}
       <div className="grid lg:grid-cols-2 gap-4">
         {/* Monthly Trends */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-          <h3 className="text-sm font-medium text-gray-700 mb-2">Monthly Trends</h3>
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Monthly Trends</h3>
           <div className="relative w-full h-32">
             <Line
               data={monthlyChartData}
@@ -260,8 +260,8 @@ const AdminAnalytics = () => {
         </div>
 
         {/* Category Distribution */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-          <h3 className="text-sm font-medium text-gray-700 mb-2">Admissions by Category</h3>
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Admissions by Category</h3>
           <div className="relative w-full h-32">
             <Doughnut
               data={categoryChartData}
@@ -283,8 +283,8 @@ const AdminAnalytics = () => {
       {/* Charts Row 2 - Dark Theme */}
       <div className="grid lg:grid-cols-2 gap-4">
         {/* Program Distribution */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-          <h3 className="text-sm font-medium text-gray-700 mb-2">Applications by Program</h3>
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Applications by Program</h3>
           <div className="relative w-full h-32">
             <Bar
               data={programChartData}
@@ -311,8 +311,8 @@ const AdminAnalytics = () => {
         </div>
 
         {/* Performance Distribution */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-          <h3 className="text-sm font-medium text-gray-700 mb-2">Performance Distribution</h3>
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Performance Distribution</h3>
           <div className="h-32">
             <Bar
               data={performanceChartData}
@@ -340,31 +340,31 @@ const AdminAnalytics = () => {
       </div>
 
       {/* Seat Occupancy Table - Dark Theme */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-        <div className="p-4 border-b border-gray-200">
-          <h3 className="text-sm font-medium text-gray-700">Program Seat Occupancy</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Program Seat Occupancy</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 dark:bg-gray-700/50">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Program</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Filled</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Avail</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rate</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Program</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Total</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Filled</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Avail</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Rate</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {analyticsData.occupancyData?.data?.slice(0, 5).map((item, index) => (
-                <tr key={index} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3 font-medium text-gray-900 text-sm">{item.program}</td>
-                  <td className="px-4 py-3 text-gray-500 text-sm">{item.totalSeats}</td>
-                  <td className="px-4 py-3 text-gray-500 text-sm">{item.filled}</td>
-                  <td className="px-4 py-3 text-gray-500 text-sm">{item.available}</td>
+                <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                  <td className="px-4 py-3 font-medium text-gray-900 dark:text-white text-sm">{item.program}</td>
+                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-sm">{item.totalSeats}</td>
+                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-sm">{item.filled}</td>
+                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-sm">{item.available}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center">
-                      <div className="flex-1 w-20 h-2 bg-gray-200 rounded-full overflow-hidden mr-2">
+                      <div className="flex-1 w-20 h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden mr-2">
                         <div
                           className={`h-full rounded-full ${
                             parseFloat(item.occupancyRate) >= 90 ? 'bg-green-500' :
@@ -375,7 +375,7 @@ const AdminAnalytics = () => {
                           style={{ width: `${item.occupancyRate}%` }}
                         />
                       </div>
-                      <span className="text-xs font-medium text-gray-900">{item.occupancyRate}%</span>
+                      <span className="text-xs font-medium text-gray-900 dark:text-white">{item.occupancyRate}%</span>
                     </div>
                   </td>
                 </tr>

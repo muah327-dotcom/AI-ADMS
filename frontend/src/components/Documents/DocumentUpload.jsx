@@ -2653,7 +2653,7 @@ const DocumentUpload = () => {
     const isOcrFilled = ocrFilledFields.has(field);
     return (
       <div className={options.colSpan2 ? 'sm:col-span-2' : ''}>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           {label}
           {isOcrFilled && (
             <span className="ml-2 inline-flex items-center gap-1 text-xs text-purple-400 font-normal">
@@ -2667,8 +2667,8 @@ const DocumentUpload = () => {
             value={formData[field] || ''}
             onChange={(e) => handleFormChange(field, e.target.value)}
             disabled={options.disabled}
-            className={`w-full px-4 py-2.5 bg-white border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 transition-all ${isOcrFilled ? 'border-purple-500/50' : 'border-gray-300'
-              } ${options.disabled ? 'text-gray-500 cursor-not-allowed' : ''}`}
+            className={`w-full px-4 py-2.5 bg-white dark:bg-gray-700 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white transition-all ${isOcrFilled ? 'border-purple-500/50' : 'border-gray-300 dark:border-gray-600'
+              } ${options.disabled ? 'text-gray-500 dark:text-gray-400 cursor-not-allowed' : ''}`}
           >
             <option value="">{options.placeholder || 'Select...'}</option>
             {(options.selectOptions || []).map(opt => (
@@ -2683,8 +2683,8 @@ const DocumentUpload = () => {
             placeholder={options.placeholder || ''}
             maxLength={options.maxLength}
             disabled={options.disabled}
-            className={`w-full px-4 py-2.5 bg-white border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 placeholder-gray-400 transition-all ${isOcrFilled ? 'border-purple-500/50' : 'border-gray-300'
-              } ${options.disabled ? 'text-gray-500 cursor-not-allowed' : ''}`}
+            className={`w-full px-4 py-2.5 bg-white dark:bg-gray-700 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-all ${isOcrFilled ? 'border-purple-500/50' : 'border-gray-300 dark:border-gray-600'
+              } ${options.disabled ? 'text-gray-500 dark:text-gray-400 cursor-not-allowed' : ''}`}
           />
         )}
       </div>
@@ -2695,8 +2695,8 @@ const DocumentUpload = () => {
     <div className="max-w-4xl mx-auto space-y-6 animate-fade-in pb-8">
       {/* Header */}
       <div>
-        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Document Upload & Verification</h1>
-        <p className="text-gray-500 mt-1">Upload your documents for automatic data extraction and verify your admission information</p>
+        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">Document Upload & Verification</h1>
+        <p className="text-gray-500 dark:text-gray-400 mt-1">Upload your documents for automatic data extraction and verify your admission information</p>
       </div>
 
       {/* Verification Status Card */}
@@ -2745,24 +2745,24 @@ const DocumentUpload = () => {
       )}
 
       {/* Step Indicator */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 text-primary-600">
+          <div className="flex items-center gap-2 text-primary-600 dark:text-primary-400">
             <div className="w-8 h-8 rounded-full bg-primary-600 text-white flex items-center justify-center text-sm font-bold">1</div>
             <span className="text-sm font-medium">Upload Documents</span>
           </div>
-          <div className="flex-1 h-0.5 bg-gray-200">
+          <div className="flex-1 h-0.5 bg-gray-200 dark:bg-gray-700">
             <div className="h-full bg-primary-600 transition-all" style={{ width: uploadedFiles.length > 0 ? '100%' : '0%' }} />
           </div>
-          <div className={`flex items-center gap-2 ${uploadedFiles.length > 0 ? 'text-primary-600' : 'text-gray-500'}`}>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${uploadedFiles.length > 0 ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-500'}`}>2</div>
+          <div className={`flex items-center gap-2 ${uploadedFiles.length > 0 ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 dark:text-gray-400'}`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${uploadedFiles.length > 0 ? 'bg-primary-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}>2</div>
             <span className="text-sm font-medium">OCR Extraction</span>
           </div>
-          <div className="flex-1 h-0.5 bg-gray-200">
+          <div className="flex-1 h-0.5 bg-gray-200 dark:bg-gray-700">
             <div className="h-full bg-primary-600 transition-all" style={{ width: ocrFilledFields.size > 0 ? '100%' : '0%' }} />
           </div>
-          <div className={`flex items-center gap-2 ${ocrFilledFields.size > 0 ? 'text-primary-600' : 'text-gray-500'}`}>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${ocrFilledFields.size > 0 ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-500'}`}>3</div>
+          <div className={`flex items-center gap-2 ${ocrFilledFields.size > 0 ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 dark:text-gray-400'}`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${ocrFilledFields.size > 0 ? 'bg-primary-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}>3</div>
             <span className="text-sm font-medium">Verify & Submit</span>
           </div>
         </div>
@@ -2778,9 +2778,9 @@ const DocumentUpload = () => {
       />
 
       {/* Document Type Selection — click a card to upload */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-900 mb-1">Upload Documents</h3>
-        <p className="text-sm text-gray-500 mb-4">Click on a document type to upload &bull; Supported: PDF, PNG, JPG (max 10MB)</p>
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Upload Documents</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Click on a document type to upload &bull; Supported: PDF, PNG, JPG (max 10MB)</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {documentTypes.map((type) => {
             const Icon = type.icon;
@@ -2808,15 +2808,15 @@ const DocumentUpload = () => {
                 ) : (
                   <Icon className={`h-7 w-7 mb-2 transition-colors ${uploaded ? 'text-green-400' : 'text-gray-500 group-hover:text-primary-600'}`} />
                 )}
-                <h4 className={`font-medium text-sm ${isProcessing ? 'text-gray-900' : uploaded ? 'text-green-700' : 'text-gray-700 group-hover:text-gray-900'}`}>
+                <h4 className={`font-medium text-sm ${isProcessing ? 'text-gray-900 dark:text-white' : uploaded ? 'text-green-700 dark:text-green-300' : 'text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white'}`}>
                   {isProcessing ? 'Processing...' : type.name}
                 </h4>
-                <p className="text-xs text-gray-500 mt-0.5">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                   {isProcessing && processingFile ? processingFile.name : type.desc}
                 </p>
-                {!type.required && !isProcessing && <span className="text-xs text-gray-600 mt-1 block">Optional</span>}
+                {!type.required && !isProcessing && <span className="text-xs text-gray-600 dark:text-gray-400 mt-1 block">Optional</span>}
                 {!uploaded && !isProcessing && (
-                  <div className="mt-2 flex items-center gap-1 text-xs text-gray-600 group-hover:text-primary-600/70 transition-colors">
+                  <div className="mt-2 flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
                     <Upload className="h-3 w-3" />
                     <span>Click to upload</span>
                   </div>
@@ -2829,9 +2829,9 @@ const DocumentUpload = () => {
 
       {/* Uploaded Files List */}
       {uploadedFiles.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Uploaded Documents ({uploadedFiles.length})</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Uploaded Documents ({uploadedFiles.length})</h3>
             <span className="text-xs text-emerald-400 flex items-center gap-1 font-medium">
               <CheckCircle className="h-3.5 w-3.5" />
               Persisted in Database
@@ -2839,19 +2839,19 @@ const DocumentUpload = () => {
           </div>
           <div className="space-y-3">
             {uploadedFiles.map((file, index) => (
-              <div key={file._id || index} className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition-colors shadow-sm">
+              <div key={file._id || index} className="flex items-center justify-between p-4 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 transition-colors shadow-sm">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 bg-primary-50 rounded-lg border border-primary-500/20">
                     <FileText className="h-5 w-5 text-primary-600" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="font-medium text-gray-900 text-sm">{file.name}</p>
+                      <p className="font-medium text-gray-900 dark:text-white text-sm">{file.name}</p>
                       <span className="px-2 py-0.5 text-[10px] bg-emerald-500/20 text-emerald-300 rounded-full font-medium border border-emerald-500/30">
                         Saved in DB
                       </span>
                     </div>
-                    <p className="text-xs text-gray-500 capitalize mt-0.5">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 capitalize mt-0.5">
                       {documentTypes.find(t => t.id === file.type)?.name}
                       {file.confidence ? ` • Confidence: ${file.confidence?.toFixed(1)}%` : ''}
                       {file.uploaded_at ? ` • ${new Date(file.uploaded_at).toLocaleDateString()}` : ''}
@@ -2874,12 +2874,12 @@ const DocumentUpload = () => {
       )}
 
       {/* Tips Section */}
-      <div className="bg-primary-50 rounded-xl p-6 border border-primary-500/20">
+      <div className="bg-primary-50 dark:bg-primary-900/20 rounded-xl p-6 border border-primary-500/20 dark:border-primary-800">
         <div className="flex items-start gap-3">
-          <AlertCircle className="h-5 w-5 text-primary-600 mt-0.5" />
+          <AlertCircle className="h-5 w-5 text-primary-600 dark:text-primary-400 mt-0.5" />
           <div>
-            <h4 className="font-medium text-primary-600">Tips for Best Results</h4>
-            <ul className="text-sm text-primary-700/80 mt-2 space-y-1 list-disc list-inside">
+            <h4 className="font-medium text-primary-600 dark:text-primary-400">Tips for Best Results</h4>
+            <ul className="text-sm text-primary-700/80 dark:text-primary-300/80 mt-2 space-y-1 list-disc list-inside">
               <li>Ensure documents are clear and well-lit</li>
               <li>Make sure all text is readable and not blurry</li>
               <li>Upload the complete document without cropping</li>
@@ -2892,7 +2892,7 @@ const DocumentUpload = () => {
       {/* ===== BASIC ADMISSION FORM ===== */}
       <div className="relative">
         <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 via-purple-500/20 to-pink-500/20 rounded-2xl blur-xl opacity-30" />
-        <div className="relative bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+        <div className="relative bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
           {/* Form Header */}
           <div className="bg-gradient-to-r from-cyan-600 to-purple-600 p-6">
             <div className="flex items-center gap-3">
@@ -2915,7 +2915,7 @@ const DocumentUpload = () => {
                 <div className="p-1.5 bg-primary-50 rounded-lg border border-primary-500/20">
                   <User className="h-4 w-4 text-primary-600" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900">Personal Information</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Personal Information</h3>
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
                 {renderField('Full Name', 'full_name', 'text', { placeholder: 'Enter full name' })}
@@ -2933,7 +2933,7 @@ const DocumentUpload = () => {
               </div>
             </div>
 
-            <hr className="border-gray-200" />
+            <hr className="border-gray-200 dark:border-gray-700" />
 
             {/* Contact Information */}
             <div>
@@ -2941,7 +2941,7 @@ const DocumentUpload = () => {
                 <div className="p-1.5 bg-green-500/10 rounded-lg border border-green-500/20">
                   <Phone className="h-4 w-4 text-green-400" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900">Contact Information</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Contact Information</h3>
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
                 {renderField('Email Address', 'email', 'email', { placeholder: 'student@example.com', disabled: true })}
@@ -2953,7 +2953,7 @@ const DocumentUpload = () => {
               </div>
             </div>
 
-            <hr className="border-gray-200" />
+            <hr className="border-gray-200 dark:border-gray-700" />
 
             {/* Academic Information */}
             <div>
@@ -2961,12 +2961,12 @@ const DocumentUpload = () => {
                 <div className="p-1.5 bg-purple-500/10 rounded-lg border border-purple-500/20">
                   <GraduationCap className="h-4 w-4 text-purple-400" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900">Academic Information</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Academic Information</h3>
               </div>
 
               {/* Matric Details */}
               <div className="mb-6">
-                <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-3 flex items-center gap-2">
+                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-3 flex items-center gap-2">
                   <Award className="h-4 w-4 text-yellow-400" />
                   Matric / SSC Details
                 </h4>
@@ -2980,7 +2980,7 @@ const DocumentUpload = () => {
 
               {/* Intermediate Details */}
               <div>
-                <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-3 flex items-center gap-2">
+                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-3 flex items-center gap-2">
                   <GraduationCap className="h-4 w-4 text-blue-400" />
                   Intermediate / HSSC Details
                 </h4>
@@ -2993,7 +2993,7 @@ const DocumentUpload = () => {
               </div>
             </div>
 
-            <hr className="border-gray-200" />
+            <hr className="border-gray-200 dark:border-gray-700" />
 
             {/* Declaration */}
             <div>
@@ -3001,9 +3001,9 @@ const DocumentUpload = () => {
                 <div className="p-1.5 bg-red-500/10 rounded-lg border border-red-500/20">
                   <AlertCircle className="h-4 w-4 text-red-400" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900">Declaration</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Declaration</h3>
               </div>
-              <div className="space-y-4 bg-gray-50 rounded-xl p-5 border border-gray-200 shadow-sm">
+              <div className="space-y-4 bg-gray-50 dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
                 <label className="flex items-start gap-3 cursor-pointer group">
                   <div className="relative flex items-center justify-center mt-0.5">
                     <input
@@ -3016,7 +3016,7 @@ const DocumentUpload = () => {
                       {declarations.confirmCorrect && <CheckCircle className="h-3.5 w-3.5 text-white" />}
                     </div>
                   </div>
-                   <span className="text-sm text-gray-700 group-hover:text-gray-900 transition-colors">
+                   <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
                     I confirm that the extracted information is correct and I have reviewed all the auto-filled fields for accuracy.
                   </span>
                 </label>
@@ -3032,7 +3032,7 @@ const DocumentUpload = () => {
                       {declarations.understandFalseInfo && <CheckCircle className="h-3.5 w-3.5 text-white" />}
                     </div>
                   </div>
-                   <span className="text-sm text-gray-700 group-hover:text-gray-900 transition-colors">
+                   <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
                     I understand that providing false information may result in cancellation of my admission.
                   </span>
                 </label>

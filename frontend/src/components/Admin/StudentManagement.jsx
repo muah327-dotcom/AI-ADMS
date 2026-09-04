@@ -158,11 +158,11 @@ const StudentManagement = () => {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Student Management</h1>
-          <p className="text-gray-500 mt-1">View and manage enrolled students</p>
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">Student Management</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">View and manage enrolled students</p>
         </div>
         <div className="flex gap-3">
-          <button className="inline-flex items-center px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+          <button className="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
             <Download className="h-5 w-5 mr-2" />
             Export
           </button>
@@ -171,67 +171,67 @@ const StudentManagement = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
           <div className="flex items-center justify-between">
-            <div className="p-3 bg-primary-50 rounded-lg border border-primary-500/20">
-              <Users className="h-5 w-5 text-primary-600" />
+            <div className="p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-primary-500/20">
+              <Users className="h-5 w-5 text-primary-600 dark:text-primary-400" />
             </div>
           </div>
-          <p className="mt-3 text-2xl font-bold text-gray-900">{totalStudents}</p>
-          <p className="text-sm text-gray-500">Total Students</p>
+          <p className="mt-3 text-2xl font-bold text-gray-900 dark:text-white">{totalStudents}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Total Students</p>
         </div>
-        <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
               <Crown className="h-5 w-5 text-yellow-400" />
             </div>
           </div>
-          <p className="mt-3 text-2xl font-bold text-gray-900">
+          <p className="mt-3 text-2xl font-bold text-gray-900 dark:text-white">
             {categoryStats.merit}
           </p>
-          <p className="text-sm text-gray-500">Merit Category</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Merit Category</p>
         </div>
-        <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
               <Star className="h-5 w-5 text-blue-400" />
             </div>
           </div>
-          <p className="mt-3 text-2xl font-bold text-gray-900">
+          <p className="mt-3 text-2xl font-bold text-gray-900 dark:text-white">
             {categoryStats.quota}
           </p>
-          <p className="text-sm text-gray-500">Quota Category</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Quota Category</p>
         </div>
-        <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="p-3 bg-green-500/10 rounded-lg border border-green-500/20">
               <GraduationCap className="h-5 w-5 text-green-400" />
             </div>
           </div>
-          <p className="mt-3 text-2xl font-bold text-gray-900">
+          <p className="mt-3 text-2xl font-bold text-gray-900 dark:text-white">
             {categoryStats.self_finance}
           </p>
-          <p className="text-sm text-gray-500">Self Finance</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Self Finance</p>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 dark:text-gray-400" />
             <input
               type="text"
               placeholder="Search students by name, email or CNIC..."
-              className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 placeholder-gray-400"
+              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           <div className="flex items-center gap-2">
-            <Filter className="h-5 w-5 text-gray-500" />
+            <Filter className="h-5 w-5 text-gray-500 dark:text-gray-400" />
             <select
-              className="px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900"
+              className="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white"
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
             >
@@ -245,58 +245,58 @@ const StudentManagement = () => {
       </div>
 
       {/* Students Table */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
         {loading ? (
           <SkeletonLoader variant="table" theme="dark" />
         ) : filteredStudents.length === 0 ? (
           <div className="p-12 text-center">
-            <Users className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No students found</h3>
-            <p className="text-gray-500">Try adjusting your search or filters</p>
+            <Users className="h-16 w-16 text-gray-600 dark:text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No students found</h3>
+            <p className="text-gray-500 dark:text-gray-400">Try adjusting your search or filters</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Applications</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Student</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Category</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Applications</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Joined</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredStudents.map((student) => (
                   <tr
                     key={student.id}
-                    className="hover:bg-gray-50 transition-colors cursor-pointer"
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                     onClick={() => { setSelectedStudent(student); setShowModal(true); }}
                   >
                     <td className="px-6 py-4">
                       <div className="flex items-center">
-                        <div className="h-10 w-10 rounded-full bg-primary-50 flex items-center justify-center mr-3 border border-primary-500/20">
-                          <span className="text-primary-600 font-semibold">
+                        <div className="h-10 w-10 rounded-full bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center mr-3 border border-primary-500/20">
+                          <span className="text-primary-600 dark:text-primary-400 font-semibold">
                             {student.full_name?.charAt(0)}
                           </span>
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">{student.full_name}</p>
-                          <p className="text-sm text-gray-500">{student.email}</p>
-                          <p className="text-xs text-gray-500">{student.cnic}</p>
+                          <p className="font-medium text-gray-900 dark:text-white">{student.full_name}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{student.email}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{student.cnic}</p>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       {student.admission_category ? (
-                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${student.admission_category === 'merit' ? 'bg-yellow-100 text-yellow-800' :
-                            student.admission_category === 'quota' ? 'bg-primary-100 text-primary-800' :
-                              'bg-green-100 text-green-800'
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${student.admission_category === 'merit' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
+                            student.admission_category === 'quota' ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300' :
+                              'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
                           }`}>
                           {getCategoryIcon(student.admission_category)}
                           <span className="ml-2 capitalize">{student.admission_category.replace('_', ' ')}</span>
                         </span>
                       ) : (
-                        <span className="text-gray-500 text-sm">Not categorized</span>
+                        <span className="text-gray-500 dark:text-gray-400 text-sm">Not categorized</span>
                       )}
                     </td>
                     <td className="px-6 py-4">
@@ -307,15 +307,15 @@ const StudentManagement = () => {
                                 app.status === 'rejected' ? 'bg-red-500' :
                                   'bg-yellow-500'
                               }`} />
-                            <span className="text-sm text-gray-500">{app.program?.name}</span>
+                            <span className="text-sm text-gray-500 dark:text-gray-400">{app.program?.name}</span>
                           </div>
                         ))}
                         {student.applications?.length > 2 && (
-                          <p className="text-xs text-gray-500">+{student.applications.length - 2} more</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">+{student.applications.length - 2} more</p>
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">
+                    <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
                       {new Date(student.created_at).toLocaleDateString()}
                     </td>
                   </tr>
@@ -327,23 +327,23 @@ const StudentManagement = () => {
 
         {/* Pagination */}
         {!loading && filteredStudents.length > 0 && (
-          <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-            <p className="text-sm text-gray-500">
+          <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               Showing {filteredStudents.length} students
             </p>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="px-3 py-1 border border-gray-200 rounded-lg text-sm text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+                className="px-3 py-1 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 dark:hover:bg-gray-700"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
-              <span className="text-sm text-gray-500">Page {page} of {totalPages}</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">Page {page} of {totalPages}</span>
               <button
                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                className="px-3 py-1 border border-gray-200 rounded-lg text-sm text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+                className="px-3 py-1 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 dark:hover:bg-gray-700"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
@@ -355,12 +355,12 @@ const StudentManagement = () => {
       {/* Student Detail Modal */}
       {showModal && selectedStudent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[92vh] overflow-y-auto animate-scale-in border border-gray-200 shadow-2xl">
-            <div className="p-6 border-b border-gray-200 sticky top-0 bg-white/95 backdrop-blur z-10 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">Student Details</h2>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-3xl w-full max-h-[92vh] overflow-y-auto animate-scale-in border border-gray-200 dark:border-gray-700 shadow-2xl">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur z-10 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Student Details</h2>
               <button
                 onClick={() => setShowModal(false)}
-                className="p-2 text-gray-500 hover:text-gray-900 rounded-lg hover:bg-gray-100 transition-colors"
+                className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -369,18 +369,18 @@ const StudentManagement = () => {
             <div className="p-6 space-y-6">
               {/* Student Profile */}
               <div className="flex items-center gap-4">
-                <div className="h-20 w-20 rounded-full bg-primary-50 flex items-center justify-center border border-primary-500/20">
-                  <span className="text-3xl text-primary-600 font-bold">
+                <div className="h-20 w-20 rounded-full bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center border border-primary-500/20">
+                  <span className="text-3xl text-primary-600 dark:text-primary-400 font-bold">
                     {selectedStudent.full_name?.charAt(0)}
                   </span>
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900">{selectedStudent.full_name}</h3>
-                  <p className="text-gray-500">{selectedStudent.email}</p>
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{selectedStudent.full_name}</h3>
+                  <p className="text-gray-500 dark:text-gray-400">{selectedStudent.email}</p>
                   {selectedStudent.admission_category && (
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium mt-2 ${selectedStudent.admission_category === 'merit' ? 'bg-yellow-100 text-yellow-800' :
-                        selectedStudent.admission_category === 'quota' ? 'bg-primary-100 text-primary-800' :
-                          'bg-green-100 text-green-800'
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium mt-2 ${selectedStudent.admission_category === 'merit' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
+                        selectedStudent.admission_category === 'quota' ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300' :
+                          'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
                       }`}>
                       {getCategoryIcon(selectedStudent.admission_category)}
                       <span className="ml-2 capitalize">{selectedStudent.admission_category.replace('_', ' ')}</span>
@@ -391,27 +391,27 @@ const StudentManagement = () => {
 
               {/* Personal Info */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <p className="text-xs text-gray-500">CNIC</p>
-                  <p className="font-medium text-gray-900 font-mono">{selectedStudent.cnic || 'N/A'}</p>
+                <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">CNIC</p>
+                  <p className="font-medium text-gray-900 dark:text-white font-mono">{selectedStudent.cnic || 'N/A'}</p>
                 </div>
-                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <p className="text-xs text-gray-500">Phone</p>
-                  <p className="font-medium text-gray-900">{selectedStudent.phone || 'N/A'}</p>
+                <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Phone</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{selectedStudent.phone || 'N/A'}</p>
                 </div>
-                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 col-span-2">
-                  <p className="text-xs text-gray-500">Address</p>
-                  <p className="font-medium text-gray-900">{selectedStudent.address || 'N/A'}</p>
+                <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 col-span-2">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Address</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{selectedStudent.address || 'N/A'}</p>
                 </div>
               </div>
 
               {/* Uploaded Documents Section */}
               <div>
-                <h4 className="font-bold text-gray-900 text-base mb-3 flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-primary-600" />
+                <h4 className="font-bold text-gray-900 dark:text-white text-base mb-3 flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary-600 dark:text-primary-400" />
                   Uploaded Documents
                   {selectedStudent.documents?.length > 0 && (
-                    <span className="text-xs font-normal text-gray-500 ml-1">({selectedStudent.documents.length} files)</span>
+                    <span className="text-xs font-normal text-gray-500 dark:text-gray-400 ml-1">({selectedStudent.documents.length} files)</span>
                   )}
                 </h4>
                 {selectedStudent.documents && selectedStudent.documents.length > 0 ? (
@@ -421,23 +421,23 @@ const StudentManagement = () => {
                       return (
                         <div
                           key={doc._id || idx}
-                          className="p-4 bg-gray-50 rounded-xl border border-gray-200 shadow-sm hover:border-gray-200 transition-all flex flex-col justify-between"
+                          className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:border-gray-200 dark:hover:border-gray-600 transition-all flex flex-col justify-between"
                         >
                           <div>
                             <div className="flex items-start justify-between gap-3">
                               <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-gray-100 border border-gray-200">
+                                <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-600 border border-gray-200 dark:border-gray-600">
                                   {getDocIcon(doc.type)}
                                 </div>
                                 <div>
-                                  <h5 className="font-semibold text-gray-900 text-sm">{getDocTypeLabel(doc.type)}</h5>
-                                  <p className="text-xs text-gray-500 truncate max-w-[160px]" title={doc.name}>
+                                  <h5 className="font-semibold text-gray-900 dark:text-white text-sm">{getDocTypeLabel(doc.type)}</h5>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[160px]" title={doc.name}>
                                     {doc.name || 'document_file'}
                                   </p>
                                 </div>
                               </div>
                               {doc.confidence && doc.confidence > 0 && (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] bg-primary-50 text-primary-600 border border-primary-500/20 whitespace-nowrap">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 border border-primary-500/20 whitespace-nowrap">
                                   <Sparkles className="h-2.5 w-2.5 mr-1" />
                                   OCR {Math.round(doc.confidence)}%
                                 </span>
@@ -446,26 +446,26 @@ const StudentManagement = () => {
 
                             {/* OCR Extracted summary */}
                             {doc.extracted_data && Object.keys(doc.extracted_data).length > 0 && (
-                              <div className="mt-2 p-2 bg-gray-50 rounded-lg border border-gray-200 text-[11px] text-gray-500 space-y-0.5">
+                              <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 text-[11px] text-gray-500 dark:text-gray-400 space-y-0.5">
                                 {doc.extracted_data.cnic && (
-                                  <p><strong className="text-gray-700">CNIC:</strong> <span className="font-mono text-primary-600">{doc.extracted_data.cnic}</span></p>
+                                  <p><strong className="text-gray-700 dark:text-gray-300">CNIC:</strong> <span className="font-mono text-primary-600 dark:text-primary-400">{doc.extracted_data.cnic}</span></p>
                                 )}
                                 {doc.extracted_data.name && (
-                                  <p><strong className="text-gray-700">Name:</strong> {doc.extracted_data.name}</p>
+                                  <p><strong className="text-gray-700 dark:text-gray-300">Name:</strong> {doc.extracted_data.name}</p>
                                 )}
                                 {doc.extracted_data.obtained_marks && (
-                                  <p><strong className="text-gray-700">Marks:</strong> {doc.extracted_data.obtained_marks} / {doc.extracted_data.total_marks || 1100}</p>
+                                  <p><strong className="text-gray-700 dark:text-gray-300">Marks:</strong> {doc.extracted_data.obtained_marks} / {doc.extracted_data.total_marks || 1100}</p>
                                 )}
                               </div>
                             )}
                           </div>
 
                           {/* Action Buttons */}
-                          <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-200/80">
+                          <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-200/80 dark:border-gray-700/80">
                             <button
                               onClick={() => handleOpenDocViewer(doc)}
                               disabled={!hasPreview}
-                              className="flex-1 inline-flex items-center justify-center px-3 py-1.5 bg-primary-50 hover:bg-primary-500 text-primary-600 hover:text-gray-900 rounded-lg transition-colors text-xs font-semibold border border-primary-500/20 disabled:opacity-40"
+                              className="flex-1 inline-flex items-center justify-center px-3 py-1.5 bg-primary-50 dark:bg-primary-900/20 hover:bg-primary-500 text-primary-600 dark:text-primary-400 hover:text-gray-900 dark:hover:text-white rounded-lg transition-colors text-xs font-semibold border border-primary-500/20 disabled:opacity-40"
                             >
                               <Eye className="h-3.5 w-3.5 mr-1.5" />
                               Preview
@@ -473,7 +473,7 @@ const StudentManagement = () => {
                             {hasPreview && (
                               <button
                                 onClick={() => handleDownloadDoc(doc)}
-                                className="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-900 rounded-lg transition-colors border border-gray-200"
+                                className="p-1.5 bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white rounded-lg transition-colors border border-gray-200 dark:border-gray-600"
                                 title="Download"
                               >
                                 <Download className="h-4 w-4" />
@@ -485,38 +485,38 @@ const StudentManagement = () => {
                     })}
                   </div>
                 ) : (
-                  <div className="p-6 bg-gray-50 rounded-xl border border-gray-200 text-center">
-                    <AlertCircle className="h-8 w-8 text-gray-600 mx-auto mb-2" />
-                    <p className="text-sm text-gray-500">No documents uploaded by this student.</p>
+                  <div className="p-6 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-700 text-center">
+                    <AlertCircle className="h-8 w-8 text-gray-600 dark:text-gray-400 mx-auto mb-2" />
+                    <p className="text-sm text-gray-500 dark:text-gray-400">No documents uploaded by this student.</p>
                   </div>
                 )}
               </div>
 
               {/* Applications */}
               <div>
-                <h4 className="font-bold text-gray-900 text-base mb-3">Applications</h4>
+                <h4 className="font-bold text-gray-900 dark:text-white text-base mb-3">Applications</h4>
                 <div className="space-y-2">
                   {selectedStudent.applications?.map((app, idx) => (
-                    <div key={idx} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <div key={idx} className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-medium text-gray-900">{app.program?.name || app.program_id?.name}</p>
-                          <p className="text-xs text-gray-500">{app.program?.department || app.program_id?.department}</p>
+                          <p className="font-medium text-gray-900 dark:text-white">{app.program?.name || app.program_id?.name}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{app.program?.department || app.program_id?.department}</p>
                         </div>
-                        <span className={`px-2 py-1 rounded text-xs font-medium capitalize ${app.status === 'approved' || app.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                            app.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                              'bg-yellow-100 text-yellow-800'
+                        <span className={`px-2 py-1 rounded text-xs font-medium capitalize ${app.status === 'approved' || app.status === 'confirmed' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
+                            app.status === 'rejected' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' :
+                              'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
                           }`}>
                           {app.status}
                         </span>
                       </div>
                       {app.admission_category && (
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                           Category: <span className="capitalize">{app.admission_category.replace('_', ' ')}</span>
                         </p>
                       )}
                     </div>
-                  )) || <p className="text-gray-500">No applications</p>}
+                  )) || <p className="text-gray-500 dark:text-gray-400">No applications</p>}
                 </div>
               </div>
             </div>
@@ -528,24 +528,24 @@ const StudentManagement = () => {
       {previewDoc && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md" onClick={() => setPreviewDoc(null)}>
           <div
-            className="bg-gradient-to-b from-gray-50 to-white rounded-3xl max-w-6xl w-full h-[92vh] flex flex-col border border-gray-200 shadow-2xl overflow-hidden"
+            className="bg-gradient-to-b from-gray-50 to-white dark:from-gray-800 dark:to-gray-800 rounded-3xl max-w-6xl w-full h-[92vh] flex flex-col border border-gray-200 dark:border-gray-700 shadow-2xl overflow-hidden"
             style={{ animation: 'fadeInScale 0.3s ease-out' }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Viewer Header */}
-            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between flex-shrink-0">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-4">
-                <div className="p-2.5 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 text-primary-600 border border-primary-500/10 shadow-lg shadow-cyan-500/5">
+                <div className="p-2.5 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 text-primary-600 dark:text-primary-400 border border-primary-500/10 shadow-lg shadow-cyan-500/5">
                   {getDocIcon(previewDoc.type)}
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900 text-lg tracking-tight">
+                  <h3 className="font-bold text-gray-900 dark:text-white text-lg tracking-tight">
                     {getDocTypeLabel(previewDoc.type)}
                   </h3>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <p className="text-xs text-gray-500 truncate max-w-[250px]">{previewDoc.name || 'Document File'}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[250px]">{previewDoc.name || 'Document File'}</p>
                     {previewDoc.confidence && (
-                      <span className="inline-flex items-center text-[10px] font-semibold text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full border border-primary-500/15">
+                      <span className="inline-flex items-center text-[10px] font-semibold text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 px-2 py-0.5 rounded-full border border-primary-500/15">
                         <Sparkles className="h-2.5 w-2.5 mr-1" />
                         {Math.round(previewDoc.confidence)}% OCR
                       </span>
@@ -575,7 +575,7 @@ const StudentManagement = () => {
             {/* Viewer Body — Side-by-Side */}
             <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
               {/* Left: Document Canvas */}
-              <div className="flex-1 bg-gray-50 relative flex items-center justify-center overflow-auto">
+              <div className="flex-1 bg-gray-50 dark:bg-gray-700/30 relative flex items-center justify-center overflow-auto">
                 {/* Document Render */}
                 <div className="w-full h-full flex items-center justify-center p-6">
                   {(() => {
@@ -587,10 +587,10 @@ const StudentManagement = () => {
                     if (!src) {
                       return (
                         <div className="text-center py-20">
-                          <div className="p-4 rounded-2xl bg-gray-100 inline-block mb-4">
-                            <AlertCircle className="h-10 w-10 text-gray-600" />
+                          <div className="p-4 rounded-2xl bg-gray-100 dark:bg-gray-600 inline-block mb-4">
+                            <AlertCircle className="h-10 w-10 text-gray-600 dark:text-gray-400" />
                           </div>
-                          <p className="text-gray-500 text-sm font-medium">No preview available for this document.</p>
+                          <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">No preview available for this document.</p>
                         </div>
                       );
                     }
@@ -601,7 +601,7 @@ const StudentManagement = () => {
                         <iframe
                           src={pdfSrc}
                           title={previewDoc.name || 'PDF Document'}
-                          className="w-full h-full rounded-2xl border-gray-200 bg-white shadow-2xl"
+                          className="w-full h-full rounded-2xl border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-2xl"
                         />
                       );
                     }
@@ -628,59 +628,59 @@ const StudentManagement = () => {
 
               {/* Right: OCR Sidebar */}
               {previewDoc.extracted_data && Object.keys(previewDoc.extracted_data).length > 0 && (
-                <div className="w-full lg:w-[340px] bg-gray-50 border-t lg:border-t-0 lg:border-l border-gray-200 flex flex-col flex-shrink-0 overflow-hidden">
+                <div className="w-full lg:w-[340px] bg-gray-50 dark:bg-gray-800 border-t lg:border-t-0 lg:border-l border-gray-200 dark:border-gray-700 flex flex-col flex-shrink-0 overflow-hidden">
                   {/* Sidebar Header */}
-                  <div className="px-5 py-4 border-b border-gray-200 bg-gray-50">
+                  <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
                     <div className="flex items-center gap-2">
                       <div className="p-1.5 rounded-lg bg-gradient-to-br from-purple-500/20 to-cyan-500/20">
-                        <Sparkles className="h-3.5 w-3.5 text-primary-600" />
+                        <Sparkles className="h-3.5 w-3.5 text-primary-600 dark:text-primary-400" />
                       </div>
-                      <span className="font-bold text-sm text-gray-900 tracking-tight">Extracted Details</span>
+                      <span className="font-bold text-sm text-gray-900 dark:text-white tracking-tight">Extracted Details</span>
                     </div>
-                    <p className="text-[10px] text-gray-500 mt-1 ml-8">AI-powered OCR extraction results</p>
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1 ml-8">AI-powered OCR extraction results</p>
                   </div>
 
                   {/* Sidebar Content */}
                   <div className="flex-1 overflow-y-auto p-5 space-y-2.5">
                     {previewDoc.extracted_data.name && (
-                      <div className="group p-3.5 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 transition-all">
-                        <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest block mb-1">Applicant Name</span>
-                        <span className="font-semibold text-gray-900 text-sm">{previewDoc.extracted_data.name}</span>
+                      <div className="group p-3.5 rounded-xl bg-white dark:bg-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+                        <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">Applicant Name</span>
+                        <span className="font-semibold text-gray-900 dark:text-white text-sm">{previewDoc.extracted_data.name}</span>
                       </div>
                     )}
                     {previewDoc.extracted_data.father_name && (
-                      <div className="group p-3.5 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 transition-all">
-                        <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest block mb-1">Father's Name</span>
-                        <span className="font-semibold text-gray-900 text-sm">{previewDoc.extracted_data.father_name}</span>
+                      <div className="group p-3.5 rounded-xl bg-white dark:bg-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+                        <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">Father's Name</span>
+                        <span className="font-semibold text-gray-900 dark:text-white text-sm">{previewDoc.extracted_data.father_name}</span>
                       </div>
                     )}
                     {previewDoc.extracted_data.cnic && (
-                      <div className="group p-3.5 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 transition-all">
-                        <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest block mb-1">CNIC / B-Form</span>
-                        <span className="font-mono font-bold text-primary-600 text-sm tracking-wide">{previewDoc.extracted_data.cnic}</span>
+                      <div className="group p-3.5 rounded-xl bg-white dark:bg-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+                        <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">CNIC / B-Form</span>
+                        <span className="font-mono font-bold text-primary-600 dark:text-primary-400 text-sm tracking-wide">{previewDoc.extracted_data.cnic}</span>
                       </div>
                     )}
                     {previewDoc.extracted_data.date_of_birth && (
-                      <div className="group p-3.5 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 transition-all">
-                        <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest block mb-1">Date of Birth</span>
-                        <span className="font-semibold text-gray-900 text-sm">{previewDoc.extracted_data.date_of_birth}</span>
+                      <div className="group p-3.5 rounded-xl bg-white dark:bg-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+                        <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">Date of Birth</span>
+                        <span className="font-semibold text-gray-900 dark:text-white text-sm">{previewDoc.extracted_data.date_of_birth}</span>
                       </div>
                     )}
                     {previewDoc.extracted_data.board && (
-                      <div className="group p-3.5 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 transition-all">
-                        <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest block mb-1">Board Name</span>
-                        <span className="font-semibold text-gray-900 text-sm">{previewDoc.extracted_data.board}</span>
+                      <div className="group p-3.5 rounded-xl bg-white dark:bg-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+                        <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">Board Name</span>
+                        <span className="font-semibold text-gray-900 dark:text-white text-sm">{previewDoc.extracted_data.board}</span>
                       </div>
                     )}
                     {previewDoc.extracted_data.obtained_marks !== undefined && previewDoc.extracted_data.obtained_marks !== null && (
                       <div className="group p-3.5 rounded-xl bg-gradient-to-r from-emerald-500/[0.05] to-transparent hover:from-emerald-500/[0.1] border border-emerald-500/10 hover:border-emerald-500/20 transition-all">
-                        <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest block mb-1">Marks Obtained / Total</span>
+                        <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">Marks Obtained / Total</span>
                         <div className="flex items-baseline gap-1.5">
                           <span className="font-bold text-emerald-400 text-lg">
                             {previewDoc.extracted_data.obtained_marks}
                           </span>
-                          <span className="text-gray-500 text-sm">/</span>
-                          <span className="font-semibold text-gray-700 text-sm">
+                          <span className="text-gray-500 dark:text-gray-400 text-sm">/</span>
+                          <span className="font-semibold text-gray-700 dark:text-gray-300 text-sm">
                             {previewDoc.extracted_data.total_marks || 1100}
                           </span>
                           {previewDoc.extracted_data.total_marks && (
@@ -692,9 +692,9 @@ const StudentManagement = () => {
                       </div>
                     )}
                     {previewDoc.extracted_data.address && (
-                      <div className="group p-3.5 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 transition-all">
-                        <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest block mb-1">Address</span>
-                        <span className="text-gray-700 text-sm leading-relaxed">{previewDoc.extracted_data.address}</span>
+                      <div className="group p-3.5 rounded-xl bg-white dark:bg-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+                        <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">Address</span>
+                        <span className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">{previewDoc.extracted_data.address}</span>
                       </div>
                     )}
                   </div>

@@ -133,19 +133,19 @@ const ProgramRecommendations = () => {
               <Zap className="h-3.5 w-3.5 text-primary-600" />
               AI-Powered Low-Merit Recommendation Engine
             </div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight">
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
               Program & Institution Recommendations
             </h1>
-            <p className="text-gray-700 mt-1 max-w-2xl text-sm leading-relaxed">
+            <p className="text-gray-700 dark:text-gray-300 mt-1 max-w-2xl text-sm leading-relaxed">
               Our Scikit-Learn KNN & Cosine Similarity model evaluates your academic merit against cutoff thresholds, predicting in-house alternative shifts and accredited partner institutions with high acceptance likelihood.
             </p>
           </div>
 
           {studentMerit > 0 && (
             <div className="bg-slate-900/80 backdrop-blur-md p-4 rounded-xl border border-primary-500/30 text-center flex-shrink-0 min-w-[160px] shadow-lg">
-              <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Your Merit Score</p>
-              <p className="text-3xl font-extrabold text-primary-600 mt-0.5">{studentMerit}%</p>
-              <span className="inline-block mt-1 px-2 py-0.5 bg-primary-50 border border-primary-200 text-primary-700 rounded text-[11px]">
+              <p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider">Your Merit Score</p>
+              <p className="text-3xl font-extrabold text-primary-600 dark:text-primary-400 mt-0.5">{studentMerit}%</p>
+              <span className="inline-block mt-1 px-2 py-0.5 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 text-primary-700 dark:text-primary-300 rounded text-[11px]">
                 {studentMerit >= 75 ? '🟢 High Merit' : studentMerit >= 60 ? '🟡 Moderate Merit' : '🔵 Alternative Match'}
               </span>
             </div>
@@ -154,12 +154,12 @@ const ProgramRecommendations = () => {
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex flex-wrap items-center gap-2 p-1.5 bg-white rounded-xl border border-gray-200">
+      <div className="flex flex-wrap items-center gap-2 p-1.5 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
         <button
           onClick={() => setActiveTab('smart')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${activeTab === 'smart'
               ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md shadow-cyan-500/20'
-              : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+              : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700'
             }`}
         >
           <Sparkles className="h-4 w-4" />
@@ -170,7 +170,7 @@ const ProgramRecommendations = () => {
           onClick={() => setActiveTab('colleges')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${activeTab === 'colleges'
               ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-md shadow-purple-500/20'
-              : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+              : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700'
             }`}
         >
           <Building2 className="h-4 w-4" />
@@ -180,8 +180,8 @@ const ProgramRecommendations = () => {
         <button
           onClick={() => setActiveTab('all')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${activeTab === 'all'
-              ? 'bg-gray-100 text-gray-900 border border-gray-300'
-              : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+              ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600'
+              : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700'
             }`}
         >
           <Layers className="h-4 w-4" />
@@ -192,12 +192,12 @@ const ProgramRecommendations = () => {
       {/* AI Advisory Summary Callout */}
       {lowMeritData?.ai_advice && (
         <div className="bg-gradient-to-r from-cyan-950/40 via-purple-950/30 to-slate-900 p-4 rounded-xl border border-primary-200 flex items-start gap-3.5 shadow-md">
-          <div className="p-2 bg-primary-50 rounded-lg text-primary-600 mt-0.5">
+          <div className="p-2 bg-primary-50 dark:bg-primary-900/20 rounded-lg text-primary-600 dark:text-primary-400 mt-0.5">
             <Info className="h-5 w-5" />
           </div>
           <div>
-            <h4 className="text-sm font-bold text-primary-700">AI Admission Strategist</h4>
-            <p className="text-xs text-gray-700 mt-0.5 leading-relaxed">{lowMeritData.ai_advice}</p>
+            <h4 className="text-sm font-bold text-primary-700 dark:text-primary-300">AI Admission Strategist</h4>
+            <p className="text-xs text-gray-700 dark:text-gray-300 mt-0.5 leading-relaxed">{lowMeritData.ai_advice}</p>
           </div>
         </div>
       )}
@@ -206,65 +206,65 @@ const ProgramRecommendations = () => {
       {activeTab === 'smart' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
               <GraduationCap className="h-5 w-5 text-primary-600" />
               In-House Alternative Programs & Flexible Shifts
             </h3>
-            <span className="text-xs text-gray-500">Ranked by Admission Acceptance Probability</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">Ranked by Admission Acceptance Probability</span>
           </div>
 
           {internalAlternatives.length === 0 ? (
-            <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-              <BookOpen className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-              <h4 className="text-base font-semibold text-gray-900">No internal alternative programs found</h4>
-              <p className="text-xs text-gray-500 mt-1">Please verify your documents to compute your profile score.</p>
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-12 text-center">
+              <BookOpen className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+              <h4 className="text-base font-semibold text-gray-900 dark:text-white">No internal alternative programs found</h4>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Please verify your documents to compute your profile score.</p>
             </div>
           ) : (
             <div className="grid md:grid-cols-2 gap-4">
               {internalAlternatives.map((prog, idx) => (
                 <div
                   key={idx}
-                  className="bg-white rounded-xl border border-gray-200 hover:border-primary-500/40 p-5 transition-all flex flex-col justify-between group relative overflow-hidden"
+                  className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-primary-500/40 p-5 transition-all flex flex-col justify-between group relative overflow-hidden"
                 >
                   <div className="absolute top-0 right-0 w-24 h-24 bg-primary-50 rounded-full blur-xl group-hover:bg-primary-100 transition-colors" />
 
                   <div>
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div>
-                        <span className="text-[11px] font-medium text-primary-600 bg-primary-50 px-2 py-0.5 rounded border border-primary-200">
-                          {prog.field_category}
-                        </span>
-                        <h4 className="text-base font-bold text-gray-900 mt-1.5 group-hover:text-primary-700 transition-colors">
+            <span className="text-[11px] font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 px-2 py-0.5 rounded border border-primary-200 dark:border-primary-800">
+              {prog.field_category}
+            </span>
+                        <h4 className="text-base font-bold text-gray-900 dark:text-white mt-1.5 group-hover:text-primary-700 transition-colors">
                           {prog.name}
                         </h4>
-                        <p className="text-xs text-gray-500">{prog.department}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{prog.department}</p>
                       </div>
 
                       <span className={`px-2.5 py-1 rounded-full text-xs font-bold border whitespace-nowrap ${prog.match_level === 'high'
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                          ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
                           : prog.match_level === 'medium'
-                            ? 'bg-primary-50 text-primary-700 border-primary-500/30'
-                            : 'bg-amber-50 text-amber-700 border-amber-200'
+                            ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 border-primary-500/30'
+                            : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800'
                         }`}>
                         {prog.admission_probability}% Acceptance
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-2 py-3 my-3 border-y border-gray-200/80 text-xs">
+                    <div className="grid grid-cols-3 gap-2 py-3 my-3 border-y border-gray-200/80 dark:border-gray-700/80 text-xs">
                       <div>
-                        <span className="text-gray-500 block text-[10px] uppercase">Shift</span>
-                        <span className="font-semibold text-gray-900 flex items-center gap-1 mt-0.5">
+                        <span className="text-gray-500 dark:text-gray-400 block text-[10px] uppercase">Shift</span>
+                        <span className="font-semibold text-gray-900 dark:text-white flex items-center gap-1 mt-0.5">
                           <Clock className="h-3 w-3 text-primary-600" />
                           {prog.shift}
                         </span>
                       </div>
                       <div>
-                        <span className="text-gray-500 block text-[10px] uppercase">Closing Cutoff</span>
-                        <span className="font-semibold text-gray-900 mt-0.5 block">{prog.min_merit_cutoff}%</span>
+                        <span className="text-gray-500 dark:text-gray-400 block text-[10px] uppercase">Closing Cutoff</span>
+                        <span className="font-semibold text-gray-900 dark:text-white mt-0.5 block">{prog.min_merit_cutoff}%</span>
                       </div>
                       <div>
-                        <span className="text-gray-500 block text-[10px] uppercase">Total Fee</span>
-                        <span className="font-semibold text-gray-900 mt-0.5 block">PKR {prog.total_fee?.toLocaleString()}</span>
+                        <span className="text-gray-500 dark:text-gray-400 block text-[10px] uppercase">Total Fee</span>
+                        <span className="font-semibold text-gray-900 dark:text-white mt-0.5 block">PKR {prog.total_fee?.toLocaleString()}</span>
                       </div>
                     </div>
                   </div>
@@ -272,7 +272,7 @@ const ProgramRecommendations = () => {
                   <div className="flex items-center gap-2 pt-1">
                     <button
                       onClick={() => fetchExplanation(prog, false)}
-                      className="flex-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-900 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5"
+                      className="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5"
                     >
                       <Info className="h-3.5 w-3.5 text-primary-600" />
                       Why This Option?
@@ -296,62 +296,62 @@ const ProgramRecommendations = () => {
       {activeTab === 'colleges' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
               <Building2 className="h-5 w-5 text-purple-600" />
               Accredited Partner Institutions Offering Lower Cutoffs
             </h3>
-            <span className="text-xs text-gray-500">Nearby Affiliated Institutions</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">Nearby Affiliated Institutions</span>
           </div>
 
           {partnerColleges.length === 0 ? (
-            <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-              <Building2 className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-              <h4 className="text-base font-semibold text-gray-900">No partner colleges currently registered</h4>
-              <p className="text-xs text-gray-500 mt-1">Please check back or contact admissions for external affiliation lists.</p>
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-12 text-center">
+              <Building2 className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+              <h4 className="text-base font-semibold text-gray-900 dark:text-white">No partner colleges currently registered</h4>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Please check back or contact admissions for external affiliation lists.</p>
             </div>
           ) : (
             <div className="grid md:grid-cols-2 gap-4">
               {partnerColleges.map((college, idx) => (
                 <div
                   key={idx}
-                  className="bg-white rounded-xl border border-gray-200 hover:border-purple-500/40 p-5 transition-all flex flex-col justify-between group relative"
+                  className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-purple-500/40 p-5 transition-all flex flex-col justify-between group relative"
                 >
                   <div>
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div>
-                        <span className="text-[11px] font-medium text-purple-600 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
+                        <span className="text-[11px] font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2 py-0.5 rounded border border-purple-200 dark:border-purple-800">
                           {college.field_category}
                         </span>
-                        <h4 className="text-base font-bold text-gray-900 mt-1.5 group-hover:text-purple-700 transition-colors">
+                        <h4 className="text-base font-bold text-gray-900 dark:text-white mt-1.5 group-hover:text-purple-700 transition-colors">
                           {college.program_name}
                         </h4>
-                        <p className="text-xs font-semibold text-gray-700 mt-0.5">{college.college_name}</p>
-                        <p className="text-[11px] text-gray-500 flex items-center gap-1 mt-0.5">
+                        <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mt-0.5">{college.college_name}</p>
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5">
                           <MapPin className="h-3 w-3 text-purple-600" />
                           {college.city} &bull; {college.affiliation}
                         </p>
                       </div>
 
                       <span className={`px-2.5 py-1 rounded-full text-xs font-bold border whitespace-nowrap ${college.match_level === 'high'
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                          : 'bg-primary-50 text-primary-700 border-primary-500/30'
+                          ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                          : 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 border-primary-500/30'
                         }`}>
                         {college.admission_probability}% Acceptance
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-2 py-3 my-3 border-y border-gray-200/80 text-xs">
+                    <div className="grid grid-cols-3 gap-2 py-3 my-3 border-y border-gray-200/80 dark:border-gray-700/80 text-xs">
                       <div>
-                        <span className="text-gray-500 block text-[10px] uppercase">Required Cutoff</span>
-                        <span className="font-semibold text-gray-900 mt-0.5 block">{college.min_merit_cutoff}%</span>
+                        <span className="text-gray-500 dark:text-gray-400 block text-[10px] uppercase">Required Cutoff</span>
+                        <span className="font-semibold text-gray-900 dark:text-white mt-0.5 block">{college.min_merit_cutoff}%</span>
                       </div>
                       <div>
-                        <span className="text-gray-500 block text-[10px] uppercase">Shift</span>
-                        <span className="font-semibold text-gray-900 mt-0.5 block">{college.shift}</span>
+                        <span className="text-gray-500 dark:text-gray-400 block text-[10px] uppercase">Shift</span>
+                        <span className="font-semibold text-gray-900 dark:text-white mt-0.5 block">{college.shift}</span>
                       </div>
                       <div>
-                        <span className="text-gray-500 block text-[10px] uppercase">Annual Fee</span>
-                        <span className="font-semibold text-gray-900 mt-0.5 block">PKR {college.total_fee?.toLocaleString()}</span>
+                        <span className="text-gray-500 dark:text-gray-400 block text-[10px] uppercase">Annual Fee</span>
+                        <span className="font-semibold text-gray-900 dark:text-white mt-0.5 block">PKR {college.total_fee?.toLocaleString()}</span>
                       </div>
                     </div>
                   </div>
@@ -359,7 +359,7 @@ const ProgramRecommendations = () => {
                   <div className="flex items-center gap-2 pt-1">
                     <button
                       onClick={() => fetchExplanation(college, true)}
-                      className="flex-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-900 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5"
+                      className="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5"
                     >
                       <Info className="h-3.5 w-3.5 text-purple-600" />
                       AI Evaluation
@@ -375,7 +375,7 @@ const ProgramRecommendations = () => {
                         <ExternalLink className="h-3.5 w-3.5" />
                       </a>
                     ) : (
-                      <span className="flex-1 px-3 py-2 bg-gray-100 text-gray-500 rounded-lg text-xs text-center">
+                      <span className="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-lg text-xs text-center">
                         Contact Admissions
                       </span>
                     )}
@@ -391,52 +391,52 @@ const ProgramRecommendations = () => {
       {activeTab === 'all' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-              <Layers className="h-5 w-5 text-gray-500" />
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <Layers className="h-5 w-5 text-gray-500 dark:text-gray-400" />
               All University Degree Programs & Eligibility Status
             </h3>
-            <span className="text-xs text-gray-500">Total: {recommendations.length} Programs</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">Total: {recommendations.length} Programs</span>
           </div>
 
           <div className="grid md:grid-cols-2 gap-4">
             {recommendations.map((rec, index) => (
               <div
                 key={index}
-                className={`bg-white rounded-xl border p-5 transition-all shadow-sm ${rec.match_level === 'high'
-                    ? 'border-emerald-200'
+                className={`bg-white dark:bg-gray-800 rounded-xl border p-5 transition-all shadow-sm ${rec.match_level === 'high'
+                    ? 'border-emerald-200 dark:border-emerald-800'
                     : rec.match_level === 'medium'
                       ? 'border-primary-500/30'
-                      : 'border-gray-200'
+                      : 'border-gray-200 dark:border-gray-700'
                   }`}
               >
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <div>
-                    <h4 className="text-base font-bold text-gray-900">{rec.program.name}</h4>
-                    <p className="text-xs text-gray-500">{rec.program.department}</p>
+                    <h4 className="text-base font-bold text-gray-900 dark:text-white">{rec.program.name}</h4>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{rec.program.department}</p>
                   </div>
                   <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${rec.details.meets_percentage
-                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                      : 'bg-rose-50 text-rose-700 border-rose-200'
+                      ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                      : 'bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800'
                     }`}>
                     {rec.details.meets_percentage ? 'Eligible' : 'Below Cutoff'}
                   </span>
                 </div>
 
-                <div className="space-y-1.5 text-xs text-gray-700 mb-4 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                <div className="space-y-1.5 text-xs text-gray-700 dark:text-gray-300 mb-4 bg-gray-50 dark:bg-gray-900 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Minimum Required Percentage:</span>
-                    <span className="font-semibold text-gray-900">{rec.details.required_percentage}%</span>
+                    <span className="text-gray-500 dark:text-gray-400">Minimum Required Percentage:</span>
+                    <span className="font-semibold text-gray-900 dark:text-white">{rec.details.required_percentage}%</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Your Calculated Percentage:</span>
-                    <span className="font-semibold text-primary-600">{rec.details.student_percentage}%</span>
+                    <span className="text-gray-500 dark:text-gray-400">Your Calculated Percentage:</span>
+                    <span className="font-semibold text-primary-600 dark:text-primary-400">{rec.details.student_percentage}%</span>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => fetchExplanation(rec.program, false)}
-                    className="flex-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5"
+                    className="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5"
                   >
                     <Info className="h-3.5 w-3.5 text-primary-600" />
                     Why This Match?
@@ -464,21 +464,21 @@ const ProgramRecommendations = () => {
             <div className="p-6">
               <button
                 onClick={() => { setSelectedProgram(null); setExplanation(null); }}
-                className="absolute top-4 right-4 p-1.5 text-gray-500 hover:text-gray-900 rounded-lg hover:bg-slate-800 transition-colors"
+                className="absolute top-4 right-4 p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
                 title="Close"
               >
                 <X className="h-5 w-5" />
               </button>
 
               <div className="flex items-start gap-4 mb-4">
-                <div className="p-3 bg-primary-50 border border-primary-200 rounded-xl flex-shrink-0">
-                  <Sparkles className="h-6 w-6 text-primary-600" />
+                <div className="p-3 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-xl flex-shrink-0">
+                  <Sparkles className="h-6 w-6 text-primary-600 dark:text-primary-400" />
                 </div>
                 <div>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-semibold text-primary-700 bg-primary-50 rounded-full border border-primary-200 mb-1">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-semibold text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-900/20 rounded-full border border-primary-200 dark:border-primary-800 mb-1">
                     AI Probability Breakdown
                   </span>
-                  <h3 className="text-xl font-bold text-gray-900">
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">
                     {explanation.program}
                   </h3>
                 </div>
@@ -486,17 +486,17 @@ const ProgramRecommendations = () => {
 
               <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 mb-4 flex items-center justify-between">
                 <div>
-                  <span className="text-xs text-gray-500 block">Predicted Acceptance Chance</span>
-                  <span className="text-2xl font-black text-primary-600">{explanation.eligibility_score}% Probability</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 block">Predicted Acceptance Chance</span>
+                  <span className="text-2xl font-black text-primary-600 dark:text-primary-400">{explanation.eligibility_score}% Probability</span>
                 </div>
                 <div className="text-right">
-                  <span className="text-xs text-gray-500 block">Closing Cutoff</span>
-                  <span className="text-base font-bold text-gray-900">{explanation.cutoff}%</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 block">Closing Cutoff</span>
+                  <span className="text-base font-bold text-gray-900 dark:text-white">{explanation.cutoff}%</span>
                 </div>
               </div>
 
               <div className="space-y-2.5 mb-6">
-                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">AI Evaluation Highlights:</h4>
+                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">AI Evaluation Highlights:</h4>
                 {explanation.explanations?.map((exp, idx) => (
                   <div key={idx} className="flex items-start gap-2.5 p-2.5 bg-slate-900/60 rounded-lg border border-slate-800/80">
                     <CheckCircle className="h-4 w-4 text-primary-600 flex-shrink-0 mt-0.5" />
@@ -508,7 +508,7 @@ const ProgramRecommendations = () => {
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
                 <button
                   onClick={() => { setSelectedProgram(null); setExplanation(null); }}
-                  className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-gray-700 rounded-xl text-xs font-semibold transition-colors"
+                  className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-semibold transition-colors"
                 >
                   Close
                 </button>
@@ -527,25 +527,25 @@ const ProgramRecommendations = () => {
             <div className="p-6 sm:p-7">
               <button
                 onClick={() => setShowMissingDocsModal(false)}
-                className="absolute top-4 right-4 p-1.5 text-gray-500 hover:text-gray-900 rounded-lg hover:bg-slate-800 transition-colors"
+                className="absolute top-4 right-4 p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
                 title="Close"
               >
                 <X className="h-5 w-5" />
               </button>
 
               <div className="flex items-start gap-4 mb-5">
-                <div className="p-3 bg-purple-50 border border-purple-200 rounded-2xl flex-shrink-0 shadow-sm">
-                  <GraduationCap className="h-7 w-7 text-purple-600" />
+                <div className="p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-2xl flex-shrink-0 shadow-sm">
+                  <GraduationCap className="h-7 w-7 text-purple-600 dark:text-purple-400" />
                 </div>
                 <div>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider text-purple-700 bg-purple-50 rounded-full border border-purple-200 mb-1.5">
-                    <Sparkles className="h-3 w-3 text-purple-600" />
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/20 rounded-full border border-purple-200 dark:border-purple-800 mb-1.5">
+                    <Sparkles className="h-3 w-3 text-purple-600 dark:text-purple-400" />
                     AI Intelligence Advisory
                   </span>
                   <h3 className="text-xl font-bold text-slate-100 tracking-tight">
                     Academic Documents Required
                   </h3>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Complete your profile to generate personalized matches
                   </p>
                 </div>
@@ -557,7 +557,7 @@ const ProgramRecommendations = () => {
                 </p>
               </div>
 
-              <div className="space-y-2.5 mb-6 text-xs text-gray-700">
+              <div className="space-y-2.5 mb-6 text-xs text-gray-700 dark:text-gray-300">
                 <div className="flex items-center gap-2">
                   <CheckCircle className="h-4 w-4 text-emerald-600 flex-shrink-0" />
                   <span>Instant OCR extraction from Matric & Intermediate result cards</span>
@@ -575,7 +575,7 @@ const ProgramRecommendations = () => {
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
                 <button
                   onClick={() => setShowMissingDocsModal(false)}
-                  className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-gray-700 hover:text-gray-900 rounded-xl font-medium text-xs transition-colors"
+                  className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white rounded-xl font-medium text-xs transition-colors"
                 >
                   Dismiss
                 </button>

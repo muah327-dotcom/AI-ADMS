@@ -368,12 +368,12 @@ const AllApplications = () => {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">All Applications</h1>
-          <p className="text-gray-500 mt-1">Review student credentials, check uploaded documents, and manage admission decisions</p>
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">All Applications</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">Review student credentials, check uploaded documents, and manage admission decisions</p>
         </div>
         <button
           onClick={exportCSV}
-          className="inline-flex items-center px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+          className="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
         >
           <Download className="h-5 w-5 mr-2" />
           Export CSV
@@ -381,22 +381,22 @@ const AllApplications = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 dark:text-gray-400" />
             <input
               type="text"
               placeholder="Search by student name, email, CNIC, or program..."
-              className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 placeholder-gray-400"
+              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           <div className="flex items-center gap-2">
-            <Filter className="h-5 w-5 text-gray-500" />
+            <Filter className="h-5 w-5 text-gray-500 dark:text-gray-400" />
             <select
-              className="px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none text-gray-900"
+              className="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none text-gray-900 dark:text-white"
               value={statusFilter}
               onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
             >
@@ -410,9 +410,9 @@ const AllApplications = () => {
             </select>
           </div>
           <div className="flex items-center gap-2">
-            <FileText className="h-5 w-5 text-gray-500" />
+            <FileText className="h-5 w-5 text-gray-500 dark:text-gray-400" />
             <select
-              className="px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none text-gray-900"
+              className="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none text-gray-900 dark:text-white"
               value={programFilter}
               onChange={(e) => { setProgramFilter(e.target.value); setPage(1); }}
             >
@@ -426,78 +426,78 @@ const AllApplications = () => {
       </div>
 
       {/* Applications Table */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
         {loading ? (
           <SkeletonLoader variant="table" theme="dark" />
         ) : filteredApplications.length === 0 ? (
           <div className="p-12 text-center">
-            <FileText className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No applications found</h3>
-            <p className="text-gray-500">Try adjusting your search or filter parameters</p>
+            <FileText className="h-16 w-16 text-gray-600 dark:text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No applications found</h3>
+            <p className="text-gray-500 dark:text-gray-400">Try adjusting your search or filter parameters</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Applied Program</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Academic Score</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Documents</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Student</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Applied Program</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Academic Score</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Documents</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredApplications.map((app) => {
                   const docCount = (app.student_documents?.length || 0) + (app.documents?.length || 0);
                   return (
-                    <tr key={app.id || app._id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={app.id || app._id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center">
-                          <div className="h-10 w-10 rounded-full bg-primary-50 flex items-center justify-center mr-3 border border-primary-500/20 text-primary-600 font-bold">
+                          <div className="h-10 w-10 rounded-full bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center mr-3 border border-primary-500/20 text-primary-600 dark:text-primary-400 font-bold">
                             {app.student?.full_name?.charAt(0) || 'S'}
                           </div>
                           <div>
-                            <p className="font-medium text-gray-900">{app.student?.full_name || 'N/A'}</p>
-                            <p className="text-sm text-gray-500">{app.student?.email}</p>
-                            <p className="text-xs text-gray-500 font-mono">{app.student?.cnic || 'CNIC Pending'}</p>
+                            <p className="font-medium text-gray-900 dark:text-white">{app.student?.full_name || 'N/A'}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{app.student?.email}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 font-mono">{app.student?.cnic || 'CNIC Pending'}</p>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <p className="font-medium text-gray-900">{app.program?.name || 'N/A'}</p>
-                        <p className="text-xs text-gray-500">{app.program?.department}</p>
+                        <p className="font-medium text-gray-900 dark:text-white">{app.program?.name || 'N/A'}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{app.program?.department}</p>
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm space-y-0.5">
                           {app.fsc_percentage || app.student?.inter_obtained_marks ? (
-                            <p className="text-gray-700">
-                              <span className="text-xs text-gray-500 mr-1">Inter:</span>
-                              <span className="font-medium text-gray-900">
+                            <p className="text-gray-700 dark:text-gray-300">
+                              <span className="text-xs text-gray-500 dark:text-gray-400 mr-1">Inter:</span>
+                              <span className="font-medium text-gray-900 dark:text-white">
                                 {app.fsc_percentage ? `${app.fsc_percentage}%` : `${app.student?.inter_obtained_marks}/${app.student?.inter_total_marks}`}
                               </span>
                             </p>
                           ) : null}
                           {app.matric_percentage || app.student?.matric_obtained_marks ? (
-                            <p className="text-gray-500 text-xs">
-                              <span className="text-gray-500 mr-1">Matric:</span>
+                            <p className="text-gray-500 dark:text-gray-400 text-xs">
+                              <span className="text-gray-500 dark:text-gray-400 mr-1">Matric:</span>
                               {app.matric_percentage ? `${app.matric_percentage}%` : `${app.student?.matric_obtained_marks}/${app.student?.matric_total_marks}`}
                             </p>
                           ) : null}
                           {!app.fsc_percentage && !app.matric_percentage && !app.student?.inter_obtained_marks && (
-                            <span className="text-xs text-gray-500">Not recorded</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">Not recorded</span>
                           )}
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-1.5">
-                          <FileText className="h-4 w-4 text-primary-600" />
-                          <span className="text-sm font-medium text-gray-900">
+                          <FileText className="h-4 w-4 text-primary-600 dark:text-primary-400" />
+                          <span className="text-sm font-medium text-gray-900 dark:text-white">
                             {docCount > 0 ? `${docCount} Uploaded` : '0 Uploaded'}
                           </span>
                           {docCount > 0 && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] bg-green-100 text-green-800 border border-green-200">
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-800">
                               <Check className="h-2.5 w-2.5 mr-0.5" /> Ready
                             </span>
                           )}
@@ -505,11 +505,11 @@ const AllApplications = () => {
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                          app.status === 'approved' || app.status === 'confirmed' ? 'bg-green-100 text-green-800 border border-green-200' :
-                          app.status === 'rejected' || app.status === 'dropped' ? 'bg-red-100 text-red-800 border border-red-200' :
-                          app.status === 'under_review' ? 'bg-primary-100 text-primary-800 border border-primary-200' :
-                          app.status === 'waitlisted' ? 'bg-purple-100 text-purple-800 border border-purple-200' :
-                          'bg-yellow-100 text-yellow-800 border border-yellow-200'
+                          app.status === 'approved' || app.status === 'confirmed' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-800' :
+                          app.status === 'rejected' || app.status === 'dropped' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800' :
+                          app.status === 'under_review' ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300 border border-primary-200 dark:border-primary-800' :
+                          app.status === 'waitlisted' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800' :
+                          'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-800'
                         }`}>
                           {getStatusIcon(app.status)}
                           <span className="ml-1.5 capitalize">{app.status?.replace('_', ' ')}</span>
@@ -522,7 +522,7 @@ const AllApplications = () => {
                             setAdminRemarks(app.remarks || '');
                             setShowModal(true);
                           }}
-                          className="flex items-center px-3 py-1.5 bg-primary-50 hover:bg-primary-500 text-primary-600 hover:text-gray-900 rounded-lg transition-all border border-primary-500/30 text-xs font-medium"
+                          className="flex items-center px-3 py-1.5 bg-primary-50 dark:bg-primary-900/20 hover:bg-primary-500 text-primary-600 dark:text-primary-400 hover:text-gray-900 dark:hover:text-white rounded-lg transition-all border border-primary-500/30 text-xs font-medium"
                           title="View Application Details & Documents"
                         >
                           <Eye className="h-4 w-4 mr-1.5" />
@@ -539,23 +539,23 @@ const AllApplications = () => {
 
         {/* Pagination */}
         {!loading && filteredApplications.length > 0 && (
-          <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-            <p className="text-sm text-gray-500">
+          <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               Showing {filteredApplications.length} applications
             </p>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="px-3 py-1 border border-gray-200 rounded-lg text-sm text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+                className="px-3 py-1 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 dark:hover:bg-gray-700"
               >
                 Previous
               </button>
-              <span className="text-sm text-gray-500">Page {page} of {totalPages}</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">Page {page} of {totalPages}</span>
               <button
                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                className="px-3 py-1 border border-gray-200 rounded-lg text-sm text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+                className="px-3 py-1 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 dark:hover:bg-gray-700"
               >
                 Next
               </button>
@@ -567,28 +567,28 @@ const AllApplications = () => {
       {/* Application Detail Modal */}
       {showModal && selectedApplication && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[92vh] overflow-y-auto animate-scale-in border border-gray-200 shadow-2xl">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-4xl w-full max-h-[92vh] overflow-y-auto animate-scale-in border border-gray-200 dark:border-gray-700 shadow-2xl">
             {/* Modal Header */}
-            <div className="p-6 border-b border-gray-200 sticky top-0 bg-white/95 backdrop-blur z-10 flex items-center justify-between">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur z-10 flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-3">
-                  <h2 className="text-xl font-bold text-gray-900">Application Details & Verification</h2>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Application Details & Verification</h2>
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                    selectedApplication.status === 'approved' || selectedApplication.status === 'confirmed' ? 'bg-green-100 text-green-800 border border-green-200' :
-                    selectedApplication.status === 'rejected' ? 'bg-red-100 text-red-800 border border-red-200' :
-                    selectedApplication.status === 'under_review' ? 'bg-primary-100 text-primary-800 border border-primary-200' :
-                    'bg-yellow-100 text-yellow-800 border border-yellow-200'
+                    selectedApplication.status === 'approved' || selectedApplication.status === 'confirmed' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-800' :
+                    selectedApplication.status === 'rejected' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800' :
+                    selectedApplication.status === 'under_review' ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300 border border-primary-200 dark:border-primary-800' :
+                    'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-800'
                   }`}>
                     {selectedApplication.status?.replace('_', ' ').toUpperCase()}
                   </span>
                 </div>
-                <p className="text-xs text-gray-500 mt-0.5">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                   Applied on {new Date(selectedApplication.application_date).toLocaleDateString()}
                 </p>
               </div>
               <button
                 onClick={() => setShowModal(false)}
-                className="p-2 text-gray-500 hover:text-gray-900 rounded-lg hover:bg-gray-100 transition-colors"
+                className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -596,30 +596,30 @@ const AllApplications = () => {
 
             <div className="p-6 space-y-6">
               {/* Student Profile Card */}
-              <div className="p-5 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-200/80">
+              <div className="p-5 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-200/80 dark:border-gray-700/80">
                   <div className="flex items-center gap-4">
-                    <div className="h-16 w-16 rounded-full bg-primary-50 flex items-center justify-center border border-primary-500/20 text-primary-600 font-bold text-2xl">
+                    <div className="h-16 w-16 rounded-full bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center border border-primary-500/20 text-primary-600 dark:text-primary-400 font-bold text-2xl">
                       {selectedApplication.student?.full_name?.charAt(0) || 'S'}
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                         {selectedApplication.student?.full_name || 'N/A'}
                         {selectedApplication.student?.is_verified ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] bg-green-100 text-green-800 border border-green-200">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-800">
                             <ShieldCheck className="h-3 w-3 mr-1" /> Profile Verified
                           </span>
                         ) : (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] bg-yellow-100 text-yellow-800 border border-yellow-200">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-800">
                             <AlertCircle className="h-3 w-3 mr-1" /> Pending Verification
                           </span>
                         )}
                       </h3>
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500 mt-1">
-                        <span className="flex items-center gap-1"><Mail className="h-3.5 w-3.5 text-gray-500" /> {selectedApplication.student?.email}</span>
-                        <span className="flex items-center gap-1"><CreditCard className="h-3.5 w-3.5 text-gray-500" /> <span className="font-mono">{selectedApplication.student?.cnic || 'N/A'}</span></span>
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        <span className="flex items-center gap-1"><Mail className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" /> {selectedApplication.student?.email}</span>
+                        <span className="flex items-center gap-1"><CreditCard className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" /> <span className="font-mono">{selectedApplication.student?.cnic || 'N/A'}</span></span>
                         {selectedApplication.student?.phone && (
-                          <span className="flex items-center gap-1"><Phone className="h-3.5 w-3.5 text-gray-500" /> {selectedApplication.student?.phone}</span>
+                          <span className="flex items-center gap-1"><Phone className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" /> {selectedApplication.student?.phone}</span>
                         )}
                       </div>
                     </div>
@@ -629,25 +629,25 @@ const AllApplications = () => {
                 {/* Additional Personal Details */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 text-xs">
                   <div>
-                    <span className="text-gray-500 block">Father's Name</span>
-                    <span className="font-medium text-gray-700">{selectedApplication.student?.father_name || 'N/A'}</span>
+                    <span className="text-gray-500 dark:text-gray-400 block">Father's Name</span>
+                    <span className="font-medium text-gray-700 dark:text-gray-300">{selectedApplication.student?.father_name || 'N/A'}</span>
                   </div>
                   <div>
-                    <span className="text-gray-500 block">Date of Birth</span>
-                    <span className="font-medium text-gray-700">{selectedApplication.student?.date_of_birth || 'N/A'}</span>
+                    <span className="text-gray-500 dark:text-gray-400 block">Date of Birth</span>
+                    <span className="font-medium text-gray-700 dark:text-gray-300">{selectedApplication.student?.date_of_birth || 'N/A'}</span>
                   </div>
                   <div>
-                    <span className="text-gray-500 block">Gender</span>
-                    <span className="font-medium text-gray-700 capitalize">{selectedApplication.student?.gender || 'N/A'}</span>
+                    <span className="text-gray-500 dark:text-gray-400 block">Gender</span>
+                    <span className="font-medium text-gray-700 dark:text-gray-300 capitalize">{selectedApplication.student?.gender || 'N/A'}</span>
                   </div>
                   <div>
-                    <span className="text-gray-500 block">Father / Alt Phone</span>
-                    <span className="font-medium text-gray-700">{selectedApplication.student?.father_phone || selectedApplication.student?.alternate_phone || 'N/A'}</span>
+                    <span className="text-gray-500 dark:text-gray-400 block">Father / Alt Phone</span>
+                    <span className="font-medium text-gray-700 dark:text-gray-300">{selectedApplication.student?.father_phone || selectedApplication.student?.alternate_phone || 'N/A'}</span>
                   </div>
                   {(selectedApplication.student?.address || selectedApplication.student?.permanent_address) && (
                     <div className="col-span-2 sm:col-span-4 mt-1">
-                      <span className="text-gray-500 block">Address</span>
-                      <span className="font-medium text-gray-700">{selectedApplication.student?.address || selectedApplication.student?.permanent_address}</span>
+                      <span className="text-gray-500 dark:text-gray-400 block">Address</span>
+                      <span className="font-medium text-gray-700 dark:text-gray-300">{selectedApplication.student?.address || selectedApplication.student?.permanent_address}</span>
                     </div>
                   )}
                 </div>
@@ -655,35 +655,35 @@ const AllApplications = () => {
 
               {/* Program & Application Info */}
               <div className="grid sm:grid-cols-2 gap-4">
-                <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
-                  <span className="text-xs text-gray-500 uppercase tracking-wider block mb-1">Applied Program</span>
-                  <p className="font-bold text-gray-900 text-base">{selectedApplication.program?.name || 'N/A'}</p>
-                  <p className="text-sm text-primary-600 mt-0.5">{selectedApplication.program?.department}</p>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Min Required Percentage: <span className="font-semibold text-gray-900">{selectedApplication.program?.min_percentage || 50}%</span>
+                <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                  <span className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-1">Applied Program</span>
+                  <p className="font-bold text-gray-900 dark:text-white text-base">{selectedApplication.program?.name || 'N/A'}</p>
+                  <p className="text-sm text-primary-600 dark:text-primary-400 mt-0.5">{selectedApplication.program?.department}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    Min Required Percentage: <span className="font-semibold text-gray-900 dark:text-white">{selectedApplication.program?.min_percentage || 50}%</span>
                   </p>
                 </div>
-                <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between">
+                <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col justify-between">
                   <div>
-                    <span className="text-xs text-gray-500 uppercase tracking-wider block mb-1">Application Fee Status</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-1">Application Fee Status</span>
                     <div className="flex items-center gap-3">
                       {selectedApplication.fee_status ? (
                         <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold capitalize ${
-                          selectedApplication.fee_status === 'verified' ? 'bg-green-100 text-green-800 border border-green-200' :
-                          selectedApplication.fee_status === 'submitted' ? 'bg-primary-50 text-primary-600 border border-primary-500/20' :
-                          'bg-yellow-100 text-yellow-800 border border-yellow-200'
+                          selectedApplication.fee_status === 'verified' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-800' :
+                          selectedApplication.fee_status === 'submitted' ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 border border-primary-500/20' :
+                          'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-800'
                         }`}>
                           Fee: {selectedApplication.fee_status}
                         </span>
                       ) : (
-                        <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-gray-100 text-gray-500 border border-gray-200">
+                        <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-600">
                           Fee: Unpaid
                         </span>
                       )}
                     </div>
                   </div>
                   {selectedApplication.fee_challan?.challan_number && (
-                    <p className="text-xs text-gray-500 mt-2 font-mono">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 font-mono">
                       Challan #: {selectedApplication.fee_challan.challan_number}
                     </p>
                   )}
@@ -692,36 +692,36 @@ const AllApplications = () => {
 
               {/* Academic Records Cards */}
               <div>
-                <h4 className="font-bold text-gray-900 text-base mb-3 flex items-center gap-2">
+                <h4 className="font-bold text-gray-900 dark:text-white text-base mb-3 flex items-center gap-2">
                   <Award className="h-5 w-5 text-yellow-400" />
                   Academic Qualifications
                 </h4>
                 <div className="grid sm:grid-cols-2 gap-4">
                   {/* Matric Card */}
-                  <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden">
-                    <div className="flex items-center justify-between pb-2 border-b border-gray-200">
+                  <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm relative overflow-hidden">
+                    <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-gray-700">
                       <div className="flex items-center gap-2">
                         <Award className="h-4 w-4 text-yellow-400" />
-                        <span className="font-semibold text-gray-900 text-sm">Matric / SSC Record</span>
+                        <span className="font-semibold text-gray-900 dark:text-white text-sm">Matric / SSC Record</span>
                       </div>
                       {selectedApplication.student?.matric_obtained_marks && (
-                        <span className="px-2 py-0.5 rounded bg-yellow-100 text-yellow-800 text-xs font-bold">
+                        <span className="px-2 py-0.5 rounded bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 text-xs font-bold">
                           {((selectedApplication.student.matric_obtained_marks / selectedApplication.student.matric_total_marks) * 100).toFixed(1)}%
                         </span>
                       )}
                     </div>
                     <div className="grid grid-cols-2 gap-3 mt-3 text-xs">
                       <div>
-                        <span className="text-gray-500 block">Board / Institution</span>
-                        <span className="font-medium text-gray-700">{selectedApplication.student?.matric_board || 'N/A'}</span>
+                        <span className="text-gray-500 dark:text-gray-400 block">Board / Institution</span>
+                        <span className="font-medium text-gray-700 dark:text-gray-300">{selectedApplication.student?.matric_board || 'N/A'}</span>
                       </div>
                       <div>
-                        <span className="text-gray-500 block">Passing Year</span>
-                        <span className="font-medium text-gray-700">{selectedApplication.student?.matric_passing_year || 'N/A'}</span>
+                        <span className="text-gray-500 dark:text-gray-400 block">Passing Year</span>
+                        <span className="font-medium text-gray-700 dark:text-gray-300">{selectedApplication.student?.matric_passing_year || 'N/A'}</span>
                       </div>
                       <div className="col-span-2">
-                        <span className="text-gray-500 block">Marks Obtained / Total</span>
-                        <span className="font-semibold text-gray-900">
+                        <span className="text-gray-500 dark:text-gray-400 block">Marks Obtained / Total</span>
+                        <span className="font-semibold text-gray-900 dark:text-white">
                           {selectedApplication.student?.matric_obtained_marks ? (
                             `${selectedApplication.student.matric_obtained_marks} / ${selectedApplication.student.matric_total_marks || 1100}`
                           ) : (
@@ -733,11 +733,11 @@ const AllApplications = () => {
                   </div>
 
                   {/* Intermediate Card */}
-                  <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden">
-                    <div className="flex items-center justify-between pb-2 border-b border-gray-200">
+                  <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm relative overflow-hidden">
+                    <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-gray-700">
                       <div className="flex items-center gap-2">
                         <GraduationCap className="h-4 w-4 text-indigo-400" />
-                        <span className="font-semibold text-gray-900 text-sm">Intermediate / HSSC Record</span>
+                        <span className="font-semibold text-gray-900 dark:text-white text-sm">Intermediate / HSSC Record</span>
                       </div>
                       {selectedApplication.student?.inter_obtained_marks && (
                         <span className="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 text-xs font-bold">
@@ -747,16 +747,16 @@ const AllApplications = () => {
                     </div>
                     <div className="grid grid-cols-2 gap-3 mt-3 text-xs">
                       <div>
-                        <span className="text-gray-500 block">Board / Institution</span>
-                        <span className="font-medium text-gray-700">{selectedApplication.student?.inter_board || 'N/A'}</span>
+                        <span className="text-gray-500 dark:text-gray-400 block">Board / Institution</span>
+                        <span className="font-medium text-gray-700 dark:text-gray-300">{selectedApplication.student?.inter_board || 'N/A'}</span>
                       </div>
                       <div>
-                        <span className="text-gray-500 block">Passing Year</span>
-                        <span className="font-medium text-gray-700">{selectedApplication.student?.inter_passing_year || 'N/A'}</span>
+                        <span className="text-gray-500 dark:text-gray-400 block">Passing Year</span>
+                        <span className="font-medium text-gray-700 dark:text-gray-300">{selectedApplication.student?.inter_passing_year || 'N/A'}</span>
                       </div>
                       <div className="col-span-2">
-                        <span className="text-gray-500 block">Marks Obtained / Total</span>
-                        <span className="font-semibold text-gray-900">
+                        <span className="text-gray-500 dark:text-gray-400 block">Marks Obtained / Total</span>
+                        <span className="font-semibold text-gray-900 dark:text-white">
                           {selectedApplication.student?.inter_obtained_marks ? (
                             `${selectedApplication.student.inter_obtained_marks} / ${selectedApplication.student.inter_total_marks || 1100}`
                           ) : (
@@ -772,11 +772,11 @@ const AllApplications = () => {
               {/* Uploaded Documents Section (Core Feature) */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-bold text-gray-900 text-base flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-primary-600" />
+                  <h4 className="font-bold text-gray-900 dark:text-white text-base flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-primary-600 dark:text-primary-400" />
                     Uploaded Student Documents
                   </h4>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
                     Click <strong>Preview</strong> on any document to inspect full file & OCR verification data
                   </span>
                 </div>
@@ -785,10 +785,10 @@ const AllApplications = () => {
                   const docs = getAllApplicationDocuments(selectedApplication);
                   if (docs.length === 0) {
                     return (
-                      <div className="p-8 bg-gray-50 rounded-xl border border-gray-200 text-center">
-                        <AlertCircle className="h-10 w-10 text-gray-600 mx-auto mb-2" />
-                        <p className="font-medium text-gray-700">No documents uploaded yet</p>
-                        <p className="text-xs text-gray-500 mt-1">The student has not uploaded any verification certificates or ID documents.</p>
+                      <div className="p-8 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-700 text-center">
+                        <AlertCircle className="h-10 w-10 text-gray-600 dark:text-gray-400 mx-auto mb-2" />
+                        <p className="font-medium text-gray-700 dark:text-gray-300">No documents uploaded yet</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">The student has not uploaded any verification certificates or ID documents.</p>
                       </div>
                     );
                   }
@@ -801,23 +801,23 @@ const AllApplications = () => {
                         return (
                           <div
                             key={doc._id || idx}
-                            className="p-4 bg-gray-50 rounded-xl border border-gray-200 shadow-sm hover:border-gray-200 transition-all flex flex-col justify-between group"
+                            className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:border-gray-200 dark:hover:border-gray-600 transition-all flex flex-col justify-between group"
                           >
                             <div>
                               <div className="flex items-start justify-between gap-3">
                                 <div className="flex items-center gap-3">
-                                  <div className="p-2.5 rounded-lg bg-gray-100 border border-gray-200">
+                                  <div className="p-2.5 rounded-lg bg-gray-100 dark:bg-gray-600 border border-gray-200 dark:border-gray-600">
                                     {getDocIcon(doc.type)}
                                   </div>
                                   <div>
-                                    <h5 className="font-semibold text-gray-900 text-sm">{label}</h5>
-                                    <p className="text-xs text-gray-500 truncate max-w-[180px]" title={doc.name}>
+                                    <h5 className="font-semibold text-gray-900 dark:text-white text-sm">{label}</h5>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[180px]" title={doc.name}>
                                       {doc.name || 'document_file'}
                                     </p>
                                   </div>
                                 </div>
                                 {doc.confidence && doc.confidence > 0 && (
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] bg-primary-50 text-primary-600 border border-primary-500/20 whitespace-nowrap">
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 border border-primary-500/20 whitespace-nowrap">
                                     <Sparkles className="h-2.5 w-2.5 mr-1" />
                                     OCR {Math.round(doc.confidence)}%
                                   </span>
@@ -826,25 +826,25 @@ const AllApplications = () => {
 
                               {/* OCR Extracted preview chip if available */}
                               {doc.extracted_data && Object.keys(doc.extracted_data).length > 0 && (
-                                <div className="mt-3 p-2 bg-gray-50 rounded-lg border border-gray-200 text-[11px] text-gray-500 space-y-0.5">
+                                <div className="mt-3 p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 text-[11px] text-gray-500 dark:text-gray-400 space-y-0.5">
                                   {doc.extracted_data.cnic && (
-                                    <p><strong className="text-gray-700">CNIC:</strong> <span className="font-mono text-primary-600">{doc.extracted_data.cnic}</span></p>
+                                    <p><strong className="text-gray-700 dark:text-gray-300">CNIC:</strong> <span className="font-mono text-primary-600 dark:text-primary-400">{doc.extracted_data.cnic}</span></p>
                                   )}
                                   {doc.extracted_data.name && (
-                                    <p><strong className="text-gray-700">Name:</strong> {doc.extracted_data.name}</p>
+                                    <p><strong className="text-gray-700 dark:text-gray-300">Name:</strong> {doc.extracted_data.name}</p>
                                   )}
                                   {doc.extracted_data.obtained_marks && (
-                                    <p><strong className="text-gray-700">Marks:</strong> {doc.extracted_data.obtained_marks} / {doc.extracted_data.total_marks || 1100}</p>
+                                    <p><strong className="text-gray-700 dark:text-gray-300">Marks:</strong> {doc.extracted_data.obtained_marks} / {doc.extracted_data.total_marks || 1100}</p>
                                   )}
                                   {doc.extracted_data.board && (
-                                    <p><strong className="text-gray-700">Board:</strong> {doc.extracted_data.board}</p>
+                                    <p><strong className="text-gray-700 dark:text-gray-300">Board:</strong> {doc.extracted_data.board}</p>
                                   )}
                                 </div>
                               )}
                             </div>
 
                             {/* Action Buttons */}
-                            <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-200/80">
+                            <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-200/80 dark:border-gray-700/80">
                               <button
                                 type="button"
                                 onClick={(e) => {
@@ -853,7 +853,7 @@ const AllApplications = () => {
                                   handleOpenDocViewer(doc);
                                 }}
                                 disabled={!hasPreview}
-                                className="flex-1 inline-flex items-center justify-center px-3 py-1.5 bg-primary-50 hover:bg-primary-500 text-primary-600 hover:text-gray-900 rounded-lg transition-colors text-xs font-semibold border border-primary-500/20 disabled:opacity-40"
+                                className="flex-1 inline-flex items-center justify-center px-3 py-1.5 bg-primary-50 dark:bg-primary-900/20 hover:bg-primary-500 text-primary-600 dark:text-primary-400 hover:text-gray-900 dark:hover:text-white rounded-lg transition-colors text-xs font-semibold border border-primary-500/20 disabled:opacity-40"
                               >
                                 <Eye className="h-3.5 w-3.5 mr-1.5" />
                                 Preview Document
@@ -861,7 +861,7 @@ const AllApplications = () => {
                               {hasPreview && (
                                 <button
                                   onClick={() => handleDownloadDoc(doc)}
-                                  className="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-900 rounded-lg transition-colors border border-gray-200"
+                                  className="p-1.5 bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white rounded-lg transition-colors border border-gray-200 dark:border-gray-600"
                                   title="Download / Open Original"
                                 >
                                   <Download className="h-4 w-4" />
@@ -879,8 +879,8 @@ const AllApplications = () => {
               {/* Personal Statement / Remarks */}
               {selectedApplication.personal_statement && (
                 <div>
-                  <h4 className="font-bold text-gray-900 text-base mb-2">Personal Statement</h4>
-                  <p className="text-sm text-gray-700 bg-gray-50 p-4 rounded-xl border border-gray-200 whitespace-pre-wrap">
+                  <h4 className="font-bold text-gray-900 dark:text-white text-base mb-2">Personal Statement</h4>
+                  <p className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border border-gray-200 dark:border-gray-700 whitespace-pre-wrap">
                     {selectedApplication.personal_statement}
                   </p>
                 </div>
@@ -888,20 +888,20 @@ const AllApplications = () => {
 
               {/* Admin Remarks Input */}
               <div>
-                <h4 className="font-bold text-gray-900 text-sm mb-2">Admin Remarks / Notes</h4>
+                <h4 className="font-bold text-gray-900 dark:text-white text-sm mb-2">Admin Remarks / Notes</h4>
                 <textarea
                   rows="2"
                   placeholder="Optional notes or reasons for approval / rejection (e.g. All documents verified successfully)..."
-                  className="w-full p-3 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 text-sm focus:ring-2 focus:ring-primary-500 outline-none"
+                  className="w-full p-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-sm focus:ring-2 focus:ring-primary-500 outline-none"
                   value={adminRemarks}
                   onChange={(e) => setAdminRemarks(e.target.value)}
                 />
               </div>
 
               {/* Decision Action Buttons */}
-              <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-gray-200">
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500">Change Status:</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">Change Status:</span>
                 </div>
                 <div className="flex flex-wrap gap-2.5">
                   <button
@@ -939,24 +939,24 @@ const AllApplications = () => {
       {previewDoc && (
         <div className="fixed inset-0 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md" style={{ zIndex: 9999 }} onClick={() => setPreviewDoc(null)}>
           <div
-            className="bg-gradient-to-b from-gray-50 to-white rounded-3xl max-w-6xl w-full h-[92vh] flex flex-col border border-gray-200 shadow-2xl overflow-hidden"
+            className="bg-gradient-to-b from-gray-50 to-white dark:from-gray-800 dark:to-gray-800 rounded-3xl max-w-6xl w-full h-[92vh] flex flex-col border border-gray-200 dark:border-gray-700 shadow-2xl overflow-hidden"
             style={{ animation: 'fadeInScale 0.3s ease-out' }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Viewer Header */}
-            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between flex-shrink-0">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-4">
-                <div className="p-2.5 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 text-primary-600 border border-primary-500/10 shadow-lg shadow-cyan-500/5">
+                <div className="p-2.5 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 text-primary-600 dark:text-primary-400 border border-primary-500/10 shadow-lg shadow-cyan-500/5">
                   {getDocIcon(previewDoc.type)}
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900 text-lg tracking-tight">
+                  <h3 className="font-bold text-gray-900 dark:text-white text-lg tracking-tight">
                     {getDocTypeLabel(previewDoc.type)}
                   </h3>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <p className="text-xs text-gray-500 truncate max-w-[250px]">{previewDoc.name || 'Document File'}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[250px]">{previewDoc.name || 'Document File'}</p>
                     {previewDoc.confidence && (
-                      <span className="inline-flex items-center text-[10px] font-semibold text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full border border-primary-500/15">
+                      <span className="inline-flex items-center text-[10px] font-semibold text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 px-2 py-0.5 rounded-full border border-primary-500/15">
                         <Sparkles className="h-2.5 w-2.5 mr-1" />
                         {Math.round(previewDoc.confidence)}% OCR
                       </span>
@@ -986,7 +986,7 @@ const AllApplications = () => {
             {/* Viewer Body — Side-by-Side */}
             <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
               {/* Left: Document Canvas */}
-              <div className="flex-1 bg-gray-50 relative flex items-center justify-center overflow-auto">
+              <div className="flex-1 bg-gray-50 dark:bg-gray-700/30 relative flex items-center justify-center overflow-auto">
                 {/* Document Render */}
                 <div className="w-full h-full flex items-center justify-center p-6">
                   {(() => {
@@ -998,11 +998,11 @@ const AllApplications = () => {
                     if (!src) {
                       return (
                         <div className="text-center py-20">
-                          <div className="p-4 rounded-2xl bg-gray-100 inline-block mb-4">
-                            <AlertCircle className="h-10 w-10 text-gray-600" />
+                          <div className="p-4 rounded-2xl bg-gray-100 dark:bg-gray-600 inline-block mb-4">
+                            <AlertCircle className="h-10 w-10 text-gray-600 dark:text-gray-400" />
                           </div>
-                          <p className="text-gray-500 text-sm font-medium">No preview available for this document.</p>
-                          <p className="text-gray-600 text-xs mt-1">The file may not have been uploaded correctly.</p>
+                          <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">No preview available for this document.</p>
+                          <p className="text-gray-600 dark:text-gray-400 text-xs mt-1">The file may not have been uploaded correctly.</p>
                         </div>
                       );
                     }
@@ -1013,7 +1013,7 @@ const AllApplications = () => {
                         <iframe
                           src={pdfSrc}
                           title={previewDoc.name || 'PDF Document'}
-                          className="w-full h-full rounded-2xl border-gray-200 bg-white shadow-2xl"
+                          className="w-full h-full rounded-2xl border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-2xl"
                         />
                       );
                     }
@@ -1040,71 +1040,71 @@ const AllApplications = () => {
 
               {/* Right: OCR Sidebar */}
               {previewDoc.extracted_data && Object.keys(previewDoc.extracted_data).length > 0 && (
-                <div className="w-full lg:w-[340px] bg-gray-50 border-t lg:border-t-0 lg:border-l border-gray-200 flex flex-col flex-shrink-0 overflow-hidden">
+                <div className="w-full lg:w-[340px] bg-gray-50 dark:bg-gray-800 border-t lg:border-t-0 lg:border-l border-gray-200 dark:border-gray-700 flex flex-col flex-shrink-0 overflow-hidden">
                   {/* Sidebar Header */}
-                  <div className="px-5 py-4 border-b border-gray-200 bg-gray-50">
+                  <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
                     <div className="flex items-center gap-2">
                       <div className="p-1.5 rounded-lg bg-gradient-to-br from-purple-500/20 to-cyan-500/20">
-                        <Sparkles className="h-3.5 w-3.5 text-primary-600" />
+                        <Sparkles className="h-3.5 w-3.5 text-primary-600 dark:text-primary-400" />
                       </div>
-                      <span className="font-bold text-sm text-gray-900 tracking-tight">Extracted Details</span>
+                      <span className="font-bold text-sm text-gray-900 dark:text-white tracking-tight">Extracted Details</span>
                     </div>
-                    <p className="text-[10px] text-gray-500 mt-1 ml-8">AI-powered OCR extraction results</p>
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1 ml-8">AI-powered OCR extraction results</p>
                   </div>
 
                   {/* Sidebar Content */}
                   <div className="flex-1 overflow-y-auto p-5 space-y-2.5">
                     {previewDoc.extracted_data.name && (
-                      <div className="group p-3.5 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 transition-all">
-                        <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest block mb-1">Applicant Name</span>
-                        <span className="font-semibold text-gray-900 text-sm">{previewDoc.extracted_data.name}</span>
+                      <div className="group p-3.5 rounded-xl bg-white dark:bg-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+                        <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">Applicant Name</span>
+                        <span className="font-semibold text-gray-900 dark:text-white text-sm">{previewDoc.extracted_data.name}</span>
                       </div>
                     )}
                     {previewDoc.extracted_data.father_name && (
-                      <div className="group p-3.5 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 transition-all">
-                        <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest block mb-1">Father's Name</span>
-                        <span className="font-semibold text-gray-900 text-sm">{previewDoc.extracted_data.father_name}</span>
+                      <div className="group p-3.5 rounded-xl bg-white dark:bg-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+                        <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">Father's Name</span>
+                        <span className="font-semibold text-gray-900 dark:text-white text-sm">{previewDoc.extracted_data.father_name}</span>
                       </div>
                     )}
                     {previewDoc.extracted_data.cnic && (
-                      <div className="group p-3.5 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 transition-all">
-                        <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest block mb-1">CNIC / B-Form</span>
-                        <span className="font-mono font-bold text-primary-600 text-sm tracking-wide">{previewDoc.extracted_data.cnic}</span>
+                      <div className="group p-3.5 rounded-xl bg-white dark:bg-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+                        <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">CNIC / B-Form</span>
+                        <span className="font-mono font-bold text-primary-600 dark:text-primary-400 text-sm tracking-wide">{previewDoc.extracted_data.cnic}</span>
                       </div>
                     )}
                     {previewDoc.extracted_data.date_of_birth && (
-                      <div className="group p-3.5 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 transition-all">
-                        <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest block mb-1">Date of Birth</span>
-                        <span className="font-semibold text-gray-900 text-sm">{previewDoc.extracted_data.date_of_birth}</span>
+                      <div className="group p-3.5 rounded-xl bg-white dark:bg-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+                        <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">Date of Birth</span>
+                        <span className="font-semibold text-gray-900 dark:text-white text-sm">{previewDoc.extracted_data.date_of_birth}</span>
                       </div>
                     )}
                     {previewDoc.extracted_data.gender && (
-                      <div className="group p-3.5 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 transition-all">
-                        <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest block mb-1">Gender</span>
-                        <span className="font-semibold text-gray-900 text-sm capitalize">{previewDoc.extracted_data.gender}</span>
+                      <div className="group p-3.5 rounded-xl bg-white dark:bg-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+                        <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">Gender</span>
+                        <span className="font-semibold text-gray-900 dark:text-white text-sm capitalize">{previewDoc.extracted_data.gender}</span>
                       </div>
                     )}
                     {previewDoc.extracted_data.board && (
-                      <div className="group p-3.5 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 transition-all">
-                        <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest block mb-1">Board Name</span>
-                        <span className="font-semibold text-gray-900 text-sm">{previewDoc.extracted_data.board}</span>
+                      <div className="group p-3.5 rounded-xl bg-white dark:bg-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+                        <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">Board Name</span>
+                        <span className="font-semibold text-gray-900 dark:text-white text-sm">{previewDoc.extracted_data.board}</span>
                       </div>
                     )}
                     {previewDoc.extracted_data.passing_year && (
-                      <div className="group p-3.5 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 transition-all">
-                        <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest block mb-1">Passing Year</span>
-                        <span className="font-semibold text-gray-900 text-sm">{previewDoc.extracted_data.passing_year}</span>
+                      <div className="group p-3.5 rounded-xl bg-white dark:bg-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+                        <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">Passing Year</span>
+                        <span className="font-semibold text-gray-900 dark:text-white text-sm">{previewDoc.extracted_data.passing_year}</span>
                       </div>
                     )}
                     {previewDoc.extracted_data.obtained_marks !== undefined && previewDoc.extracted_data.obtained_marks !== null && (
                       <div className="group p-3.5 rounded-xl bg-gradient-to-r from-emerald-500/[0.05] to-transparent hover:from-emerald-500/[0.1] border border-emerald-500/10 hover:border-emerald-500/20 transition-all">
-                        <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest block mb-1">Marks Obtained / Total</span>
+                        <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">Marks Obtained / Total</span>
                         <div className="flex items-baseline gap-1.5">
                           <span className="font-bold text-emerald-400 text-lg">
                             {previewDoc.extracted_data.obtained_marks}
                           </span>
-                          <span className="text-gray-500 text-sm">/</span>
-                          <span className="font-semibold text-gray-700 text-sm">
+                          <span className="text-gray-500 dark:text-gray-400 text-sm">/</span>
+                          <span className="font-semibold text-gray-700 dark:text-gray-300 text-sm">
                             {previewDoc.extracted_data.total_marks || 1100}
                           </span>
                           {previewDoc.extracted_data.total_marks && (
@@ -1116,9 +1116,9 @@ const AllApplications = () => {
                       </div>
                     )}
                     {previewDoc.extracted_data.address && (
-                      <div className="group p-3.5 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 transition-all">
-                        <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest block mb-1">Address</span>
-                        <span className="text-gray-700 text-sm leading-relaxed">{previewDoc.extracted_data.address}</span>
+                      <div className="group p-3.5 rounded-xl bg-white dark:bg-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+                        <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">Address</span>
+                        <span className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">{previewDoc.extracted_data.address}</span>
                       </div>
                     )}
                   </div>

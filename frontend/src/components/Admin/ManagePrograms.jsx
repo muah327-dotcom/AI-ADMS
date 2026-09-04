@@ -303,17 +303,17 @@ const ManagePrograms = () => {
                   setSelectedDepartment(null);
                   setSearchTerm('');
                 }}
-                className="p-2 bg-white border border-gray-200 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                className="p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 title="Back to Departments"
               >
                 <ArrowLeft className="h-5 w-5" />
               </button>
             )}
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
               {selectedDepartment ? `${selectedDepartment.name} Programs` : 'Manage Departments & Programs'}
             </h1>
           </div>
-          <p className="text-gray-500 mt-1">
+          <p className="text-gray-500 dark:text-gray-400 mt-1">
             {selectedDepartment ? `Manage programs for the ${selectedDepartment.name} department` : 'Manage academic departments and their associated programs'}
           </p>
         </div>
@@ -338,13 +338,13 @@ const ManagePrograms = () => {
       </div>
 
       {/* Search */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
         <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 dark:text-gray-400" />
           <input
             type="text"
             placeholder={selectedDepartment ? "Search programs..." : "Search departments..."}
-            className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 placeholder-gray-400"
+            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -359,23 +359,23 @@ const ManagePrograms = () => {
             const deptProgramsCount = programs.filter(p => p.department === dept.name).length;
             
             return (
-              <div key={dept._id} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:border-gray-200 transition-colors flex flex-col h-full shadow-sm">
+              <div key={dept._id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:border-gray-200 dark:hover:border-gray-600 transition-colors flex flex-col h-full shadow-sm">
                 <div className="p-6 flex-grow">
                   <div className="flex items-start justify-between mb-4">
-                    <div className="p-3 bg-primary-50 rounded-lg border border-primary-200">
-                      <Building2 className="h-6 w-6 text-primary-600" />
+                    <div className="p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-primary-200 dark:border-primary-800">
+                      <Building2 className="h-6 w-6 text-primary-600 dark:text-primary-400" />
                     </div>
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleEditDept(dept)}
-                        className="p-2 text-gray-500 hover:text-primary-600 transition-colors"
+                        className="p-2 text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
                         title="Edit Department"
                       >
                         <Edit2 className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteDept(dept._id)}
-                        className="p-2 text-gray-500 hover:text-red-400 transition-colors"
+                        className="p-2 text-gray-500 dark:text-gray-400 hover:text-red-400 transition-colors"
                         title="Delete Department"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -383,18 +383,18 @@ const ManagePrograms = () => {
                     </div>
                   </div>
 
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">{dept.name}</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{dept.name}</h3>
                   {dept.description && (
-                    <p className="text-gray-500 text-sm line-clamp-2 mb-4">{dept.description}</p>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm line-clamp-2 mb-4">{dept.description}</p>
                   )}
                   
-                  <div className="mt-auto pt-4 border-t border-gray-200 flex justify-between items-center">
+                  <div className="mt-auto pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                      dept.is_active ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-red-100 text-red-800 border border-red-200'
+                      dept.is_active ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-800' : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800'
                     }`}>
                       {dept.is_active ? 'Active' : 'Inactive'}
                     </span>
-                    <span className="text-sm text-gray-500">
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
                       {deptProgramsCount} Program{deptProgramsCount !== 1 ? 's' : ''}
                     </span>
                   </div>
@@ -405,7 +405,7 @@ const ManagePrograms = () => {
                     setSelectedDepartment(dept);
                     setSearchTerm('');
                   }}
-                  className="w-full py-3 bg-gray-50 text-primary-600 hover:bg-primary-50 transition-colors border-t border-gray-200 font-medium text-sm flex items-center justify-center gap-2"
+                  className="w-full py-3 bg-gray-50 dark:bg-gray-700/50 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors border-t border-gray-200 dark:border-gray-700 font-medium text-sm flex items-center justify-center gap-2"
                 >
                   <BookOpen className="h-4 w-4" />
                   Manage Programs
@@ -416,60 +416,60 @@ const ManagePrograms = () => {
         ) : (
           // Programs List
           filteredItems.map((program) => (
-            <div key={program._id} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:border-gray-200 transition-colors shadow-sm">
+            <div key={program._id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:border-gray-200 dark:hover:border-gray-600 transition-colors shadow-sm">
               <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
-                  <div className="p-3 bg-primary-50 rounded-lg border border-primary-200">
-                    <GraduationCap className="h-6 w-6 text-primary-600" />
+                  <div className="p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-primary-200 dark:border-primary-800">
+                    <GraduationCap className="h-6 w-6 text-primary-600 dark:text-primary-400" />
                   </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleEditProgram(program)}
-                      className="p-2 text-gray-500 hover:text-primary-600 transition-colors"
+                      className="p-2 text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
                     >
                       <Edit2 className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => handleDeleteProgram(program._id)}
-                      className="p-2 text-gray-500 hover:text-red-400 transition-colors"
+                      className="p-2 text-gray-500 dark:text-gray-400 hover:text-red-400 transition-colors"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
 
-                <h3 className="text-lg font-semibold text-gray-900">{program.name}</h3>
-                <p className="text-gray-500 text-sm">{program.department}</p>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{program.name}</h3>
+                <p className="text-gray-500 dark:text-gray-400 text-sm">{program.department}</p>
 
                 <div className="grid grid-cols-3 gap-3 mt-4">
-                  <div className="text-center p-2 bg-gray-50 rounded border border-gray-200">
-                    <p className="text-lg font-semibold text-gray-900">{program.total_seats}</p>
-                    <p className="text-xs text-gray-500">Seats</p>
+                  <div className="text-center p-2 bg-gray-50 dark:bg-gray-700/50 rounded border border-gray-200 dark:border-gray-600">
+                    <p className="text-lg font-semibold text-gray-900 dark:text-white">{program.total_seats}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Seats</p>
                   </div>
-                  <div className="text-center p-2 bg-gray-50 rounded border border-gray-200">
-                    <p className="text-lg font-semibold text-primary-600">{program.min_percentage}%</p>
-                    <p className="text-xs text-gray-500">Min %</p>
+                  <div className="text-center p-2 bg-gray-50 dark:bg-gray-700/50 rounded border border-gray-200 dark:border-gray-600">
+                    <p className="text-lg font-semibold text-primary-600 dark:text-primary-400">{program.min_percentage}%</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Min %</p>
                   </div>
-                  <div className="text-center p-2 bg-gray-50 rounded border border-gray-200">
-                    <p className="text-lg font-semibold text-gray-900">{program.duration_years || '-'}</p>
-                    <p className="text-xs text-gray-500">Years</p>
+                  <div className="text-center p-2 bg-gray-50 dark:bg-gray-700/50 rounded border border-gray-200 dark:border-gray-600">
+                    <p className="text-lg font-semibold text-gray-900 dark:text-white">{program.duration_years || '-'}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Years</p>
                   </div>
                 </div>
 
                 <div className="mt-4">
-                  <p className="text-xs text-gray-500 mb-1">Required Subjects:</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Required Subjects:</p>
                   <div className="flex flex-wrap gap-1">
                     {program.required_subjects?.map((subject, idx) => (
-                      <span key={idx} className="px-2 py-1 bg-primary-50 text-primary-600 text-xs rounded border border-primary-200">
+                      <span key={idx} className="px-2 py-1 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 text-xs rounded border border-primary-200 dark:border-primary-800">
                         {subject}
                       </span>
-                    )) || <span className="text-xs text-gray-500">None specified</span>}
+                    )) || <span className="text-xs text-gray-500 dark:text-gray-400">None specified</span>}
                   </div>
                 </div>
 
-                <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                   <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                    program.is_active ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-red-100 text-red-800 border border-red-200'
+                    program.is_active ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-800' : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800'
                   }`}>
                     {program.is_active ? (
                       <><CheckCircle className="h-3 w-3 mr-1" /> Active</>
@@ -485,7 +485,7 @@ const ManagePrograms = () => {
         
         {filteredItems.length === 0 && !loading && (
           <div className="col-span-full py-12 text-center">
-            <p className="text-gray-500 text-lg">No {selectedDepartment ? 'programs' : 'departments'} found.</p>
+            <p className="text-gray-500 dark:text-gray-400 text-lg">No {selectedDepartment ? 'programs' : 'departments'} found.</p>
           </div>
         )}
       </div>
@@ -493,13 +493,13 @@ const ManagePrograms = () => {
       {/* Department Modal */}
       {showDeptModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-70">
-          <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto animate-scale-in border border-gray-200">
-            <div className="p-6 border-b border-gray-200 sticky top-0 bg-white">
+          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto animate-scale-in border border-gray-200 dark:border-gray-700">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                   {editingDept ? 'Edit Department' : 'Add New Department'}
                 </h2>
-                <button onClick={() => setShowDeptModal(false)} className="p-2 text-gray-500 hover:text-gray-900">
+                <button onClick={() => setShowDeptModal(false)} className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
                   <X className="h-5 w-5" />
                 </button>
               </div>
@@ -507,19 +507,19 @@ const ManagePrograms = () => {
 
             <form onSubmit={handleDeptSubmit} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Department Name *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Department Name *</label>
                 <input
                   type="text"
                   required
-                  className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900"
+                  className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white"
                   value={deptFormData.name}
                   onChange={(e) => setDeptFormData({ ...deptFormData, name: e.target.value })}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
                 <textarea
-                  className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 h-24 resize-none"
+                  className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white h-24 resize-none"
                   value={deptFormData.description}
                   onChange={(e) => setDeptFormData({ ...deptFormData, description: e.target.value })}
                 />
@@ -532,12 +532,12 @@ const ManagePrograms = () => {
                     onChange={(e) => setDeptFormData({ ...deptFormData, is_active: e.target.checked })}
                     className="h-4 w-4 text-cyan-500 rounded border-gray-200 bg-gray-50"
                   />
-                  <span className="text-sm text-gray-700">Active Department</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Active Department</span>
                 </label>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
-                <button type="button" onClick={() => setShowDeptModal(false)} className="px-4 py-2 text-gray-500 hover:text-gray-900 font-medium">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button type="button" onClick={() => setShowDeptModal(false)} className="px-4 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium">
                   Cancel
                 </button>
                 <button type="submit" disabled={saving} className="flex items-center px-4 py-2 bg-primary-600 text-gray-900 rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 font-medium">
@@ -552,13 +552,13 @@ const ManagePrograms = () => {
       {/* Program Modal (Unchanged Layout) */}
       {showProgramModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-70">
-          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-scale-in border border-gray-200">
-            <div className="p-6 border-b border-gray-200 sticky top-0 bg-white">
+          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-scale-in border border-gray-200 dark:border-gray-700">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                   {editingProgram ? 'Edit Program' : 'Add New Program'}
                 </h2>
-                <button onClick={() => setShowProgramModal(false)} className="p-2 text-gray-500 hover:text-gray-900">
+                <button onClick={() => setShowProgramModal(false)} className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
                   <X className="h-5 w-5" />
                 </button>
               </div>
@@ -567,103 +567,103 @@ const ManagePrograms = () => {
             <form onSubmit={handleProgramSubmit} className="p-6 space-y-4">
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Program Name *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Program Name *</label>
                   <input
                     type="text"
                     required
-                    className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900"
+                    className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Department *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Department *</label>
                   <input
                     type="text"
                     required
-                    className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900"
+                    className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white"
                     value={formData.department}
                     onChange={(e) => setFormData({ ...formData, department: e.target.value })}
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
                   <textarea
-                    className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 h-20 resize-none"
+                    className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white h-20 resize-none"
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Total Seats *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Total Seats *</label>
                   <input
                     type="number"
                     required
                     min="1"
-                    className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900"
+                    className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white"
                     value={formData.total_seats}
                     onChange={(e) => setFormData({ ...formData, total_seats: e.target.value })}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Min Percentage Required *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Min Percentage Required *</label>
                   <input
                     type="number"
                     required
                     min="0"
                     max="100"
                     step="0.01"
-                    className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900"
+                    className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white"
                     value={formData.min_percentage}
                     onChange={(e) => setFormData({ ...formData, min_percentage: e.target.value })}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Merit Seats</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Merit Seats</label>
                   <input
                     type="number"
                     min="0"
-                    className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900"
+                    className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white"
                     value={formData.merit_seats}
                     onChange={(e) => setFormData({ ...formData, merit_seats: e.target.value })}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Quota Seats</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Quota Seats</label>
                   <input
                     type="number"
                     min="0"
-                    className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900"
+                    className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white"
                     value={formData.quota_seats}
                     onChange={(e) => setFormData({ ...formData, quota_seats: e.target.value })}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Self Finance Seats</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Self Finance Seats</label>
                   <input
                     type="number"
                     min="0"
-                    className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900"
+                    className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white"
                     value={formData.self_finance_seats}
                     onChange={(e) => setFormData({ ...formData, self_finance_seats: e.target.value })}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Duration (Years)</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Duration (Years)</label>
                   <input
                     type="number"
                     min="1"
                     max="10"
-                    className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900"
+                    className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white"
                     value={formData.duration_years}
                     onChange={(e) => setFormData({ ...formData, duration_years: e.target.value })}
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Required Subjects (comma-separated)</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Required Subjects (comma-separated)</label>
                   <input
                     type="text"
-                    className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900"
+                    className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                     placeholder="e.g., Mathematics, Physics, Chemistry"
                     value={formData.required_subjects}
                     onChange={(e) => setFormData({ ...formData, required_subjects: e.target.value })}
@@ -677,16 +677,16 @@ const ManagePrograms = () => {
                       onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
                     className="h-4 w-4 text-primary-600 rounded border-gray-200 bg-white"
                     />
-                    <span className="text-sm text-gray-700">Active Program</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Active Program</span>
                   </label>
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <button
                   type="button"
                   onClick={() => setShowProgramModal(false)}
-                  className="px-4 py-2 text-gray-500 hover:text-gray-900 font-medium"
+                  className="px-4 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium"
                 >
                   Cancel
                 </button>
