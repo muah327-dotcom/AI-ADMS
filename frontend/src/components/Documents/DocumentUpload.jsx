@@ -2767,7 +2767,7 @@ const DocumentUpload = () => {
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           {label}
           {isOcrFilled && (
-            <span className="ml-2 inline-flex items-center gap-1 text-xs text-purple-400 font-normal">
+            <span className="ml-2 inline-flex items-center gap-1 text-xs text-purple-400 dark:text-purple-300 font-normal">
               <Sparkles className="h-3 w-3" />
               Auto-filled
             </span>
@@ -2812,33 +2812,33 @@ const DocumentUpload = () => {
 
       {/* Verification Status Card */}
       {isFullyVerified ? (
-        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 flex items-center justify-between gap-3 shadow-md">
+        <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 rounded-xl p-4 flex items-center justify-between gap-3 shadow-md">
           <div className="flex items-center gap-3">
-            <CheckCircle className="h-6 w-6 text-emerald-400 flex-shrink-0" />
+            <CheckCircle className="h-6 w-6 text-emerald-500 dark:text-emerald-400 flex-shrink-0" />
             <div>
-              <h4 className="text-sm font-bold text-emerald-300">Profile & Mandatory Documents Verified</h4>
-              <p className="text-xs text-emerald-200/80 mt-0.5">All required non-optional documents have been verified. You can now submit program applications.</p>
+              <h4 className="text-sm font-bold text-emerald-700 dark:text-emerald-300">Profile & Mandatory Documents Verified</h4>
+              <p className="text-xs text-emerald-600/80 dark:text-emerald-200/80 mt-0.5">All required non-optional documents have been verified. You can now submit program applications.</p>
             </div>
           </div>
-          <span className="px-3 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-full text-xs font-semibold whitespace-nowrap">
+          <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/40 rounded-full text-xs font-semibold whitespace-nowrap">
             Verified
           </span>
         </div>
       ) : (
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md">
+        <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md">
           <div className="flex items-start gap-3">
-            <AlertCircle className="h-6 w-6 text-amber-400 flex-shrink-0 mt-0.5" />
+            <AlertCircle className="h-6 w-6 text-amber-500 dark:text-amber-400 flex-shrink-0 mt-0.5" />
             <div>
-              <h4 className="text-sm font-bold text-amber-300">
+              <h4 className="text-sm font-bold text-amber-700 dark:text-amber-300">
                 {missingMandatoryDocs.length > 0
                   ? `Verification Pending — ${missingMandatoryDocs.length} Mandatory Document(s) Missing`
                   : 'Verification Pending — Review & Submit Profile'}
               </h4>
-              <p className="text-xs text-amber-200/80 mt-1 leading-relaxed">
+              <p className="text-xs text-amber-600/80 dark:text-amber-200/80 mt-1 leading-relaxed">
                 {missingMandatoryDocs.length > 0 ? (
                   <>
                     Please upload the missing mandatory documents:{' '}
-                    <span className="font-semibold text-amber-100">
+                    <span className="font-semibold text-amber-700 dark:text-amber-100">
                       {missingMandatoryDocs.map(d => d.name).join(', ')}
                     </span>
                     . Your profile cannot be verified until all non-optional documents are uploaded.
@@ -2849,7 +2849,7 @@ const DocumentUpload = () => {
               </p>
             </div>
           </div>
-          <span className="px-3 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-full text-xs font-semibold whitespace-nowrap">
+          <span className="px-3 py-1 bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/40 rounded-full text-xs font-semibold whitespace-nowrap">
             Verification Pending
           </span>
         </div>
@@ -2973,7 +2973,7 @@ const DocumentUpload = () => {
                   <button
                     onClick={() => removeFile(index)}
                     title="Delete document from database"
-                    className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
+                    className="p-2 text-red-400 dark:text-red-400 hover:text-red-300 dark:hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
                   >
                     <X className="h-5 w-5" />
                   </button>
@@ -3123,7 +3123,7 @@ const DocumentUpload = () => {
                       onChange={(e) => setDeclarations(prev => ({ ...prev, confirmCorrect: e.target.checked }))}
                       className="sr-only peer"
                     />
-                    <div className="w-5 h-5 rounded border-2 border-gray-600 peer-checked:bg-cyan-500 peer-checked:border-primary-500 transition-all flex items-center justify-center">
+                    <div className="w-5 h-5 rounded border-2 border-gray-400 dark:border-gray-500 peer-checked:bg-cyan-500 peer-checked:border-primary-500 transition-all flex items-center justify-center">
                       {declarations.confirmCorrect && <CheckCircle className="h-3.5 w-3.5 text-white" />}
                     </div>
                   </div>
@@ -3139,7 +3139,7 @@ const DocumentUpload = () => {
                       onChange={(e) => setDeclarations(prev => ({ ...prev, understandFalseInfo: e.target.checked }))}
                       className="sr-only peer"
                     />
-                    <div className="w-5 h-5 rounded border-2 border-gray-600 peer-checked:bg-cyan-500 peer-checked:border-primary-500 transition-all flex items-center justify-center">
+                    <div className="w-5 h-5 rounded border-2 border-gray-400 dark:border-gray-500 peer-checked:bg-cyan-500 peer-checked:border-primary-500 transition-all flex items-center justify-center">
                       {declarations.understandFalseInfo && <CheckCircle className="h-3.5 w-3.5 text-white" />}
                     </div>
                   </div>

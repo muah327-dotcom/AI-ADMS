@@ -136,10 +136,10 @@ const StudentDashboard = () => {
           Manage your applications, check your eligibility, and track your admission status all in one place.
         </p>
         <div className="mt-4 flex items-center gap-2 bg-white dark:bg-gray-800/15 backdrop-blur-sm rounded-lg px-4 py-2.5 border border-white/20">
-          <Upload className="h-4 w-4 text-yellow-300 flex-shrink-0" />
-          <p className="text-sm text-white">
-            <span className="font-semibold text-yellow-300">Verification Required:</span> Non-optional documents (CNIC, Photograph, Matric & Intermediate certificates) are mandatory.{' '}
-            <Link to="/dashboard/documents" className="underline font-semibold hover:text-yellow-200 transition-colors">
+          <Upload className="h-4 w-4 text-amber-500 dark:text-yellow-300 flex-shrink-0" />
+          <p className="text-sm text-gray-700 dark:text-white">
+            <span className="font-semibold text-amber-600 dark:text-yellow-300">Verification Required:</span> Non-optional documents (CNIC, Photograph, Matric & Intermediate certificates) are mandatory.{' '}
+            <Link to="/dashboard/documents" className="underline font-semibold text-primary-600 dark:text-primary-300 hover:text-primary-700 dark:hover:text-yellow-200 transition-colors">
               Upload all mandatory documents
             </Link>{' '}
             to verify your profile and enable application submission.
@@ -199,7 +199,7 @@ const StudentDashboard = () => {
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {recentApplications.length === 0 ? (
               <div className="p-8 text-center">
-                <FileText className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                <FileText className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
                 <p className="text-gray-500 dark:text-gray-400">No applications yet</p>
                 <Link to="/dashboard/applications/new" className="mt-2 text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 text-sm">
                   Submit your first application

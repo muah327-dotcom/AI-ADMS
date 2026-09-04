@@ -1100,7 +1100,7 @@ const AllApplications = () => {
                       <div className="group p-3.5 rounded-xl bg-gradient-to-r from-emerald-500/[0.05] to-transparent hover:from-emerald-500/[0.1] border border-emerald-500/10 hover:border-emerald-500/20 transition-all">
                         <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">Marks Obtained / Total</span>
                         <div className="flex items-baseline gap-1.5">
-                          <span className="font-bold text-emerald-400 text-lg">
+                          <span className="font-bold text-emerald-600 dark:text-emerald-400 text-lg">
                             {previewDoc.extracted_data.obtained_marks}
                           </span>
                           <span className="text-gray-500 dark:text-gray-400 text-sm">/</span>
@@ -1108,7 +1108,7 @@ const AllApplications = () => {
                             {previewDoc.extracted_data.total_marks || 1100}
                           </span>
                           {previewDoc.extracted_data.total_marks && (
-                            <span className="ml-1.5 text-xs font-semibold text-emerald-400/70 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                            <span className="ml-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400/70 bg-emerald-500/10 px-2 py-0.5 rounded-full">
                               {((previewDoc.extracted_data.obtained_marks / previewDoc.extracted_data.total_marks) * 100).toFixed(1)}%
                             </span>
                           )}
