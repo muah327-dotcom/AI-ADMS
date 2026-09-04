@@ -36,7 +36,7 @@ const Layout = () => {
     // Set styles for dashboard layout
     document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
-    document.body.style.backgroundColor = '#0f0f0f';
+    document.body.style.backgroundColor = '#f8fafc';
 
     return () => {
       // Restore original styles on unmount
@@ -80,7 +80,7 @@ const Layout = () => {
   };
 
   return (
-    <div className="h-[100dvh] w-full bg-[#0f0f0f] flex overflow-hidden">
+    <div className="h-[100dvh] w-full bg-gray-50 flex overflow-hidden">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div
@@ -91,23 +91,23 @@ const Layout = () => {
 
       {/* Sidebar - Same height as viewport using flex */}
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-[#1a1a1a] flex flex-col h-full transform transition-transform duration-300 ease-in-out lg:transform-none ${
+        className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white flex flex-col h-full transform transition-transform duration-300 ease-in-out lg:transform-none shadow-lg lg:shadow-none border-r border-gray-200 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Logo */}
-        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
+        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 flex-shrink-0">
             <Link to={isAdmin ? '/admin' : '/dashboard'} className="flex items-center space-x-2">
               <div className="w-10 h-10 flex items-center justify-center">
                 <img src="/logo.png" alt="GGC Township Logo" className="w-10 h-10 object-contain" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">GGC Township</h1>
-                <p className="text-xs text-gray-500 dark:text-gray-400">AI-Enhanced Admissions</p>
+                <h1 className="text-lg font-bold text-gray-900 leading-tight">GGC Township</h1>
+                <p className="text-xs text-gray-500">AI-Enhanced Admissions</p>
               </div>
             </Link>
             <button
-              className="lg:hidden text-gray-400 hover:text-white"
+              className="lg:hidden text-gray-400 hover:text-gray-600"
               onClick={() => setSidebarOpen(false)}
             >
               <X className="h-6 w-6" />
@@ -124,8 +124,8 @@ const Layout = () => {
                   to={item.path}
                   className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
                     isActive(item.path)
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                      ? 'bg-primary-600 text-white'
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                   }`}
                   onClick={() => setSidebarOpen(false)}
                 >
@@ -137,13 +137,13 @@ const Layout = () => {
           </nav>
 
           {/* User profile section */}
-          <div className="border-t border-gray-800 p-4 flex-shrink-0">
+          <div className="border-t border-gray-200 p-4 flex-shrink-0">
             <div className="relative">
               <button
                 onClick={() => setProfileOpen(!profileOpen)}
-                className="flex items-center w-full px-4 py-3 text-sm font-medium text-gray-300 rounded-lg hover:bg-gray-800 transition-colors"
+                className="flex items-center w-full px-4 py-3 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
               >
-                <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center mr-3 overflow-hidden">
+                <div className="h-8 w-8 rounded-full bg-primary-600 flex items-center justify-center mr-3 overflow-hidden">
                   {user?.avatar_url ? (
                     <img 
                       src={user.avatar_url} 
@@ -157,24 +157,24 @@ const Layout = () => {
                   )}
                 </div>
                 <div className="flex-1 text-left">
-                  <p className="text-sm font-medium text-white truncate">{user?.full_name}</p>
-                  <p className="text-xs text-gray-400 capitalize">{user?.role}</p>
+                  <p className="text-sm font-medium text-gray-900 truncate">{user?.full_name}</p>
+                  <p className="text-xs text-gray-500 capitalize">{user?.role}</p>
                 </div>
                 <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${profileOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {profileOpen && (
-                <div className="absolute bottom-full left-0 right-0 mb-2 bg-[#1a1a1a] rounded-lg shadow-lg border border-gray-700 py-1">
+                <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg shadow-lg border border-gray-200 py-1">
                   <Link
                     to={isAdmin ? '/admin/settings' : '/dashboard/settings'}
-                    className="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gray-800"
+                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   >
                     <Settings className="h-4 w-4 mr-2" />
                     Settings
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="flex items-center w-full px-4 py-2 text-sm text-red-400 hover:bg-gray-800"
+                    className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                   >
                     <LogOut className="h-4 w-4 mr-2" />
                     Logout
@@ -186,11 +186,11 @@ const Layout = () => {
         </aside>
 
       {/* Main content - Flex to fill remaining space, same height as sidebar */}
-      <div className="flex-1 flex flex-col h-full bg-[#0f0f0f] min-w-0 w-full overflow-hidden">
+      <div className="flex-1 flex flex-col h-full bg-gray-50 min-w-0 w-full overflow-hidden">
         {/* Top header */}
-        <header className="h-16 bg-[#1a1a1a] border-b border-gray-800 flex items-center justify-between px-4 lg:px-6 flex-shrink-0">
+        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 lg:px-6 flex-shrink-0">
           <button
-            className="lg:hidden text-gray-400 hover:text-white"
+            className="lg:hidden text-gray-400 hover:text-gray-600"
             onClick={() => setSidebarOpen(true)}
           >
             <Menu className="h-6 w-6" />
@@ -202,7 +202,7 @@ const Layout = () => {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 px-4 lg:px-6 py-4 overflow-y-auto overflow-x-hidden bg-[#0f0f0f]">
+        <main className="flex-1 px-4 lg:px-6 py-4 overflow-y-auto overflow-x-hidden bg-gray-50">
           <Outlet />
         </main>
       </div>

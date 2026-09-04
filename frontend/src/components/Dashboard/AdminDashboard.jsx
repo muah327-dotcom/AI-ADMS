@@ -115,7 +115,7 @@ const AdminDashboard = () => {
   };
 
   if (loading) {
-    return <SkeletonLoader variant="dashboard" theme="dark" />;
+    return <SkeletonLoader variant="dashboard" />;
   }
 
   return (
@@ -123,11 +123,11 @@ const AdminDashboard = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
-          <p className="text-sm text-gray-400">Manage admissions and view real-time analytics</p>
+          <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+          <p className="text-sm text-gray-500">Manage admissions and view real-time analytics</p>
         </div>
         <div className="flex gap-3">
-          <button className="inline-flex items-center px-3 py-2 bg-[#1a1a1a] border border-gray-700 rounded-lg text-sm text-gray-300 hover:bg-gray-800 transition-colors">
+          <button className="inline-flex items-center px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors shadow-sm">
             <Download className="h-4 w-4 mr-2" />
             Export CSV
           </button>
@@ -144,11 +144,11 @@ const AdminDashboard = () => {
         ].map((stat, index) => {
           const Icon = stat.icon;
           return (
-            <div key={index} className="bg-[#1a1a1a] rounded-xl p-5 border border-gray-800">
+            <div key={index} className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs text-gray-400 uppercase tracking-wider">{stat.label}</p>
-                  <p className="mt-2 text-2xl font-bold text-white">{stat.value}</p>
+                  <p className="text-xs text-gray-500 uppercase tracking-wider">{stat.label}</p>
+                  <p className="mt-2 text-2xl font-bold text-gray-900">{stat.value}</p>
                   <p className="text-xs mt-1 text-cyan-400 font-medium">
                     {stat.subtext}
                   </p>
@@ -163,8 +163,8 @@ const AdminDashboard = () => {
       {/* Charts Section - Dark Theme */}
       <div className="grid lg:grid-cols-3 gap-4">
         {/* Application Trend */}
-        <div className="lg:col-span-2 bg-[#1a1a1a] rounded-xl border border-gray-800 p-5">
-          <h2 className="text-sm font-medium text-gray-300 mb-4">Application Trend</h2>
+        <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+          <h2 className="text-sm font-medium text-gray-700 mb-4">Application Trend</h2>
           <div className="relative w-full" style={{ height: '200px' }}>
             <Bar
               data={monthlyData}
@@ -177,7 +177,7 @@ const AdminDashboard = () => {
                 scales: {
                   y: { 
                     beginAtZero: true, 
-                    grid: { color: '#2a2a2a' }, 
+                    grid: { color: '#e5e7eb' }, 
                     ticks: { color: '#6b7280', font: { size: 11 } }
                   },
                   x: { 
@@ -191,8 +191,8 @@ const AdminDashboard = () => {
         </div>
 
         {/* Admissions by Category */}
-        <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-5">
-          <h2 className="text-sm font-medium text-gray-300 mb-4">Admissions by Category</h2>
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+          <h2 className="text-sm font-medium text-gray-700 mb-4">Admissions by Category</h2>
           <div className="relative w-full" style={{ height: '200px' }}>
             <Doughnut
               data={admissionData}
@@ -219,8 +219,8 @@ const AdminDashboard = () => {
       {/* Programs & Recent Applications - Dark Theme */}
       <div className="grid lg:grid-cols-3 gap-4">
         {/* Program Distribution */}
-        <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-5">
-          <h2 className="text-sm font-medium text-gray-300 mb-4">By Program</h2>
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+          <h2 className="text-sm font-medium text-gray-700 mb-4">By Program</h2>
           <div className="relative w-full" style={{ height: '280px' }}>
             <Pie
               data={programData}
@@ -244,44 +244,44 @@ const AdminDashboard = () => {
         </div>
 
         {/* Recent Applications */}
-        <div className="lg:col-span-2 bg-[#1a1a1a] rounded-xl border border-gray-800">
-          <div className="p-4 border-b border-gray-800">
+        <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm">
+          <div className="p-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-medium text-gray-300">Recent Applications</h2>
-              <Link to="/admin/applications" className="text-xs text-cyan-400 hover:text-cyan-300 flex items-center">
+              <h2 className="text-sm font-medium text-gray-700">Recent Applications</h2>
+              <Link to="/admin/applications" className="text-xs text-primary-600 hover:text-primary-700 flex items-center">
                 View All
                 <ArrowRight className="h-3 w-3 ml-1" />
               </Link>
             </div>
           </div>
-          <div className="divide-y divide-gray-800">
+          <div className="divide-y divide-gray-200">
             {recentApplications.length === 0 ? (
               <div className="p-4 text-center text-gray-500 text-sm">No applications yet</div>
             ) : (
               recentApplications.slice(0, 4).map((app) => (
-                <div key={app.id} className="p-3 hover:bg-gray-800/50 transition-colors">
+                <div key={app.id} className="p-3 hover:bg-gray-50 transition-colors">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       {app.student?.full_name ? (
-                        <div className="h-8 w-8 rounded-full bg-blue-600/20 flex items-center justify-center">
-                          <span className="text-blue-400 font-semibold text-sm">
+                        <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center">
+                          <span className="text-primary-700 font-semibold text-sm">
                             {app.student.full_name.charAt(0).toUpperCase()}
                           </span>
                         </div>
                       ) : (
-                        <div className="h-8 w-8 rounded-full bg-gray-700 flex items-center justify-center">
-                          <Users className="h-4 w-4 text-gray-500" />
+                        <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
+                          <Users className="h-4 w-4 text-gray-400" />
                         </div>
                       )}
                       <div>
-                        <p className="text-sm font-medium text-white">{app.student?.full_name || 'Unknown Student'}</p>
+                        <p className="text-sm font-medium text-gray-900">{app.student?.full_name || 'Unknown Student'}</p>
                         <p className="text-xs text-gray-500">{app.program?.name}</p>
                       </div>
                     </div>
                     <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                      app.status === 'approved' ? 'bg-green-500/20 text-green-400' :
-                      app.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
-                      'bg-yellow-500/20 text-yellow-400'
+                      app.status === 'approved' ? 'bg-green-100 text-green-800' :
+                      app.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                      'bg-yellow-100 text-yellow-800'
                     }`}>
                       {app.status}
                     </span>

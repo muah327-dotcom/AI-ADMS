@@ -104,7 +104,7 @@ const Applications = () => {
   });
 
   if (loading) {
-    return <SkeletonLoader variant="list" theme="dark" />;
+    return     <SkeletonLoader variant="list" theme="light" />;
   }
 
   return (
@@ -113,12 +113,12 @@ const Applications = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-white">My Applications</h1>
-          <p className="text-gray-400 mt-1">Track and manage your admission applications</p>
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">My Applications</h1>
+          <p className="text-gray-500 mt-1">Track and manage your admission applications</p>
         </div>
         <Link
           to="/dashboard/applications/new"
-          className="inline-flex items-center px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
+          className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
         >
           <Plus className="h-5 w-5 mr-2" />
           New Application
@@ -126,14 +126,14 @@ const Applications = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-4">
+      <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
             <input
               type="text"
               placeholder="Search by program or department..."
-              className="w-full pl-10 pr-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white placeholder-gray-500"
+              className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 placeholder-gray-400"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -141,7 +141,7 @@ const Applications = () => {
           <div className="flex items-center gap-2">
             <Filter className="h-5 w-5 text-gray-500" />
             <select
-              className="px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none text-white"
+              className="px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none text-gray-900"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
@@ -157,12 +157,12 @@ const Applications = () => {
       </div>
 
       {/* Applications List */}
-      <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
         {filteredApplications.length === 0 ? (
           <div className="p-12 text-center">
             <FileText className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-white mb-2">No applications found</h3>
-            <p className="text-gray-400 mb-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No applications found</h3>
+            <p className="text-gray-500 mb-4">
               {applications.length === 0 
                 ? "You haven't submitted any applications yet." 
                 : "No applications match your search criteria."}
@@ -170,7 +170,7 @@ const Applications = () => {
             {applications.length === 0 && (
               <Link
                 to="/dashboard/applications/new"
-                className="inline-flex items-center px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
+                className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
               >
                 <Plus className="h-5 w-5 mr-2" />
                 Submit First Application
@@ -178,21 +178,21 @@ const Applications = () => {
             )}
           </div>
         ) : (
-          <div className="divide-y divide-gray-800">
+          <div className="divide-y divide-gray-200">
             {filteredApplications.map((app) => (
-              <div key={app.id} className="p-6 hover:bg-gray-800/50 transition-colors">
+              <div key={app.id} className="p-6 hover:bg-gray-50 transition-colors">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                   <div className="flex items-start space-x-4">
-                    <div className="p-3 bg-cyan-500/10 rounded-lg">
-                      <FileText className="h-6 w-6 text-cyan-500" />
+                    <div className="p-3 bg-primary-50 rounded-lg">
+                      <FileText className="h-6 w-6 text-primary-600" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-medium text-white">{app.programs?.name}</h3>
-                      <p className="text-sm text-gray-400">{app.programs?.department}</p>
-                      <div className="flex items-center gap-4 mt-2 text-sm text-gray-400">
+                      <h3 className="text-lg font-medium text-gray-900">{app.programs?.name}</h3>
+                      <p className="text-sm text-gray-500">{app.programs?.department}</p>
+                      <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
                         <span>Applied: {new Date(app.application_date).toLocaleDateString()}</span>
                         {app.merit_rank && (
-                          <span className="text-cyan-400 font-medium">Merit Rank: #{app.merit_rank}</span>
+                          <span className="text-primary-600 font-medium">Merit Rank: #{app.merit_rank}</span>
                         )}
                       </div>
                     </div>
@@ -203,20 +203,20 @@ const Applications = () => {
                       <span className="ml-2 capitalize">{app.status.replace('_', ' ')}</span>
                     </span>
                     {app.admission_category && (
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-cyan-500/20 text-cyan-400">
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-50 text-primary-600">
                         {app.admission_category}
                       </span>
                     )}
                     <Link
                       to={`/dashboard/applications/track/${app.id}`}
-                      className="p-2 text-gray-400 hover:text-cyan-400 transition-colors"
+                      className="p-2 text-gray-500 hover:text-primary-600 transition-colors"
                       title="Track Application"
                     >
                       <Eye className="h-5 w-5" />
                     </Link>
                     <button
                       onClick={() => setDeleteConfirm(app)}
-                      className="p-2 text-gray-400 hover:text-red-400 transition-colors"
+                      className="p-2 text-gray-500 hover:text-red-400 transition-colors"
                       title="Delete Application"
                     >
                       <Trash2 className="h-5 w-5" />
@@ -233,24 +233,24 @@ const Applications = () => {
       {/* Delete Confirmation Modal */}
       {deleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-[#1a1a1a] border border-gray-700 rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl">
+          <div className="bg-white border border-gray-200 rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-red-500/10 rounded-lg">
-                <Trash2 className="h-6 w-6 text-red-400" />
+              <div className="p-2 bg-red-100 rounded-lg">
+                <Trash2 className="h-6 w-6 text-red-600" />
               </div>
-              <h3 className="text-lg font-semibold text-white">Delete Application</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Delete Application</h3>
             </div>
-            <p className="text-gray-400 mb-2">
+            <p className="text-gray-500 mb-2">
               Are you sure you want to delete your application for:
             </p>
-            <p className="text-white font-medium mb-1">{deleteConfirm.programs?.name}</p>
+            <p className="text-gray-900 font-medium mb-1">{deleteConfirm.programs?.name}</p>
             <p className="text-sm text-gray-500 mb-6">{deleteConfirm.programs?.department}</p>
-            <p className="text-xs text-red-400 mb-6">This action cannot be undone.</p>
+            <p className="text-xs text-red-600 mb-6">This action cannot be undone.</p>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setDeleteConfirm(null)}
                 disabled={deleting}
-                className="px-4 py-2 text-gray-400 hover:text-white font-medium transition-colors"
+                className="px-4 py-2 text-gray-500 hover:text-gray-900 font-medium transition-colors"
               >
                 Cancel
               </button>

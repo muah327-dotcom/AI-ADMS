@@ -180,7 +180,7 @@ const NewApplication = () => {
   };
 
   if (loading) {
-    return <SkeletonLoader variant="card" theme="dark" />;
+    return <SkeletonLoader variant="card" theme="light" />;
   }
 
   return (
@@ -189,13 +189,13 @@ const NewApplication = () => {
       <div className="flex items-center gap-4">
         <button
           onClick={() => step === 1 ? navigate('/dashboard/applications') : setStep(1)}
-          className="p-2 text-gray-400 hover:text-white transition-colors"
+          className="p-2 text-gray-500 hover:text-gray-900 transition-colors"
         >
           <ArrowLeft className="h-6 w-6" />
         </button>
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-white">New Application</h1>
-          <p className="text-gray-400 mt-1">Apply for your desired program</p>
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">New Application</h1>
+          <p className="text-gray-500 mt-1">Apply for your desired program</p>
         </div>
       </div>
 
@@ -222,15 +222,15 @@ const NewApplication = () => {
 
       {/* Progress Steps */}
       <div className="flex items-center gap-4">
-        <div className={`flex items-center gap-2 ${step >= 1 ? 'text-cyan-500' : 'text-gray-500'}`}>
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 1 ? 'bg-cyan-500 text-white' : 'bg-gray-700 text-gray-400'}`}>
+        <div className={`flex items-center gap-2 ${step >= 1 ? 'text-primary-600' : 'text-gray-500'}`}>
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 1 ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-500'}`}>
             1
           </div>
           <span className="text-sm font-medium">Select Program</span>
         </div>
-        <div className="flex-1 h-0.5 bg-gray-700" />
-        <div className={`flex items-center gap-2 ${step >= 2 ? 'text-cyan-500' : 'text-gray-500'}`}>
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 2 ? 'bg-cyan-500 text-white' : 'bg-gray-700 text-gray-400'}`}>
+        <div className="flex-1 h-0.5 bg-gray-200" />
+        <div className={`flex items-center gap-2 ${step >= 2 ? 'text-primary-600' : 'text-gray-500'}`}>
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 2 ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-500'}`}>
             2
           </div>
           <span className="text-sm font-medium">Complete Details</span>
@@ -249,11 +249,11 @@ const NewApplication = () => {
                 <div className="flex items-center gap-3">
                   <Sparkles className="h-6 w-6 text-purple-400" />
                   <div>
-                    <h3 className="text-lg font-semibold text-white">AI Recommended Programs</h3>
-                    <p className="text-sm text-gray-400">Based on your academic profile</p>
+                    <h3 className="text-lg font-semibold text-gray-900">AI Recommended Programs</h3>
+                    <p className="text-sm text-gray-500">Based on your academic profile</p>
                   </div>
                 </div>
-                {showRecommendations ? <ChevronUp className="h-5 w-5 text-gray-400" /> : <ChevronDown className="h-5 w-5 text-gray-400" />}
+                {showRecommendations ? <ChevronUp className="h-5 w-5 text-gray-500" /> : <ChevronDown className="h-5 w-5 text-gray-500" />}
               </button>
               
               {showRecommendations && (
@@ -262,19 +262,19 @@ const NewApplication = () => {
                     <button
                       key={index}
                       onClick={() => handleProgramSelect(rec.program)}
-                      className="text-left p-4 bg-[#1a1a1a] rounded-lg border border-gray-700 hover:border-purple-500 hover:bg-gray-800/50 transition-all"
+                      className="text-left p-4 bg-white rounded-lg border border-gray-200 hover:border-primary-500 hover:bg-gray-50 transition-all"
                     >
                       <div className="flex items-center justify-between mb-2">
                         <span className={`text-xs font-medium px-2 py-1 rounded ${
-                          rec.match_level === 'high' ? 'bg-green-500/20 text-green-400' :
-                          rec.match_level === 'medium' ? 'bg-cyan-500/20 text-cyan-400' :
-                          'bg-yellow-500/20 text-yellow-400'
+                          rec.match_level === 'high' ? 'bg-green-100 text-green-800' :
+                          rec.match_level === 'medium' ? 'bg-primary-50 text-primary-600' :
+                          'bg-yellow-100 text-yellow-800'
                         }`}>
                           {rec.eligibility_score}% Match
                         </span>
                       </div>
-                      <h4 className="font-medium text-white">{rec.program.name}</h4>
-                      <p className="text-sm text-gray-400">{rec.program.department}</p>
+                      <h4 className="font-medium text-gray-900">{rec.program.name}</h4>
+                      <p className="text-sm text-gray-500">{rec.program.department}</p>
                     </button>
                   ))}
                 </div>
@@ -283,17 +283,17 @@ const NewApplication = () => {
           )}
 
           {/* All Programs */}
-          <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">All Available Programs</h3>
+          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">All Available Programs</h3>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {programs.map((program) => (
                 <button
                   key={program._id || program.id}
                   onClick={() => handleProgramSelect(program)}
-                  className="text-left p-4 border border-gray-700 rounded-lg hover:border-cyan-500 hover:bg-gray-800/50 transition-all"
+                  className="text-left p-4 border border-gray-200 rounded-lg hover:border-primary-500 hover:bg-gray-50 transition-all"
                 >
-                  <h4 className="font-medium text-white">{program.name}</h4>
-                  <p className="text-sm text-gray-400">{program.department}</p>
+                  <h4 className="font-medium text-gray-900">{program.name}</h4>
+                  <p className="text-sm text-gray-500">{program.department}</p>
                   <div className="mt-3 flex items-center gap-2 text-xs text-gray-500">
                     <Info className="h-3 w-3" />
                     <span>Min {program.min_percentage}% required</span>
@@ -306,16 +306,16 @@ const NewApplication = () => {
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Selected Program Info */}
-          <div className="bg-cyan-500/10 rounded-xl p-6 border border-cyan-500/20">
+          <div className="bg-primary-50 rounded-xl p-6 border border-primary-200">
             <div className="flex items-start justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-white">{selectedProgram?.name}</h3>
-                <p className="text-gray-400">{selectedProgram?.department}</p>
+                <h3 className="text-lg font-semibold text-gray-900">{selectedProgram?.name}</h3>
+                <p className="text-gray-500">{selectedProgram?.department}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setStep(1)}
-                className="text-sm text-cyan-400 hover:text-cyan-300"
+                className="text-sm text-primary-600 hover:text-primary-700"
               >
                 Change
               </button>
@@ -327,21 +327,21 @@ const NewApplication = () => {
               const isEligible = currentPercentage >= requiredPercentage;
 
               return (
-                <div className="mt-4 p-4 bg-[#1a1a1a] rounded-lg border border-gray-700">
+                <div className="mt-4 p-4 bg-white rounded-lg border border-gray-200">
                   <div className="flex items-center gap-2 mb-2">
                     {isEligible ? (
                       <>
                         <CheckCircle className="h-5 w-5 text-green-500" />
-                        <span className="font-medium text-green-400">You are eligible</span>
+                        <span className="font-medium text-green-800">You are eligible</span>
                       </>
                     ) : (
                       <>
                         <AlertCircle className="h-5 w-5 text-red-500" />
-                        <span className="font-medium text-red-400">You do not meet minimum percentage requirements</span>
+                        <span className="font-medium text-red-800">You do not meet minimum percentage requirements</span>
                       </>
                     )}
                   </div>
-                  <p className="text-sm text-gray-400">
+                  <p className="text-sm text-gray-500">
                     Required: {requiredPercentage}% | Your percentage: {currentPercentage}%
                   </p>
                 </div>
@@ -350,21 +350,21 @@ const NewApplication = () => {
           </div>
 
           {/* Academic Records */}
-          <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Academic Records</h3>
+          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Academic Records</h3>
             <div className="grid sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Overall Percentage</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Overall Percentage</label>
                 <input
                   type="number"
                   step="any"
                   min="0"
                   max="100"
-                  className={`w-full px-4 py-2 bg-[#0f0f0f] border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white placeholder-gray-500 ${
+                  className={`w-full px-4 py-2 bg-white border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 placeholder-gray-400 ${
                     formData.academic_records.percentage !== '' &&
                     parseFloat(formData.academic_records.percentage) < (selectedProgram?.min_percentage ?? 0)
                       ? 'border-red-500'
-                      : 'border-gray-700'
+                      : 'border-gray-300'
                   }`}
                   placeholder="e.g., 85"
                   value={formData.academic_records.percentage}
@@ -376,19 +376,19 @@ const NewApplication = () => {
                 />
                 {formData.academic_records.percentage !== '' &&
                   parseFloat(formData.academic_records.percentage) < (selectedProgram?.min_percentage ?? 0) && (
-                  <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
+                  <p className="mt-1 text-xs text-red-600 flex items-center gap-1">
                     <AlertCircle className="h-3 w-3" />
                     Below minimum required percentage ({selectedProgram?.min_percentage}%). Application will be rejected.
                   </p>
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Passing Year</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Passing Year</label>
                 <input
                   type="number"
                   min="2000"
                   max="2030"
-                  className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white placeholder-gray-500"
+                  className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 placeholder-gray-400"
                   placeholder="e.g., 2024"
                   value={formData.academic_records.passing_year}
                   onChange={(e) => setFormData({
@@ -399,10 +399,10 @@ const NewApplication = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Board/University</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Board/University</label>
                 <input
                   type="text"
-                  className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white placeholder-gray-500"
+                  className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 placeholder-gray-400"
                   placeholder="e.g., BISE Lahore"
                   value={formData.academic_records.board}
                   onChange={(e) => setFormData({
@@ -420,14 +420,14 @@ const NewApplication = () => {
             <button
               type="button"
               onClick={() => setStep(1)}
-              className="px-6 py-2 text-gray-400 hover:text-white font-medium"
+              className="px-6 py-2 text-gray-500 hover:text-gray-900 font-medium"
             >
               Back
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="px-8 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors disabled:opacity-50 font-medium"
+              className="px-8 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 font-medium"
             >
               {submitting ? (
                 <>

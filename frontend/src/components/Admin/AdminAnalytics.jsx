@@ -146,14 +146,14 @@ const AdminAnalytics = () => {
       {/* Header - Dark Theme */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Analytics Dashboard</h1>
-          <p className="text-gray-400 mt-1">Comprehensive insights into admissions and performance</p>
+          <h1 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h1>
+          <p className="text-gray-500 mt-1">Comprehensive insights into admissions and performance</p>
         </div>
         <div className="flex items-center gap-3">
           <select
             value={timeRange}
             onChange={(e) => setTimeRange(e.target.value)}
-            className="px-3 py-2 bg-[#1a1a1a] border border-gray-700 rounded-lg text-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+            className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-gray-700 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
           >
             <option value="1month">Last Month</option>
             <option value="3months">Last 3 Months</option>
@@ -162,11 +162,11 @@ const AdminAnalytics = () => {
           </select>
           <button
             onClick={fetchAnalyticsData}
-            className="p-2 text-gray-400 hover:text-white border border-gray-700 rounded-lg bg-[#1a1a1a]"
+            className="p-2 text-gray-500 hover:text-gray-900 border border-gray-200 rounded-lg bg-white"
           >
             <RefreshCw className="h-5 w-5" />
           </button>
-          <button className="inline-flex items-center px-3 py-2 bg-[#1a1a1a] border border-gray-700 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors text-sm">
+          <button className="inline-flex items-center px-3 py-2 bg-white border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors text-sm">
             <Download className="h-4 w-4 mr-2" />
             Export Report
           </button>
@@ -181,7 +181,7 @@ const AdminAnalytics = () => {
             value: analyticsData.categoryData?.total || 0, 
             subtext: '+12%',
             icon: BarChart3, 
-            color: 'text-cyan-400' 
+            color: 'text-primary-600' 
           },
           { 
             label: 'Processed', 
@@ -210,11 +210,11 @@ const AdminAnalytics = () => {
         ].map((stat, index) => {
           const Icon = stat.icon;
           return (
-            <div key={index} className="bg-[#1a1a1a] rounded-xl p-4 border border-gray-800">
+            <div key={index} className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs text-gray-400 uppercase tracking-wider">{stat.label}</p>
-                  <p className="mt-2 text-2xl font-bold text-white">{stat.value}</p>
+                  <p className="text-xs text-gray-500 uppercase tracking-wider">{stat.label}</p>
+                  <p className="mt-2 text-2xl font-bold text-gray-900">{stat.value}</p>
                   <p className={`text-xs mt-1 ${stat.subtext.startsWith('+') ? 'text-green-400' : 'text-red-400'}`}>
                     {stat.subtext}
                   </p>
@@ -229,8 +229,8 @@ const AdminAnalytics = () => {
       {/* Charts Row 1 - Dark Theme */}
       <div className="grid lg:grid-cols-2 gap-4">
         {/* Monthly Trends */}
-        <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-4">
-          <h3 className="text-sm font-medium text-gray-300 mb-2">Monthly Trends</h3>
+        <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+          <h3 className="text-sm font-medium text-gray-700 mb-2">Monthly Trends</h3>
           <div className="relative w-full h-32">
             <Line
               data={monthlyChartData}
@@ -260,8 +260,8 @@ const AdminAnalytics = () => {
         </div>
 
         {/* Category Distribution */}
-        <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-4">
-          <h3 className="text-sm font-medium text-gray-300 mb-2">Admissions by Category</h3>
+        <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+          <h3 className="text-sm font-medium text-gray-700 mb-2">Admissions by Category</h3>
           <div className="relative w-full h-32">
             <Doughnut
               data={categoryChartData}
@@ -283,8 +283,8 @@ const AdminAnalytics = () => {
       {/* Charts Row 2 - Dark Theme */}
       <div className="grid lg:grid-cols-2 gap-4">
         {/* Program Distribution */}
-        <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-4">
-          <h3 className="text-sm font-medium text-gray-300 mb-2">Applications by Program</h3>
+        <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+          <h3 className="text-sm font-medium text-gray-700 mb-2">Applications by Program</h3>
           <div className="relative w-full h-32">
             <Bar
               data={programChartData}
@@ -311,8 +311,8 @@ const AdminAnalytics = () => {
         </div>
 
         {/* Performance Distribution */}
-        <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-4">
-          <h3 className="text-sm font-medium text-gray-300 mb-2">Performance Distribution</h3>
+        <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+          <h3 className="text-sm font-medium text-gray-700 mb-2">Performance Distribution</h3>
           <div className="h-32">
             <Bar
               data={performanceChartData}
@@ -340,13 +340,13 @@ const AdminAnalytics = () => {
       </div>
 
       {/* Seat Occupancy Table - Dark Theme */}
-      <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 overflow-hidden">
-        <div className="p-4 border-b border-gray-800">
-          <h3 className="text-sm font-medium text-gray-300">Program Seat Occupancy</h3>
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+        <div className="p-4 border-b border-gray-200">
+          <h3 className="text-sm font-medium text-gray-700">Program Seat Occupancy</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-[#0f0f0f]">
+            <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Program</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
@@ -355,16 +355,16 @@ const AdminAnalytics = () => {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rate</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-800">
+            <tbody className="divide-y divide-gray-200">
               {analyticsData.occupancyData?.data?.slice(0, 5).map((item, index) => (
-                <tr key={index} className="hover:bg-gray-800/30 transition-colors">
-                  <td className="px-4 py-3 font-medium text-white text-sm">{item.program}</td>
-                  <td className="px-4 py-3 text-gray-400 text-sm">{item.totalSeats}</td>
-                  <td className="px-4 py-3 text-gray-400 text-sm">{item.filled}</td>
-                  <td className="px-4 py-3 text-gray-400 text-sm">{item.available}</td>
+                <tr key={index} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-3 font-medium text-gray-900 text-sm">{item.program}</td>
+                  <td className="px-4 py-3 text-gray-500 text-sm">{item.totalSeats}</td>
+                  <td className="px-4 py-3 text-gray-500 text-sm">{item.filled}</td>
+                  <td className="px-4 py-3 text-gray-500 text-sm">{item.available}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center">
-                      <div className="flex-1 w-20 h-2 bg-gray-700 rounded-full overflow-hidden mr-2">
+                      <div className="flex-1 w-20 h-2 bg-gray-200 rounded-full overflow-hidden mr-2">
                         <div
                           className={`h-full rounded-full ${
                             parseFloat(item.occupancyRate) >= 90 ? 'bg-green-500' :
@@ -375,7 +375,7 @@ const AdminAnalytics = () => {
                           style={{ width: `${item.occupancyRate}%` }}
                         />
                       </div>
-                      <span className="text-xs font-medium text-white">{item.occupancyRate}%</span>
+                      <span className="text-xs font-medium text-gray-900">{item.occupancyRate}%</span>
                     </div>
                   </td>
                 </tr>
