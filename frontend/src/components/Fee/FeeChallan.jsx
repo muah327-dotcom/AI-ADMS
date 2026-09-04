@@ -135,18 +135,18 @@ const FeeChallan = () => {
       {/* Page Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 no-print">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-white flex items-center">
-            <CreditCard className="h-8 w-8 text-cyan-400 mr-3" />
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white flex items-center">
+            <CreditCard className="h-8 w-8 text-primary-600 dark:text-primary-400 mr-3" />
             Fee Challan & Payment
           </h1>
-          <p className="text-gray-400 mt-1">
+          <p className="text-gray-500 dark:text-gray-400 mt-1">
             Download your admission fee challan, pay at bank, and upload the paid receipt to confirm your admission.
           </p>
         </div>
         {currentChallan && (
           <button
             onClick={handlePrint}
-            className="inline-flex items-center px-5 py-2.5 bg-cyan-500 text-white font-medium rounded-lg hover:bg-cyan-600 transition-colors shadow-lg shadow-cyan-500/20"
+            className="inline-flex items-center px-5 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/20"
           >
             <Printer className="h-5 w-5 mr-2" />
             Print Fee Challan
@@ -156,15 +156,15 @@ const FeeChallan = () => {
 
       {/* Program Selector Tabs if multiple programs */}
       {challans.length > 1 && (
-        <div className="flex gap-2 border-b border-gray-800 pb-2 no-print">
+        <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 pb-2 no-print">
           {challans.map((ch, idx) => (
             <button
               key={ch.application_id}
               onClick={() => setSelectedChallanIndex(idx)}
               className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
                 idx === selectedChallanIndex
-                  ? 'bg-cyan-500 text-white'
-                  : 'bg-[#1a1a1a] text-gray-400 hover:text-white border border-gray-800'
+                  ? 'bg-primary-600 text-white'
+                  : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700'
               }`}
             >
               {ch.program_name}
@@ -174,28 +174,28 @@ const FeeChallan = () => {
       )}
 
       {!currentChallan ? (
-        <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-12 text-center no-print">
-          <CreditCard className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-          <h3 className="text-xl font-bold text-white mb-2">No Fee Challan Generated</h3>
-          <p className="text-gray-400 max-w-md mx-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-12 text-center no-print shadow-sm">
+          <CreditCard className="h-16 w-16 text-gray-600 dark:text-gray-400 mx-auto mb-4" />
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">No Fee Challan Generated</h3>
+          <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
             Fee challans are generated once you are selected in a merit list. Check the merit list section for your admission status.
           </p>
         </div>
       ) : (
         <>
           {/* Status & Deadline Banner */}
-          <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-6 no-print">
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 no-print shadow-sm">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="space-y-1">
                 <div className="flex items-center space-x-3">
                   <span className="text-[#999999] text-sm">Program:</span>
-                  <span className="font-semibold text-white">{currentChallan.program_name}</span>
-                  <span className="text-xs bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded font-mono">
+                  <span className="font-semibold text-gray-900 dark:text-white">{currentChallan.program_name}</span>
+                    <span className="text-xs bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300 px-2 py-0.5 rounded font-mono">
                     Merit List #{currentChallan.merit_list_number}
                   </span>
                 </div>
-                <div className="flex items-center space-x-2 text-sm text-gray-400">
-                  <Calendar className="h-4 w-4 text-cyan-400" />
+                <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
+                  <Calendar className="h-4 w-4 text-primary-600 dark:text-primary-400" />
                   <span>Fee Payment Deadline:</span>
                   <span className="text-yellow-400 font-medium">
                     {new Date(currentChallan.challan.due_date).toLocaleDateString('en-US', {
@@ -208,35 +208,35 @@ const FeeChallan = () => {
               {/* Status Badge */}
               <div>
                 {currentChallan.fee_status === 'verified' || currentChallan.status === 'confirmed' ? (
-                  <div className="flex items-center px-4 py-2 bg-green-500/20 text-green-400 rounded-lg border border-green-500/30">
+                  <div className="flex items-center px-4 py-2 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded-lg border border-green-200 dark:border-green-800">
                     <ShieldCheck className="h-5 w-5 mr-2" />
                     <div>
                       <p className="font-semibold text-sm">Admission Confirmed!</p>
-                      <p className="text-xs text-green-300">Fee payment verified by university.</p>
+                      <p className="text-xs text-green-300 dark:text-green-400">Fee payment verified by university.</p>
                     </div>
                   </div>
                 ) : currentChallan.fee_status === 'submitted' ? (
-                  <div className="flex items-center px-4 py-2 bg-yellow-500/20 text-yellow-400 rounded-lg border border-yellow-500/30">
+                  <div className="flex items-center px-4 py-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 rounded-lg border border-yellow-200 dark:border-yellow-800">
                     <Clock className="h-5 w-5 mr-2 animate-pulse" />
                     <div>
                       <p className="font-semibold text-sm">Fee Receipt Submitted</p>
-                      <p className="text-xs text-yellow-300">Pending admin verification.</p>
+                      <p className="text-xs text-yellow-300 dark:text-yellow-400">Pending admin verification.</p>
                     </div>
                   </div>
                 ) : currentChallan.status === 'dropped' ? (
-                  <div className="flex items-center px-4 py-2 bg-red-500/20 text-red-400 rounded-lg border border-red-500/30">
+                  <div className="flex items-center px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded-lg border border-red-200 dark:border-red-800">
                     <XCircle className="h-5 w-5 mr-2" />
                     <div>
                       <p className="font-semibold text-sm">Admission Dropped</p>
-                      <p className="text-xs text-red-300">Deadline passed without fee payment.</p>
+                      <p className="text-xs text-red-300 dark:text-red-400">Deadline passed without fee payment.</p>
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center px-4 py-2 bg-cyan-500/20 text-cyan-400 rounded-lg border border-cyan-500/30">
+                  <div className="flex items-center px-4 py-2 bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300 rounded-lg border border-primary-200 dark:border-primary-800">
                     <AlertCircle className="h-5 w-5 mr-2" />
                     <div>
                       <p className="font-semibold text-sm">Action Required: Unpaid</p>
-                      <p className="text-xs text-cyan-300">Pay at bank & upload receipt before deadline.</p>
+                      <p className="text-xs text-primary-700 dark:text-primary-300">Pay at bank & upload receipt before deadline.</p>
                     </div>
                   </div>
                 )}
@@ -264,8 +264,8 @@ const FeeChallan = () => {
                   </div>
 
                   {/* Bank & Account Info */}
-                  <div className="bg-cyan-50 p-2 rounded border border-cyan-200">
-                    <p className="font-bold text-cyan-900">{currentChallan.challan.bank_name}</p>
+                  <div className="bg-primary-50 p-2 rounded border border-primary-200">
+                    <p className="font-bold text-primary-900">{currentChallan.challan.bank_name}</p>
                     <p className="text-gray-700">A/C Title: <span className="font-medium text-gray-900">{currentChallan.challan.account_title}</span></p>
                     <p className="text-gray-700 font-mono">A/C No: <span className="font-bold text-gray-900">{currentChallan.challan.account_number}</span></p>
                   </div>
@@ -287,7 +287,7 @@ const FeeChallan = () => {
                       </tr>
                       <tr className="border-b border-gray-200">
                         <td className="py-1 font-semibold text-gray-600">Program:</td>
-                        <td className="py-1 font-bold text-cyan-800">{currentChallan.program_name}</td>
+                        <td className="py-1 font-bold text-primary-800">{currentChallan.program_name}</td>
                       </tr>
                       <tr className="border-b border-gray-200">
                         <td className="py-1 font-semibold text-gray-600">Due Date:</td>
@@ -315,7 +315,7 @@ const FeeChallan = () => {
                       </div>
                       <div className="px-2 py-1 flex justify-between font-bold bg-gray-100 text-gray-900">
                         <span>Total Payable</span>
-                        <span className="text-cyan-900">Rs. {currentChallan.challan.total_fee.toLocaleString()}</span>
+                        <span className="text-primary-900">Rs. {currentChallan.challan.total_fee.toLocaleString()}</span>
                       </div>
                     </div>
                   </div>
@@ -340,24 +340,24 @@ const FeeChallan = () => {
           </div>
 
           {/* Upload Paid Fee Receipt Form */}
-          <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-6 no-print space-y-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 no-print space-y-4 shadow-sm">
             <div className="flex items-center space-x-3">
-              <Upload className="h-6 w-6 text-cyan-400" />
+              <Upload className="h-6 w-6 text-primary-600 dark:text-primary-400" />
               <div>
-                <h3 className="text-lg font-bold text-white">Upload Paid Fee Receipt</h3>
-                <p className="text-sm text-gray-400">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Upload Paid Fee Receipt</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   After paying at the bank, upload a scan/photo of your bank-stamped challan receipt here.
                 </p>
               </div>
             </div>
 
             {currentChallan.challan.paid_receipt_url && (
-              <div className="p-4 bg-gray-900/80 rounded-lg border border-gray-700 flex items-center justify-between">
+              <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <FileText className="h-5 w-5 text-cyan-400" />
+                  <FileText className="h-5 w-5 text-primary-600 dark:text-primary-400" />
                   <div>
-                    <p className="text-sm font-medium text-white">Uploaded Receipt</p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">Uploaded Receipt</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
                       Uploaded on {new Date(currentChallan.challan.uploaded_at || Date.now()).toLocaleDateString()}
                     </p>
                   </div>
@@ -366,7 +366,7 @@ const FeeChallan = () => {
                   href={currentChallan.challan.paid_receipt_url}
                   target="_blank"
                   rel="noreferrer"
-                  className="px-3 py-1.5 bg-cyan-500/20 text-cyan-400 text-xs font-semibold rounded hover:bg-cyan-500/30 transition-colors"
+                  className="px-3 py-1.5 bg-primary-100 text-primary-800 text-xs font-semibold rounded hover:bg-primary-200 transition-colors"
                 >
                   View Receipt
                 </a>
@@ -375,30 +375,30 @@ const FeeChallan = () => {
 
             <form onSubmit={handleUploadReceipt} className="space-y-4 pt-2">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Select Receipt Image / PDF File</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Receipt Image / PDF File</label>
                 <input
                   type="file"
                   accept="image/*,.pdf"
                   onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
-                  className="w-full text-sm text-gray-400 bg-[#0f0f0f] border border-gray-700 rounded-lg p-2.5 focus:border-cyan-500 outline-none"
+                  className="w-full text-sm text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 focus:border-primary-500 outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Or Provide Image/File URL</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Or Provide Image/File URL</label>
                 <input
                   type="text"
                   placeholder="https://example.com/paid-receipt.pdf"
                   value={receiptUrl}
                   onChange={(e) => setReceiptUrl(e.target.value)}
-                  className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg text-white focus:border-cyan-500 outline-none text-sm"
+                  className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:border-primary-500 outline-none text-sm"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={uploading || currentChallan.status === 'dropped'}
-                className="inline-flex items-center px-6 py-2.5 bg-cyan-500 text-white font-medium rounded-lg hover:bg-cyan-600 transition-colors disabled:opacity-50"
+                className="inline-flex items-center px-6 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
               >
                 {uploading ? (
                   <>

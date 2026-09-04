@@ -15,9 +15,12 @@ import {
   Bell
 } from 'lucide-react';
 import SkeletonLoader from '../Common/SkeletonLoader';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const StudentDashboard = () => {
   const { user } = useAuth();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [stats, setStats] = useState(null);
   const [recentApplications, setRecentApplications] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
@@ -84,18 +87,18 @@ const StudentDashboard = () => {
     switch (status) {
       case 'approved':
       case 'confirmed':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300';
       case 'rejected':
       case 'dropped':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300';
       case 'pending':
       default:
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300';
     }
   };
 
   if (loading) {
-    return <SkeletonLoader variant="dashboard" theme="dark" />;
+    return <SkeletonLoader variant="dashboard" />;
   }
 
   return (
@@ -104,7 +107,7 @@ const StudentDashboard = () => {
       {selectedApp && (
         <div className="bg-gradient-to-r from-emerald-600 to-green-700 rounded-2xl p-6 text-white shadow-xl border border-green-400/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-start space-x-4">
-            <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+            <div className="p-3 bg-white dark:bg-gray-800/20 rounded-xl backdrop-blur-sm">
               <Bell className="h-8 w-8 text-yellow-300 animate-bounce" />
             </div>
             <div>
@@ -118,7 +121,7 @@ const StudentDashboard = () => {
           </div>
           <Link
             to="/dashboard/fee-challan"
-            className="px-5 py-2.5 bg-yellow-400 text-gray-900 font-bold rounded-lg hover:bg-yellow-300 transition-colors shadow-lg flex items-center whitespace-nowrap"
+            className="px-5 py-2.5 bg-yellow-400 text-gray-900 dark:text-white font-bold rounded-lg hover:bg-yellow-300 transition-colors shadow-lg flex items-center whitespace-nowrap"
           >
             <CreditCard className="h-5 w-5 mr-2" />
             View & Print Fee Challan
@@ -132,7 +135,7 @@ const StudentDashboard = () => {
         <p className="mt-2 text-cyan-100">
           Manage your applications, check your eligibility, and track your admission status all in one place.
         </p>
-        <div className="mt-4 flex items-center gap-2 bg-white/15 backdrop-blur-sm rounded-lg px-4 py-2.5 border border-white/20">
+        <div className="mt-4 flex items-center gap-2 bg-white dark:bg-gray-800/15 backdrop-blur-sm rounded-lg px-4 py-2.5 border border-white/20">
           <Upload className="h-4 w-4 text-yellow-300 flex-shrink-0" />
           <p className="text-sm text-white">
             <span className="font-semibold text-yellow-300">Verification Required:</span> Non-optional documents (CNIC, Photograph, Matric & Intermediate certificates) are mandatory.{' '}
@@ -143,7 +146,7 @@ const StudentDashboard = () => {
           </p>
         </div>
         <div className="mt-4 flex flex-wrap gap-3">
-          <Link to="/dashboard/applications/new" className="inline-flex items-center px-4 py-2 bg-white text-cyan-700 rounded-lg font-medium hover:bg-cyan-50 transition-colors">
+          <Link to="/dashboard/applications/new" className="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-800 text-cyan-700 rounded-lg font-medium hover:bg-cyan-50 transition-colors">
             <FileText className="h-4 w-4 mr-2" />
             New Application
           </Link>
@@ -170,12 +173,12 @@ const StudentDashboard = () => {
             red: 'bg-red-500/10 text-red-400 border-red-500/20'
           };
           return (
-            <div key={index} className="bg-[#1a1a1a] rounded-xl p-4 lg:p-6 border border-gray-800 hover:border-gray-700 transition-colors">
+            <div key={index} className="bg-white dark:bg-gray-800 rounded-xl p-4 lg:p-6 border border-gray-200 dark:border-gray-700 hover:border-gray-300 shadow-sm transition-colors">
               <div className={`inline-flex p-3 rounded-lg border ${colorClasses[stat.color]}`}>
                 <Icon className="h-5 w-5 lg:h-6 lg:w-6" />
               </div>
-              <p className="mt-4 text-2xl lg:text-3xl font-bold text-white">{stat.value}</p>
-              <p className="text-sm text-gray-400">{stat.label}</p>
+              <p className="mt-4 text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">{stat.value}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{stat.label}</p>
             </div>
           );
         })}
@@ -183,45 +186,45 @@ const StudentDashboard = () => {
 
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Recent Applications */}
-        <div className="lg:col-span-2 bg-[#1a1a1a] rounded-xl border border-gray-800">
-          <div className="p-6 border-b border-gray-800">
+        <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-white">Recent Applications</h2>
-              <Link to="/dashboard/applications" className="text-sm text-cyan-400 hover:text-cyan-300 flex items-center">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Applications</h2>
+              <Link to="/dashboard/applications" className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 flex items-center">
                 View All
                 <ArrowRight className="h-4 w-4 ml-1" />
               </Link>
             </div>
           </div>
-          <div className="divide-y divide-gray-800">
+          <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {recentApplications.length === 0 ? (
               <div className="p-8 text-center">
-                <FileText className="h-12 w-12 text-gray-600 mx-auto mb-3" />
-                <p className="text-gray-400">No applications yet</p>
-                <Link to="/dashboard/applications/new" className="mt-2 text-cyan-400 hover:text-cyan-300 text-sm">
+                <FileText className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500 dark:text-gray-400">No applications yet</p>
+                <Link to="/dashboard/applications/new" className="mt-2 text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 text-sm">
                   Submit your first application
                 </Link>
               </div>
             ) : (
               recentApplications.map((app) => (
-                <div key={app.id} className="p-4 hover:bg-gray-800/50 transition-colors">
+                <div key={app.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       {getStatusIcon(app.status)}
                       <div>
-                        <p className="text-sm font-medium text-white">{app.programs?.name}</p>
-                        <p className="text-xs text-gray-400">{app.programs?.department}</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">{app.programs?.name}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{app.programs?.department}</p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${app.status === 'approved' ? 'bg-green-500/20 text-green-400' :
-                          app.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
-                            app.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
-                              'bg-cyan-500/20 text-cyan-400'
+                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${app.status === 'approved' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
+                          app.status === 'rejected' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' :
+                            app.status === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
+                              'bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300'
                         }`}>
                         {app.status}
                       </span>
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                         {new Date(app.application_date).toLocaleDateString()}
                       </p>
                     </div>
@@ -236,21 +239,21 @@ const StudentDashboard = () => {
         <div className="space-y-6">
 
           {/* Quick Actions */}
-          <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-6">
-            <h2 className="text-lg font-semibold text-white mb-4">Quick Actions</h2>
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
             <div className="space-y-3">
-              <Link to="/dashboard/documents" className="flex items-center p-3 bg-[#0f0f0f] rounded-lg hover:bg-gray-800/50 transition-colors border border-gray-800">
-                <Upload className="h-5 w-5 text-cyan-400 mr-3" />
+              <Link to="/dashboard/documents" className="flex items-center p-3 bg-gray-50 dark:bg-gray-900 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-200 dark:border-gray-700">
+                <Upload className="h-5 w-5 text-primary-600 mr-3" />
                 <div>
-                  <p className="text-sm font-medium text-white">Upload Documents</p>
-                  <p className="text-xs text-gray-400">CNIC & academic records</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">Upload Documents</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">CNIC & academic records</p>
                 </div>
               </Link>
-              <Link to="/dashboard/merit-list" className="flex items-center p-3 bg-[#0f0f0f] rounded-lg hover:bg-gray-800/50 transition-colors border border-gray-800">
-                <Award className="h-5 w-5 text-green-400 mr-3" />
+              <Link to="/dashboard/merit-list" className="flex items-center p-3 bg-gray-50 dark:bg-gray-900 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-200 dark:border-gray-700">
+                <Award className="h-5 w-5 text-green-600 mr-3" />
                 <div>
-                  <p className="text-sm font-medium text-white">Check Merit List</p>
-                  <p className="text-xs text-gray-400">View your ranking</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">Check Merit List</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">View your ranking</p>
                 </div>
               </Link>
             </div>

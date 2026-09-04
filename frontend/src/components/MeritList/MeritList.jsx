@@ -327,21 +327,21 @@ const MeritList = ({ admin = false }) => {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-white flex items-center gap-3">
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
             Merit List
             {programDetails?.current_merit_list && (
-              <span className="text-sm bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 px-3 py-1 rounded-full font-mono">
+              <span className="text-sm bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300 border border-primary-200 dark:border-primary-800 px-3 py-1 rounded-full font-mono">
                 Merit List #{programDetails.current_merit_list}
               </span>
             )}
           </h1>
-          <p className="text-gray-400 mt-1">View program-wise merit rankings, fee statuses, and admissions</p>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">View program-wise merit rankings, fee statuses, and admissions</p>
         </div>
         {admin && (
           <div className="flex flex-wrap gap-3">
             <button
               onClick={() => setShowFeeConfig(!showFeeConfig)}
-              className="inline-flex items-center px-4 py-2 bg-[#1a1a1a] border border-gray-700 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors"
+              className="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
             >
               <DollarSign className="h-5 w-5 mr-2 text-green-400" />
               Configure Fee & Deadline
@@ -350,9 +350,9 @@ const MeritList = ({ admin = false }) => {
             {programDetails?.current_merit_list > 0 && (
               <button
                 onClick={() => setShowPreviousListsModal(true)}
-                className="inline-flex items-center px-4 py-2 bg-[#1a1a1a] border border-gray-700 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors"
+              className="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
               >
-                <History className="h-5 w-5 mr-2 text-cyan-400" />
+                <History className="h-5 w-5 mr-2 text-primary-600" />
                 View Merit Lists
               </button>
             )}
@@ -388,7 +388,7 @@ const MeritList = ({ admin = false }) => {
                   <button
                     onClick={generateMeritList}
                     disabled={generating || !selectedProgram}
-                    className="inline-flex items-center px-4 py-2 bg-cyan-500 text-white font-medium rounded-lg hover:bg-cyan-600 transition-colors disabled:opacity-50"
+                    className="inline-flex items-center px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
                   >
                     {generating ? (
                       <>
@@ -433,64 +433,64 @@ const MeritList = ({ admin = false }) => {
 
       {/* Admin Fee & Deadline Configuration Box */}
       {admin && showFeeConfig && (
-        <div className="bg-[#1a1a1a] rounded-xl border border-cyan-500/30 p-6 space-y-4 animate-fade-in">
-          <h3 className="text-lg font-bold text-white flex items-center">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-primary-500/30 p-6 space-y-4 animate-fade-in">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center">
             <DollarSign className="h-5 w-5 text-green-400 mr-2" />
             Program Fee Structure & Payment Deadline
           </h3>
           <form onSubmit={handleSaveFeeConfig} className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs text-gray-400 mb-1">Admission Fee (PKR)</label>
+              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Admission Fee (PKR)</label>
               <input
                 type="number"
                 value={feeForm.admission_fee}
                 onChange={e => setFeeForm({ ...feeForm, admission_fee: Number(e.target.value) })}
-                className="w-full px-3 py-2 bg-[#0f0f0f] border border-gray-700 rounded text-white text-sm"
+                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm"
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-400 mb-1">Tuition Fee (PKR)</label>
+              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Tuition Fee (PKR)</label>
               <input
                 type="number"
                 value={feeForm.tuition_fee}
                 onChange={e => setFeeForm({ ...feeForm, tuition_fee: Number(e.target.value) })}
-                className="w-full px-3 py-2 bg-[#0f0f0f] border border-gray-700 rounded text-white text-sm"
+                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm"
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-400 mb-1">Fee Payment Deadline</label>
+              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Fee Payment Deadline</label>
               <input
                 type="date"
                 value={feeForm.fee_deadline}
                 onChange={e => setFeeForm({ ...feeForm, fee_deadline: e.target.value })}
-                className="w-full px-3 py-2 bg-[#0f0f0f] border border-gray-700 rounded text-white text-sm"
+                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm"
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-400 mb-1">Bank Name</label>
+              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Bank Name</label>
               <input
                 type="text"
                 value={feeForm.bank_name}
                 onChange={e => setFeeForm({ ...feeForm, bank_name: e.target.value })}
-                className="w-full px-3 py-2 bg-[#0f0f0f] border border-gray-700 rounded text-white text-sm"
+                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm"
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-400 mb-1">Account Number</label>
+              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Account Number</label>
               <input
                 type="text"
                 value={feeForm.account_number}
                 onChange={e => setFeeForm({ ...feeForm, account_number: e.target.value })}
-                className="w-full px-3 py-2 bg-[#0f0f0f] border border-gray-700 rounded text-white text-sm"
+                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm"
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-400 mb-1">Account Title</label>
+              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Account Title</label>
               <input
                 type="text"
                 value={feeForm.account_title}
                 onChange={e => setFeeForm({ ...feeForm, account_title: e.target.value })}
-                className="w-full px-3 py-2 bg-[#0f0f0f] border border-gray-700 rounded text-white text-sm"
+                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm"
               />
             </div>
             <div className="md:col-span-3 flex justify-end">
@@ -506,12 +506,12 @@ const MeritList = ({ admin = false }) => {
       )}
 
       {/* Filters */}
-      <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1">
-            <label className="text-sm font-medium text-gray-400 mb-1 block">Select Program</label>
+            <label className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1 block">Select Program</label>
             <select
-              className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white"
+              className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white"
               value={selectedProgram}
               onChange={(e) => setSelectedProgram(e.target.value)}
             >
@@ -523,9 +523,9 @@ const MeritList = ({ admin = false }) => {
           </div>
           {admin && (
             <div>
-              <label className="text-sm font-medium text-gray-400 mb-1 block">Category Filter</label>
+              <label className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1 block">Category Filter</label>
               <select
-                className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white"
+                className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white"
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
               >
@@ -541,15 +541,15 @@ const MeritList = ({ admin = false }) => {
 
       {/* Program Info */}
       {selectedProgramData && (
-        <div className="bg-cyan-500/10 rounded-xl p-6 border border-cyan-500/20">
+        <div className="bg-primary-50 dark:bg-primary-900/20 rounded-xl p-6 border border-primary-500/20 dark:border-primary-800 shadow-sm">
           <div className="flex justify-between items-start">
             <div>
-              <h3 className="text-lg font-semibold text-white">{selectedProgramData.name}</h3>
-              <p className="text-gray-400">{selectedProgramData.department}</p>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{selectedProgramData.name}</h3>
+              <p className="text-gray-500 dark:text-gray-400">{selectedProgramData.department}</p>
             </div>
             {programDetails?.fee_deadline && (
               <div className="text-right text-xs">
-                <span className="text-gray-400">Payment Deadline:</span>
+                <span className="text-gray-500 dark:text-gray-400">Payment Deadline:</span>
                 <p className="text-yellow-400 font-bold">
                   {new Date(programDetails.fee_deadline).toLocaleDateString()}
                 </p>
@@ -558,39 +558,39 @@ const MeritList = ({ admin = false }) => {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mt-4">
-            <div className="bg-[#1a1a1a] rounded-lg p-3 text-center border border-gray-800">
-              <p className="text-2xl font-bold text-white">{selectedProgramData.total_seats}</p>
-              <p className="text-xs text-gray-400">Total Seats</p>
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center border border-gray-200 dark:border-gray-700 shadow-sm">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{selectedProgramData.total_seats}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Total Seats</p>
             </div>
-            <div className="bg-[#1a1a1a] rounded-lg p-3 text-center border border-gray-800">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center border border-gray-200 dark:border-gray-700 shadow-sm">
               <p className="text-2xl font-bold text-green-400">{stats.confirmed}</p>
-              <p className="text-xs text-gray-400">Confirmed (Paid)</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Confirmed (Paid)</p>
             </div>
-            <div className="bg-[#1a1a1a] rounded-lg p-3 text-center border border-gray-800">
-              <p className="text-2xl font-bold text-cyan-400">{stats.selected}</p>
-              <p className="text-xs text-gray-400">Selected (Pending Fee)</p>
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center border border-gray-200 dark:border-gray-700 shadow-sm">
+              <p className="text-2xl font-bold text-primary-600 dark:text-primary-400">{stats.selected}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Selected (Pending Fee)</p>
             </div>
-            <div className="bg-[#1a1a1a] rounded-lg p-3 text-center border border-gray-800">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center border border-gray-200 dark:border-gray-700 shadow-sm">
               <p className="text-2xl font-bold text-yellow-400">{stats.waitlisted}</p>
-              <p className="text-xs text-gray-400">Waitlisted</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Waitlisted</p>
             </div>
-            <div className="bg-[#1a1a1a] rounded-lg p-3 text-center border border-gray-800">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center border border-gray-200 dark:border-gray-700 shadow-sm">
               <p className="text-2xl font-bold text-red-400">{stats.dropped}</p>
-              <p className="text-xs text-gray-400">Dropped (Unpaid)</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Dropped (Unpaid)</p>
             </div>
           </div>
         </div>
       )}
 
       {/* Merit List Table */}
-      <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
         {loading ? (
           <SkeletonLoader variant="table" theme="dark" />
         ) : meritList.length === 0 ? (
           <div className="p-12 text-center">
-            <Award className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-white mb-2">No Merit List Available</h3>
-            <p className="text-gray-400">
+            <Award className="h-16 w-16 text-gray-600 dark:text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No Merit List Available</h3>
+            <p className="text-gray-500 dark:text-gray-400">
               {admin
                 ? "Generate a merit list to see the rankings"
                 : "Merit list has not been published yet"}
@@ -599,43 +599,43 @@ const MeritList = ({ admin = false }) => {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-[#0f0f0f] border-b border-gray-800">
+              <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admission Status</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fee Payment</th>
-                  {admin && <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>}
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Rank</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Student</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Category</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Score</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Admission Status</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fee Payment</th>
+                  {admin && <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-800">
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {meritList.map((entry) => (
-                  <tr key={entry.id} className="hover:bg-gray-800/50 transition-colors">
+                  <tr key={entry.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full font-bold ${entry.rank <= 3 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-gray-700 text-gray-300'
+                      <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full font-bold ${entry.rank <= 3 ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                         }`}>
                         {entry.rank}
                       </span>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center">
-                        <div className="h-8 w-8 rounded-full bg-cyan-500/10 flex items-center justify-center mr-3 border border-cyan-500/20">
-                          <span className="text-cyan-400 font-semibold text-sm">
+                        <div className="h-8 w-8 rounded-full bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center mr-3 border border-primary-500/20">
+                          <span className="text-primary-600 dark:text-primary-400 font-semibold text-sm">
                             {entry.student?.full_name?.charAt(0)}
                           </span>
                         </div>
                         <div>
-                          <p className="font-medium text-white">{entry.student?.full_name}</p>
-                          <p className="text-sm text-gray-400">{entry.student?.cnic}</p>
+                          <p className="font-medium text-gray-900 dark:text-white">{entry.student?.full_name}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{entry.student?.cnic}</p>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${entry.category === 'merit' ? 'bg-yellow-500/20 text-yellow-400' :
-                          entry.category === 'quota' ? 'bg-cyan-500/20 text-cyan-400' :
-                            'bg-green-500/20 text-green-400'
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${entry.category === 'merit' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
+                          entry.category === 'quota' ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300' :
+                            'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
                         }`}>
                         {getCategoryIcon(entry.category)}
                         <span className="ml-2 capitalize">{entry.category.replace('_', ' ')}</span>
@@ -643,23 +643,23 @@ const MeritList = ({ admin = false }) => {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center">
-                        <div className="flex-1 w-20 h-2 bg-gray-700 rounded-full overflow-hidden mr-3">
+                        <div className="flex-1 w-20 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden mr-3">
                           <div
-                            className="h-full bg-cyan-500 rounded-full"
+                            className="h-full bg-primary-600 rounded-full"
                             style={{ width: `${entry.score}%` }}
                           />
                         </div>
-                        <span className="text-sm font-medium text-white">{entry.score.toFixed(1)}%</span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">{entry.score.toFixed(1)}%</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${entry.status === 'confirmed'
-                          ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                          ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border border-green-500/30'
                           : entry.status === 'selected'
-                            ? 'bg-cyan-500/20 text-cyan-400'
+                            ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300'
                             : entry.status === 'dropped'
-                              ? 'bg-red-500/20 text-red-400'
-                              : 'bg-yellow-500/20 text-yellow-400'
+                              ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
+                              : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
                         }`}>
                         {entry.status === 'confirmed' ? (
                           <CheckCircle className="h-3.5 w-3.5 mr-1" />
@@ -676,10 +676,10 @@ const MeritList = ({ admin = false }) => {
 
                     {/* Fee Payment Column */}
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-medium ${entry.fee_status === 'verified' ? 'bg-green-500/20 text-green-400' :
-                          entry.fee_status === 'submitted' ? 'bg-yellow-500/20 text-yellow-400' :
-                            entry.fee_status === 'rejected' ? 'bg-red-500/20 text-red-400' :
-                              'bg-gray-800 text-gray-400'
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-medium ${entry.fee_status === 'verified' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
+                          entry.fee_status === 'submitted' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
+                            entry.fee_status === 'rejected' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' :
+                              'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                         }`}>
                         {entry.fee_status === 'verified' ? 'Paid & Verified' :
                           entry.fee_status === 'submitted' ? 'Receipt Uploaded' :
@@ -697,7 +697,7 @@ const MeritList = ({ admin = false }) => {
                               href={entry.fee_receipt_url}
                               target="_blank"
                               rel="noreferrer"
-                              className="p-1.5 bg-gray-800 hover:bg-gray-700 text-cyan-400 rounded transition-colors"
+                              className="p-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-primary-600 dark:text-primary-400 rounded transition-colors"
                               title="View Paid Receipt"
                             >
                               <Eye className="h-4 w-4" />
@@ -735,15 +735,15 @@ const MeritList = ({ admin = false }) => {
       {/* Previous Merit Lists Modal */}
       {showPreviousListsModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-[#1a1a1a] rounded-xl max-w-md w-full border border-gray-800 shadow-2xl p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-md w-full border border-gray-200 dark:border-gray-700 shadow-2xl p-6">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-white flex items-center">
-                <History className="h-6 w-6 text-cyan-400 mr-2" />
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center">
+                <History className="h-6 w-6 text-primary-600 dark:text-primary-400 mr-2" />
                 Generated Merit Lists
               </h3>
               <button
                 onClick={() => setShowPreviousListsModal(false)}
-                className="text-gray-400 hover:text-white transition-colors"
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -752,19 +752,19 @@ const MeritList = ({ admin = false }) => {
             <div className="space-y-3">
               {programDetails?.current_merit_list > 0 ? (
                 Array.from({ length: programDetails.current_merit_list }).map((_, i) => (
-                  <div key={i} className="flex items-center justify-between p-4 bg-[#0f0f0f] border border-gray-800 rounded-lg">
+                  <div key={i} className="flex items-center justify-between p-4 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-sm">
                     <div className="flex items-center">
-                      <div className="h-10 w-10 rounded-full bg-cyan-500/10 flex items-center justify-center mr-3 border border-cyan-500/20">
-                        <Award className="h-5 w-5 text-cyan-400" />
+                      <div className="h-10 w-10 rounded-full bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center mr-3 border border-primary-500/20">
+                        <Award className="h-5 w-5 text-primary-600 dark:text-primary-400" />
                       </div>
                       <div>
-                        <p className="font-bold text-white">Merit List #{i + 1}</p>
-                        <p className="text-xs text-gray-400">{selectedProgramData?.name}</p>
+                        <p className="font-bold text-gray-900 dark:text-white">Merit List #{i + 1}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{selectedProgramData?.name}</p>
                       </div>
                     </div>
                     <button
                       onClick={() => exportToCSV(i + 1)}
-                      className="p-2 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg transition-colors border border-gray-700"
+                      className="p-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white rounded-lg transition-colors border border-gray-200 dark:border-gray-600"
                       title="Export CSV"
                     >
                       <Download className="h-4 w-4" />
@@ -772,7 +772,7 @@ const MeritList = ({ admin = false }) => {
                   </div>
                 ))
               ) : (
-                <div className="text-center py-6 text-gray-500">
+                <div className="text-center py-6 text-gray-500 dark:text-gray-400">
                   No merit lists have been generated yet.
                 </div>
               )}

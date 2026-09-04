@@ -291,14 +291,14 @@ const Settings = () => {
     <div className="space-y-6 animate-fade-in max-w-4xl mx-auto">
       {/* Header */}
       <div>
-        <h1 className="text-2xl lg:text-3xl font-bold text-white">Settings</h1>
-        <p className="text-gray-400 mt-1">Manage your account preferences</p>
+        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">Settings</h1>
+        <p className="text-gray-500 dark:text-gray-400 mt-1">Manage your account preferences</p>
       </div>
 
       <div className="grid lg:grid-cols-4 gap-6">
         {/* Sidebar */}
         <div className="lg:col-span-1">
-          <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-2 space-y-1">
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-2 space-y-1 shadow-sm">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
@@ -307,8 +307,8 @@ const Settings = () => {
                   onClick={() => setActiveTab(tab.id)}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                     activeTab === tab.id
-                      ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
-                      : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                      ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 border border-primary-500/20'
+                      : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
                   }`}
                 >
                   <Icon className="h-5 w-5" />
@@ -324,11 +324,11 @@ const Settings = () => {
           {activeTab === 'profile' && (
             <div className="space-y-6">
               {/* Profile Picture */}
-              <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">Profile Picture</h3>
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Profile Picture</h3>
                 <div className="flex items-center gap-6">
                   <div className="relative">
-                    <div className="h-24 w-24 rounded-full bg-cyan-500/10 flex items-center justify-center border-2 border-cyan-500/20 overflow-hidden">
+                    <div className="h-24 w-24 rounded-full bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center border-2 border-primary-500/20 overflow-hidden">
                       {avatarPreview || user?.avatar_url ? (
                         <img 
                           src={avatarPreview || user?.avatar_url} 
@@ -336,7 +336,7 @@ const Settings = () => {
                           className="h-full w-full object-cover"
                         />
                       ) : (
-                        <span className="text-3xl text-cyan-400 font-bold">
+                        <span className="text-3xl text-primary-600 dark:text-primary-400 font-bold">
                           {user?.full_name?.charAt(0).toUpperCase()}
                         </span>
                       )}
@@ -356,20 +356,20 @@ const Settings = () => {
                     />
                   </div>
                   <div className="flex flex-col gap-2">
-                    <p className="text-sm text-gray-400 mb-2">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
                       JPG, PNG or GIF. Max size 2MB.
                     </p>
                     <div className="flex gap-2">
                       <button
                         onClick={handleAvatarClick}
-                        className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
+                        className="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors text-sm"
                       >
                         Change Photo
                       </button>
                       {(avatarPreview || user?.avatar_url) && (
                         <button
                           onClick={removeAvatar}
-                          className="px-4 py-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 transition-colors text-sm border border-red-500/20"
+                          className="px-4 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors text-sm border border-red-200 dark:border-red-800"
                         >
                           Remove Photo
                         </button>
@@ -380,11 +380,11 @@ const Settings = () => {
               </div>
 
               {/* Personal Information */}
-              <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">Personal Information</h3>
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Personal Information</h3>
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Full Name
                     </label>
                     <input
@@ -392,11 +392,11 @@ const Settings = () => {
                       name="full_name"
                       value={profileForm.full_name}
                       onChange={handleProfileChange}
-                      className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white"
+                      className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Email Address
                     </label>
                     <input
@@ -404,12 +404,12 @@ const Settings = () => {
                       name="email"
                       value={profileForm.email}
                       disabled
-                      className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg text-gray-500 cursor-not-allowed"
+                      className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-500 dark:text-gray-400 cursor-not-allowed"
                     />
-                    <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Email cannot be changed</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Phone Number
                     </label>
                     <input
@@ -419,11 +419,11 @@ const Settings = () => {
                       value={profileForm.phone}
                       onChange={handleProfileChange}
                       placeholder="03XX-XXXXXXX"
-                      className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white placeholder-gray-500"
+                      className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       CNIC
                     </label>
                     <input
@@ -431,12 +431,12 @@ const Settings = () => {
                       name="cnic"
                       value={profileForm.cnic}
                       disabled
-                      className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg text-gray-500 cursor-not-allowed"
+                      className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-500 dark:text-gray-400 cursor-not-allowed"
                     />
-                    <p className="text-xs text-gray-500 mt-1">CNIC cannot be changed</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">CNIC cannot be changed</p>
                   </div>
                   <div className="sm:col-span-2">
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Address
                     </label>
                     <textarea
@@ -445,7 +445,7 @@ const Settings = () => {
                       onChange={handleProfileChange}
                       placeholder="Enter your address"
                       rows={3}
-                      className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white placeholder-gray-500 resize-none"
+                      className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none"
                     />
                   </div>
                 </div>
@@ -475,20 +475,20 @@ const Settings = () => {
           {activeTab === 'security' && (
             <div className="space-y-6">
               {/* Change Password */}
-              <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-6">
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-cyan-500/10 rounded-lg border border-cyan-500/20">
-                    <Lock className="h-5 w-5 text-cyan-400" />
+                  <div className="p-2 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-primary-500/20">
+                    <Lock className="h-5 w-5 text-primary-600 dark:text-primary-400" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-white">Change Password</h3>
-                    <p className="text-sm text-gray-400">Update your password to keep your account secure</p>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Change Password</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Update your password to keep your account secure</p>
                   </div>
                 </div>
 
                 <div className="space-y-4 max-w-md">
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Current Password
                     </label>
                     <div className="relative">
@@ -498,12 +498,12 @@ const Settings = () => {
                         value={passwordForm.currentPassword}
                         onChange={handlePasswordChange}
                         placeholder="Enter current password"
-                        className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white placeholder-gray-500 pr-10"
+                        className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 pr-10"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword({ ...showPassword, current: !showPassword.current })}
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-300"
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white"
                       >
                         {showPassword.current ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
@@ -511,7 +511,7 @@ const Settings = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       New Password
                     </label>
                     <div className="relative">
@@ -521,21 +521,21 @@ const Settings = () => {
                         value={passwordForm.newPassword}
                         onChange={handlePasswordChange}
                         placeholder="Enter new password"
-                        className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white placeholder-gray-500 pr-10"
+                        className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 pr-10"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword({ ...showPassword, new: !showPassword.new })}
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-300"
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white"
                       >
                         {showPassword.new ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">Must be at least 6 characters</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Must be at least 6 characters</p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Confirm New Password
                     </label>
                     <div className="relative">
@@ -545,12 +545,12 @@ const Settings = () => {
                         value={passwordForm.confirmPassword}
                         onChange={handlePasswordChange}
                         placeholder="Confirm new password"
-                        className="w-full px-4 py-2 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-white placeholder-gray-500 pr-10"
+                        className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 pr-10"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword({ ...showPassword, confirm: !showPassword.confirm })}
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-300"
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white"
                       >
                         {showPassword.confirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
@@ -575,53 +575,53 @@ const Settings = () => {
               </div>
 
               {/* Security Info */}
-              <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-6">
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-green-500/10 rounded-lg border border-green-500/20">
-                    <Shield className="h-5 w-5 text-green-400" />
+                  <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg border border-green-200 dark:border-green-800">
+                    <Shield className="h-5 w-5 text-green-600 dark:text-green-400" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-white">Account Security</h3>
-                    <p className="text-sm text-gray-400">Your account security status</p>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Account Security</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Your account security status</p>
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-[#0f0f0f] rounded-lg border border-gray-800">
+                  <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700">
                     <div className="flex items-center gap-3">
-                      <CheckCircle className="h-5 w-5 text-green-400" />
-                      <span className="text-sm text-gray-300">Password protected</span>
+                      <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Password protected</span>
                     </div>
-                    <span className="text-xs text-green-400">Active</span>
+                    <span className="text-xs text-green-600 dark:text-green-400">Active</span>
                   </div>
-                  <div className="flex items-center justify-between p-3 bg-[#0f0f0f] rounded-lg border border-gray-800">
+                  <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700">
                     <div className="flex items-center gap-3">
-                      <CheckCircle className="h-5 w-5 text-green-400" />
-                      <span className="text-sm text-gray-300">Account verified</span>
+                      <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Account verified</span>
                     </div>
-                    <span className="text-xs text-green-400">Verified</span>
+                    <span className="text-xs text-green-600 dark:text-green-400">Verified</span>
                   </div>
                 </div>
               </div>
 
               {/* Danger Zone – Delete Account */}
-              <div className="bg-[#1a1a1a] rounded-xl border border-red-500/30 p-6">
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-red-200 dark:border-red-800 p-6 shadow-sm">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-red-500/10 rounded-lg border border-red-500/20">
-                    <Trash2 className="h-5 w-5 text-red-400" />
+                  <div className="p-2 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                    <Trash2 className="h-5 w-5 text-red-600 dark:text-red-400" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-red-400">Danger Zone</h3>
-                    <p className="text-sm text-gray-400">Irreversible and destructive actions</p>
+                    <h3 className="text-lg font-semibold text-red-600 dark:text-red-400">Danger Zone</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Irreversible and destructive actions</p>
                   </div>
                 </div>
 
-                <div className="p-4 bg-red-500/5 rounded-lg border border-red-500/10">
+                <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
                   <div className="flex items-start gap-3">
-                    <AlertTriangle className="h-5 w-5 text-red-400 mt-0.5 flex-shrink-0" />
+                    <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-sm text-gray-300">
-                        Once you delete your account, <span className="text-red-400 font-medium">all your data will be permanently removed</span>. This includes your profile, uploaded documents, applications, and any associated records. This action cannot be undone.
+                      <p className="text-sm text-gray-700 dark:text-gray-300">
+                        Once you delete your account, <span className="text-red-600 dark:text-red-400 font-medium">all your data will be permanently removed</span>. This includes your profile, uploaded documents, applications, and any associated records. This action cannot be undone.
                       </p>
                     </div>
                   </div>
@@ -630,7 +630,7 @@ const Settings = () => {
                 <div className="mt-4">
                   <button
                     onClick={() => setShowDeleteModal(true)}
-                    className="flex items-center px-5 py-2.5 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 transition-all duration-200 text-sm font-medium border border-red-500/20 hover:border-red-500/40"
+                    className="flex items-center px-5 py-2.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-all duration-200 text-sm font-medium border border-red-200 dark:border-red-800 hover:border-red-300 dark:hover:border-red-700"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Delete My Account
@@ -645,45 +645,45 @@ const Settings = () => {
       {/* Delete Account Confirmation Modal */}
       {showDeleteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
-          <div className="bg-[#1a1a1a] rounded-2xl border border-red-500/30 max-w-md w-full p-0 shadow-2xl shadow-red-500/5">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-red-200 dark:border-red-800 max-w-md w-full p-0 shadow-2xl shadow-red-500/5">
             {/* Modal Header */}
-            <div className="p-6 pb-4 border-b border-gray-800">
+            <div className="p-6 pb-4 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-3 mb-2">
-                <div className="p-2.5 bg-red-500/10 rounded-xl border border-red-500/20">
-                  <AlertTriangle className="h-6 w-6 text-red-400" />
+                <div className="p-2.5 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800">
+                  <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white">Delete Account</h3>
-                  <p className="text-sm text-gray-400">This action is permanent</p>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">Delete Account</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">This action is permanent</p>
                 </div>
               </div>
             </div>
 
             {/* Modal Body */}
             <div className="p-6 space-y-4">
-              <div className="p-3 bg-red-500/5 rounded-lg border border-red-500/10">
-                <p className="text-sm text-gray-300 leading-relaxed">
-                  You are about to <span className="text-red-400 font-semibold">permanently delete</span> your account
-                  {user?.email && <> (<span className="text-white font-medium">{user.email}</span>)</>}.
+              <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                  You are about to <span className="text-red-600 dark:text-red-400 font-semibold">permanently delete</span> your account
+                  {user?.email && <> (<span className="text-gray-900 dark:text-white font-medium">{user.email}</span>)</>}.
                   All your profile data, documents, and applications will be erased forever.
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Type <span className="text-red-400 font-bold">DELETE</span> to confirm
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Type <span className="text-red-600 dark:text-red-400 font-bold">DELETE</span> to confirm
                 </label>
                 <input
                   type="text"
                   value={deleteConfirmText}
                   onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
                   placeholder="DELETE"
-                  className="w-full px-4 py-2.5 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none text-white placeholder-gray-600 text-sm"
+                  className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-sm"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Enter your password
                 </label>
                 <div className="relative">
@@ -692,12 +692,12 @@ const Settings = () => {
                     value={deletePassword}
                     onChange={(e) => setDeletePassword(e.target.value)}
                     placeholder="Enter your password"
-                    className="w-full px-4 py-2.5 bg-[#0f0f0f] border border-gray-700 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none text-white placeholder-gray-600 pr-10 text-sm"
+                    className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 pr-10 text-sm"
                   />
                   <button
                     type="button"
                     onClick={() => setShowDeletePassword(!showDeletePassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-300"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white"
                   >
                     {showDeletePassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -715,7 +715,7 @@ const Settings = () => {
                   setShowDeletePassword(false);
                 }}
                 disabled={isDeleting}
-                className="flex-1 px-4 py-2.5 bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm font-medium disabled:opacity-50"
               >
                 Cancel
               </button>
