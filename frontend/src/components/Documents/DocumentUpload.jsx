@@ -2311,26 +2311,39 @@ const DocumentUpload = () => {
         const docCategory = (documentType === 'matric' || documentType === 'intermediate' || documentType === 'transcript')
           ? 'academic' : documentType === 'cnic' ? 'cnic' : 'other';
           
-        let targetedNameData = await performTargetedFieldOcr(processedCanvas, ocrLines, docCategory, 'name');
-        let targetedFatherNameData = await performTargetedFieldOcr(processedCanvas, ocrLines, docCategory, 'father_name');
-
         let pass1Data = docCategory === 'cnic' ? extractCNICData(extractedText) : extractAcademicData(extractedText);
         
-        if (targetedNameData && targetedNameData.text) {
-           const cleanedTargetedName = cleanNameCandidate(targetedNameData.text);
-           if (cleanedTargetedName && cleanedTargetedName.length >= 3) {
-               pass1Data.name = cleanedTargetedName;
-               if (targetedNameData.confidence < confidence) {
-                   pass1Data.name_verification_needed = true;
-               }
-           }
+        // Targeted OCR as fallback for Name if full-text extraction failed
+        if (!pass1Data.name) {
+          let targetedNameData = await performTargetedFieldOcr(processedCanvas, ocrLines, docCategory, 'name');
+          if (targetedNameData && targetedNameData.text && targetedNameData.confidence > 60) {
+             const cleanedTargetedName = cleanNameCandidate(targetedNameData.text);
+             if (cleanedTargetedName && scoreNameCandidate(cleanedTargetedName) > 0) {
+                 pass1Data.name = cleanedTargetedName;
+                 pass1Data.name_verification_needed = true;
+                 console.log(`[OCR] Used targeted OCR for name: "${cleanedTargetedName}" (confidence: ${Math.round(targetedNameData.confidence)})`);
+             } else {
+                 console.log(`[OCR] Rejected targeted OCR for name: "${targetedNameData.text}" (failed validation)`);
+             }
+          } else if (targetedNameData && targetedNameData.text) {
+             console.log(`[OCR] Rejected targeted OCR for name due to low confidence (${Math.round(targetedNameData.confidence)})`);
+          }
         }
         
-        if (targetedFatherNameData && targetedFatherNameData.text) {
-           const cleanedTargetedFatherName = cleanNameCandidate(targetedFatherNameData.text);
-           if (cleanedTargetedFatherName && cleanedTargetedFatherName.length >= 3) {
-               pass1Data.father_name = cleanedTargetedFatherName;
-           }
+        // Targeted OCR as fallback for Father Name if full-text extraction failed
+        if (!pass1Data.father_name) {
+          let targetedFatherNameData = await performTargetedFieldOcr(processedCanvas, ocrLines, docCategory, 'father_name');
+          if (targetedFatherNameData && targetedFatherNameData.text && targetedFatherNameData.confidence > 60) {
+             const cleanedTargetedFatherName = cleanNameCandidate(targetedFatherNameData.text);
+             if (cleanedTargetedFatherName && scoreNameCandidate(cleanedTargetedFatherName) > 0 && cleanedTargetedFatherName.toLowerCase() !== pass1Data.name?.toLowerCase()) {
+                 pass1Data.father_name = cleanedTargetedFatherName;
+                 console.log(`[OCR] Used targeted OCR for father name: "${cleanedTargetedFatherName}" (confidence: ${Math.round(targetedFatherNameData.confidence)})`);
+             } else {
+                 console.log(`[OCR] Rejected targeted OCR for father name: "${targetedFatherNameData.text}" (failed validation)`);
+             }
+          } else if (targetedFatherNameData && targetedFatherNameData.text) {
+             console.log(`[OCR] Rejected targeted OCR for father name due to low confidence (${Math.round(targetedFatherNameData.confidence)})`);
+          }
         }
 
         const pass1Incomplete = (docCategory === 'cnic' && (!pass1Data.cnic || !pass1Data.name)) ||
@@ -2382,21 +2395,27 @@ const DocumentUpload = () => {
         extractedData = { ...extractCNICData(extractedText), ...extractAcademicData(extractedText) };
       }
       
-      // Override fields with targeted extraction if available
-      if (!isPdf && typeof targetedNameData !== 'undefined' && targetedNameData && targetedNameData.text) {
-          const cleanedTargetedName = cleanNameCandidate(targetedNameData.text);
-          if (cleanedTargetedName && cleanedTargetedName.length >= 3) {
-              extractedData.name = cleanedTargetedName;
-              if (targetedNameData.confidence < confidence) {
+      // Override fields with targeted extraction ONLY if full-text extraction failed
+      if (!isPdf && !extractedData.name && typeof processedCanvas !== 'undefined' && typeof ocrLines !== 'undefined') {
+          let targetedNameData = await performTargetedFieldOcr(processedCanvas, ocrLines, docCategoryFinal, 'name');
+          if (targetedNameData && targetedNameData.text && targetedNameData.confidence > 60) {
+              const cleanedTargetedName = cleanNameCandidate(targetedNameData.text);
+              if (cleanedTargetedName && scoreNameCandidate(cleanedTargetedName) > 0) {
+                  extractedData.name = cleanedTargetedName;
                   extractedData.name_verification_needed = true;
+                  console.log(`[OCR] Fallback: Used targeted OCR for name: "${cleanedTargetedName}"`);
               }
           }
       }
       
-      if (!isPdf && typeof targetedFatherNameData !== 'undefined' && targetedFatherNameData && targetedFatherNameData.text) {
-          const cleanedTargetedFatherName = cleanNameCandidate(targetedFatherNameData.text);
-          if (cleanedTargetedFatherName && cleanedTargetedFatherName.length >= 3) {
-              extractedData.father_name = cleanedTargetedFatherName;
+      if (!isPdf && !extractedData.father_name && typeof processedCanvas !== 'undefined' && typeof ocrLines !== 'undefined') {
+          let targetedFatherNameData = await performTargetedFieldOcr(processedCanvas, ocrLines, docCategoryFinal, 'father_name');
+          if (targetedFatherNameData && targetedFatherNameData.text && targetedFatherNameData.confidence > 60) {
+              const cleanedTargetedFatherName = cleanNameCandidate(targetedFatherNameData.text);
+              if (cleanedTargetedFatherName && scoreNameCandidate(cleanedTargetedFatherName) > 0 && cleanedTargetedFatherName.toLowerCase() !== extractedData.name?.toLowerCase()) {
+                  extractedData.father_name = cleanedTargetedFatherName;
+                  console.log(`[OCR] Fallback: Used targeted OCR for father name: "${cleanedTargetedFatherName}"`);
+              }
           }
       }
 
