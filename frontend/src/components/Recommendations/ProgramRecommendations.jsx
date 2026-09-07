@@ -121,8 +121,6 @@ const ProgramRecommendations = () => {
   }
 
   const internalAlternatives = lowMeritData?.internal_alternatives || [];
-  const partnerColleges = lowMeritData?.partner_colleges || [];
-
   return (
     <div className="space-y-6 animate-fade-in pb-12">
       {/* Header Banner */}
@@ -165,17 +163,6 @@ const ProgramRecommendations = () => {
         >
           <Sparkles className="h-4 w-4" />
           <span>In-House Alternatives ({internalAlternatives.length})</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('colleges')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-purple-500/40 ${activeTab === 'colleges'
-              ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-md shadow-purple-500/20'
-              : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700'
-            }`}
-        >
-          <Building2 className="h-4 w-4" />
-          <span>Partner Colleges ({partnerColleges.length})</span>
         </button>
 
         <button
@@ -293,100 +280,6 @@ const ProgramRecommendations = () => {
         </div>
       )}
 
-      {/* TAB 2: Partner Colleges */}
-      {activeTab === 'colleges' && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <Building2 className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-              Accredited Partner Institutions Offering Lower Cutoffs
-            </h3>
-            <span className="text-xs text-gray-500 dark:text-gray-400">Nearby Affiliated Institutions</span>
-          </div>
-
-          {partnerColleges.length === 0 ? (
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-12 text-center">
-              <Building2 className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
-              <h4 className="text-base font-semibold text-gray-900 dark:text-white">No partner colleges currently registered</h4>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Please check back or contact admissions for external affiliation lists.</p>
-            </div>
-          ) : (
-            <div className="grid md:grid-cols-2 gap-4">
-              {partnerColleges.map((college, idx) => (
-                <div
-                  key={idx}
-                  className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-purple-500/40 p-5 transition-all flex flex-col justify-between group relative"
-                >
-                  <div>
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <div>
-                        <span className="text-[11px] font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2 py-0.5 rounded border border-purple-200 dark:border-purple-800">
-                          {college.field_category}
-                        </span>
-                        <h4 className="text-base font-bold text-gray-900 dark:text-white mt-1.5 group-hover:text-purple-700 dark:group-hover:text-purple-300 transition-colors">
-                          {college.program_name}
-                        </h4>
-                        <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mt-0.5">{college.college_name}</p>
-                        <p className="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5">
-                          <MapPin className="h-3 w-3 text-purple-600 dark:text-purple-400" />
-                          {college.city} &bull; {college.affiliation}
-                        </p>
-                      </div>
-
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold border whitespace-nowrap ${college.match_level === 'high'
-                          ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
-                          : 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 border-primary-200 dark:border-primary-500/30'
-                        }`}>
-                        {college.admission_probability}% Acceptance
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2 py-3 my-3 border-y border-gray-200/80 dark:border-gray-700/80 text-xs">
-                      <div>
-                        <span className="text-gray-500 dark:text-gray-400 block text-[10px] uppercase">Required Cutoff</span>
-                        <span className="font-semibold text-gray-900 dark:text-white mt-0.5 block">{college.min_merit_cutoff}%</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-500 dark:text-gray-400 block text-[10px] uppercase">Shift</span>
-                        <span className="font-semibold text-gray-900 dark:text-white mt-0.5 block">{college.shift}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-500 dark:text-gray-400 block text-[10px] uppercase">Annual Fee</span>
-                        <span className="font-semibold text-gray-900 dark:text-white mt-0.5 block">PKR {college.total_fee?.toLocaleString()}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 pt-1">
-                    <button
-                      onClick={() => fetchExplanation(college, true)}
-                      className="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
-                    >
-                      <Info className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
-                      AI Evaluation
-                    </button>
-                    {college.website_url ? (
-                      <a
-                        href={college.website_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex-1 px-3 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white rounded-lg text-xs font-bold transition-all text-center flex items-center justify-center gap-1 shadow-md shadow-purple-600/20 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
-                      >
-                        <span>Visit College</span>
-                        <ExternalLink className="h-3.5 w-3.5" />
-                      </a>
-                    ) : (
-                      <span className="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-lg text-xs text-center">
-                        Contact Admissions
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
 
       {/* TAB 3: All Programs */}
       {activeTab === 'all' && (
@@ -569,7 +462,7 @@ const ProgramRecommendations = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
-                  <span>Personalized program match analysis and partner college recommendations</span>
+                  <span>Personalized program match analysis and recommendations</span>
                 </div>
               </div>
 

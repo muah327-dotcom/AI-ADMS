@@ -2,7 +2,6 @@ import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import User from '../models/User.js';
 import Program from '../models/Program.js';
-import College from '../models/College.js';
 import Application from '../models/Application.js';
 import {
   generateLowMeritRecommendations,
@@ -158,10 +157,9 @@ router.get('/low-merit-options', async (req, res) => {
     const userId = req.user.id;
     const { target_program_id } = req.query;
 
-    const [user, internalPrograms, partnerColleges] = await Promise.all([
+    const [user, internalPrograms] = await Promise.all([
       User.findById(userId),
-      Program.find({ is_active: true }),
-      College.find({ is_active: true })
+      Program.find({ is_active: true })
     ]);
 
     const studentMerit = getStudentPercentage(user);
@@ -190,8 +188,7 @@ router.get('/low-merit-options', async (req, res) => {
       matricPercentage: matricPct,
       interPercentage: interPct,
       targetProgram,
-      internalPrograms,
-      partnerColleges
+      internalPrograms
     });
 
     res.json(result);
@@ -234,7 +231,7 @@ router.get('/best-fit', async (req, res) => {
 
 router.post('/explain-match', async (req, res) => {
   try {
-    const { program_id, college_name, shift, is_external, student_merit, cutoff } = req.body;
+    const { program_id, shift, student_merit, cutoff } = req.body;
     const userId = req.user.id;
 
     const user = await User.findById(userId);
@@ -255,9 +252,8 @@ router.post('/explain-match', async (req, res) => {
       actualMerit,
       minCutoff,
       programName,
-      college_name || 'Our University',
-      shift || 'Morning',
-      Boolean(is_external)
+      'Our University',
+      shift || 'Morning'
     );
 
     const probability = predictAdmissionProbability(actualMerit, minCutoff);

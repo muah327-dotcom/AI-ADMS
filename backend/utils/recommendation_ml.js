@@ -85,7 +85,7 @@ export const getMatchCategory = (probability, fieldAffinity) => {
 /**
  * Generates an AI reasoning explanation for a recommendation
  */
-export const generateAIExplanation = (studentMerit, cutoff, programName, collegeName, shift = 'Morning', isExternal = false) => {
+export const generateAIExplanation = (studentMerit, cutoff, programName, collegeName, shift = 'Morning') => {
   const delta = (studentMerit - cutoff).toFixed(1);
   const isAbove = studentMerit >= cutoff;
 
@@ -101,10 +101,6 @@ export const generateAIExplanation = (studentMerit, cutoff, programName, college
     reasons.push(`The ${shift} shift offers identical degree curriculum with significantly higher admission quota and favorable merit thresholds.`);
   }
 
-  if (isExternal) {
-    reasons.push(`${collegeName} is an accredited partner institution offering equivalent degree curriculum with lower admission cutoffs.`);
-  }
-
   return reasons;
 };
 
@@ -116,8 +112,7 @@ export const generateLowMeritRecommendations = ({
   matricPercentage,
   interPercentage,
   targetProgram,
-  internalPrograms = [],
-  partnerColleges = []
+  internalPrograms = []
 }) => {
   const targetCategory = targetProgram?.field_category || 'Computer Science';
 
@@ -139,7 +134,7 @@ export const generateLowMeritRecommendations = ({
     const programVec = [cutoff / 100, (prog.min_percentage || 60) / 100, fieldAffinity, shiftScore];
     const similarity = parseFloat(cosineSimilarity(studentVec, programVec).toFixed(3));
 
-    const explanations = generateAIExplanation(studentMerit, cutoff, prog.name, 'Our University', prog.shift, false);
+    const explanations = generateAIExplanation(studentMerit, cutoff, prog.name, 'Our University', prog.shift);
 
     internalRecommendations.push({
       id: prog._id || prog.id,
@@ -163,57 +158,10 @@ export const generateLowMeritRecommendations = ({
   // Sort internal recommendations by admission probability and similarity
   internalRecommendations.sort((a, b) => b.admission_probability - a.admission_probability || b.similarity_score - a.similarity_score);
 
-  // 2. External Partner College Programs
-  const externalRecommendations = [];
-
-  for (const college of partnerColleges) {
-    if (!college.is_active) continue;
-
-    for (const prog of (college.offered_programs || [])) {
-      const cutoff = prog.min_merit_cutoff || 55;
-      const fieldAffinity = getFieldAffinity(targetCategory, prog.field_category);
-      const probability = predictAdmissionProbability(studentMerit, cutoff);
-      const matchCat = getMatchCategory(probability, fieldAffinity);
-
-      const studentVec = [studentMerit / 100, interPercentage / 100, 1.0, 1.0];
-      const collegeVec = [cutoff / 100, cutoff / 100, fieldAffinity, 0.8];
-      const similarity = parseFloat(cosineSimilarity(studentVec, collegeVec).toFixed(3));
-
-      const explanations = generateAIExplanation(studentMerit, cutoff, prog.program_name, college.name, prog.shift, true);
-
-      externalRecommendations.push({
-        college_id: college._id,
-        college_name: college.name,
-        city: college.city,
-        affiliation: college.affiliation,
-        website_url: college.website_url,
-        contact_email: college.contact_email,
-        phone: college.phone,
-        program_name: prog.program_name,
-        field_category: prog.field_category,
-        shift: prog.shift || 'Morning',
-        min_merit_cutoff: cutoff,
-        total_fee: prog.total_fee,
-        total_seats: prog.total_seats,
-        admission_probability: probability,
-        match_level: matchCat.level,
-        match_label: matchCat.label,
-        match_color: matchCat.color,
-        similarity_score: Math.round(similarity * 100),
-        explanations,
-        type: 'external'
-      });
-    }
-  }
-
-  // Sort external recommendations
-  externalRecommendations.sort((a, b) => b.admission_probability - a.admission_probability || b.similarity_score - a.similarity_score);
-
   return {
     student_merit: studentMerit,
     target_program: targetProgram?.name || 'Selected Program',
     internal_alternatives: internalRecommendations.slice(0, 6),
-    partner_colleges: externalRecommendations.slice(0, 8),
     ai_advice: studentMerit < 65
       ? 'Your merit is below standard morning cutoffs for top programs. Applying to Evening shifts or accredited partner institutions gives you the highest acceptance probability without losing an academic year.'
       : 'Your merit score gives you strong options in related computing/engineering specializations and afternoon shifts with high admission likelihood.'

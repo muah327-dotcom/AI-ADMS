@@ -2995,30 +2995,6 @@ const DocumentUpload = () => {
         </div>
       )}
 
-      {/* Step Indicator */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 text-primary-600 dark:text-primary-400">
-            <div className="w-8 h-8 rounded-full bg-primary-600 text-white flex items-center justify-center text-sm font-bold">1</div>
-            <span className="text-sm font-medium">Upload Documents</span>
-          </div>
-          <div className="flex-1 h-0.5 bg-gray-200 dark:bg-gray-700">
-            <div className="h-full bg-primary-600 transition-all" style={{ width: uploadedFiles.length > 0 ? '100%' : '0%' }} />
-          </div>
-          <div className={`flex items-center gap-2 ${uploadedFiles.length > 0 ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 dark:text-gray-400'}`}>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${uploadedFiles.length > 0 ? 'bg-primary-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}>2</div>
-            <span className="text-sm font-medium">OCR Extraction</span>
-          </div>
-          <div className="flex-1 h-0.5 bg-gray-200 dark:bg-gray-700">
-            <div className="h-full bg-primary-600 transition-all" style={{ width: ocrFilledFields.size > 0 ? '100%' : '0%' }} />
-          </div>
-          <div className={`flex items-center gap-2 ${ocrFilledFields.size > 0 ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 dark:text-gray-400'}`}>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${ocrFilledFields.size > 0 ? 'bg-primary-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}>3</div>
-            <span className="text-sm font-medium">Verify & Submit</span>
-          </div>
-        </div>
-      </div>
-
       {/* Hidden file input for card-click uploads */}
       <input
         ref={fileInputRef}

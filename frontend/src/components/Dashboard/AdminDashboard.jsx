@@ -8,8 +8,7 @@ import {
   TrendingUp,
   Award,
   Loader2,
-  ArrowRight,
-  Download
+  ArrowRight
 } from 'lucide-react';
 import SkeletonLoader from '../Common/SkeletonLoader';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -128,12 +127,6 @@ const AdminDashboard = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Admin Dashboard</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">Manage admissions and view real-time analytics</p>
-        </div>
-        <div className="flex gap-3">
-          <button className="inline-flex items-center px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
-            <Download className="h-4 w-4 mr-2" />
-            Export CSV
-          </button>
         </div>
       </div>
 
