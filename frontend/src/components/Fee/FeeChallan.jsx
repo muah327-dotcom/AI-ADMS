@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   CreditCard,
   Printer,
@@ -14,7 +15,8 @@ import {
   User,
   ShieldCheck,
   XCircle,
-  HelpCircle
+  HelpCircle,
+  Award
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import SkeletonLoader from '../Common/SkeletonLoader';
@@ -143,15 +145,26 @@ const FeeChallan = () => {
             Download your admission fee challan, pay at bank, and upload the paid receipt to confirm your admission.
           </p>
         </div>
-        {currentChallan && (
-          <button
-            onClick={handlePrint}
-            className="inline-flex items-center px-5 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/20"
-          >
-            <Printer className="h-5 w-5 mr-2" />
-            Print Fee Challan
-          </button>
-        )}
+        <div className="flex flex-wrap gap-3">
+          {currentChallan && (
+            <Link
+              to={`/dashboard/merit-list?program=${currentChallan.program_id}`}
+              className="inline-flex items-center px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm font-medium text-sm"
+            >
+              <Award className="h-4 w-4 mr-2 text-primary-600 dark:text-primary-400" />
+              View Merit List
+            </Link>
+          )}
+          {currentChallan && (
+            <button
+              onClick={handlePrint}
+              className="inline-flex items-center px-5 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/20 text-sm"
+            >
+              <Printer className="h-4 w-4 mr-2" />
+              Print Fee Challan
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Program Selector Tabs if multiple programs */}
@@ -174,12 +187,21 @@ const FeeChallan = () => {
       )}
 
       {!currentChallan ? (
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-12 text-center no-print shadow-sm">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-12 text-center no-print shadow-sm">
           <CreditCard className="h-16 w-16 text-gray-600 dark:text-gray-400 mx-auto mb-4" />
           <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">No Fee Challan Generated</h3>
           <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
             Fee challans are generated once you are selected in a merit list. Check the merit list section for your admission status.
           </p>
+          <div className="mt-4">
+            <Link
+              to="/dashboard/merit-list"
+              className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium shadow-sm"
+            >
+              <Award className="h-4 w-4 mr-2" />
+              View Merit Lists
+            </Link>
+          </div>
         </div>
       ) : (
         <>
@@ -190,9 +212,14 @@ const FeeChallan = () => {
                 <div className="flex items-center space-x-3">
                   <span className="text-[#999999] text-sm">Program:</span>
                   <span className="font-semibold text-gray-900 dark:text-white">{currentChallan.program_name}</span>
-                    <span className="text-xs bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300 px-2 py-0.5 rounded font-mono">
+                  <Link
+                    to={`/dashboard/merit-list?program=${currentChallan.program_id}`}
+                    className="text-xs bg-primary-100 hover:bg-primary-200 dark:bg-primary-900/30 dark:hover:bg-primary-900/50 text-primary-800 dark:text-primary-300 px-2.5 py-0.5 rounded font-mono inline-flex items-center transition-colors"
+                    title="View applicable merit list"
+                  >
                     Merit List #{currentChallan.merit_list_number}
-                  </span>
+                    <Award className="h-3 w-3 ml-1 text-primary-600 dark:text-primary-400" />
+                  </Link>
                 </div>
                 <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
                   <Calendar className="h-4 w-4 text-primary-600 dark:text-primary-400" />

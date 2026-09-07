@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Sparkles,
   CheckCircle,
@@ -277,13 +278,13 @@ const ProgramRecommendations = () => {
                       <Info className="h-3.5 w-3.5 text-primary-600 dark:text-primary-400" />
                       Why This Option?
                     </button>
-                    <a
-                      href={`/dashboard/applications/new?program=${prog.id}`}
+                    <Link
+                      to={`/dashboard/applications/new?program=${prog.id || prog._id}`}
                       className="flex-1 px-3 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-lg text-xs font-bold transition-all text-center flex items-center justify-center gap-1 shadow-md shadow-cyan-500/20 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
                     >
                       <span>Apply Shift</span>
                       <ChevronRight className="h-3.5 w-3.5" />
-                    </a>
+                    </Link>
                   </div>
                 </div>
               ))}
@@ -441,13 +442,13 @@ const ProgramRecommendations = () => {
                     <Info className="h-3.5 w-3.5 text-primary-600 dark:text-primary-400" />
                     Why This Match?
                   </button>
-                  <a
-                    href={`/dashboard/applications/new?program=${rec.program._id || rec.program.id}`}
+                  <Link
+                    to={`/dashboard/applications/new?program=${rec.program._id || rec.program.id}`}
                     className="flex-1 px-3 py-2 bg-cyan-600 hover:bg-cyan-500 dark:bg-cyan-500 dark:hover:bg-cyan-400 text-white rounded-lg text-xs font-bold transition-all text-center flex items-center justify-center gap-1 shadow-md shadow-cyan-600/20 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
                   >
                     <Target className="h-3.5 w-3.5" />
                     Apply
-                  </a>
+                  </Link>
                 </div>
               </div>
             ))}

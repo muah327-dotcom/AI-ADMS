@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
   CheckCircle,
@@ -16,16 +16,18 @@ import SkeletonLoader from '../Common/SkeletonLoader';
 
 const NewApplication = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const [programs, setPrograms] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
+  const [existingAppsCount, setExistingAppsCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [selectedProgram, setSelectedProgram] = useState(null);
   const [eligibility, setEligibility] = useState(null);
   const [showRecommendations, setShowRecommendations] = useState(false);
   const [step, setStep] = useState(1);
-  
+
   const [formData, setFormData] = useState({
     program_id: '',
     academic_records: {
@@ -43,61 +45,98 @@ const NewApplication = () => {
     fetchProgramsAndRecommendations();
   }, []);
 
-  // Auto-fill academic records from user profile (matric & inter marks)
+  // Auto-fill academic records from the complete persisted profile.
   useEffect(() => {
     if (!user) return;
 
-    const matricObt = parseFloat(user.matric_obtained_marks);
-    const matricTot = parseFloat(user.matric_total_marks);
-    const interObt = parseFloat(user.inter_obtained_marks);
-    const interTot = parseFloat(user.inter_total_marks);
+    let cancelled = false;
 
-    // Calculate individual percentages
-    const matricPct = (!isNaN(matricObt) && !isNaN(matricTot) && matricTot > 0)
-      ? (matricObt / matricTot) * 100 : null;
-    const interPct = (!isNaN(interObt) && !isNaN(interTot) && interTot > 0)
-      ? (interObt / interTot) * 100 : null;
+    const loadAcademicProfile = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/auth/me', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok || cancelled) return;
 
-    // Average of available percentages
-    let avgPercentage = null;
-    if (matricPct !== null && interPct !== null) {
-      avgPercentage = ((matricPct + interPct) / 2).toFixed(2);
-    } else if (interPct !== null) {
-      avgPercentage = interPct.toFixed(2);
-    } else if (matricPct !== null) {
-      avgPercentage = matricPct.toFixed(2);
-    }
+        const data = await response.json();
+        const profile = data.user;
+        const matricObt = parseFloat(profile.matric_obtained_marks);
+        const matricTot = parseFloat(profile.matric_total_marks);
+        const interObt = parseFloat(profile.inter_obtained_marks);
+        const interTot = parseFloat(profile.inter_total_marks);
 
-    const interPassingYear = user.inter_passing_year || '';
-    const interBoard = user.inter_board || '';
+        // Calculate individual percentages
+        const matricPct = (!isNaN(matricObt) && !isNaN(matricTot) && matricTot > 0)
+          ? (matricObt / matricTot) * 100 : null;
+        const interPct = (!isNaN(interObt) && !isNaN(interTot) && interTot > 0)
+          ? (interObt / interTot) * 100 : null;
 
-    setFormData(prev => ({
-      ...prev,
-      academic_records: {
-        ...prev.academic_records,
-        percentage: avgPercentage || prev.academic_records.percentage,
-        passing_year: interPassingYear || prev.academic_records.passing_year,
-        board: interBoard || prev.academic_records.board
+        // Average of available percentages
+        let avgPercentage = null;
+        if (matricPct !== null && interPct !== null) {
+          avgPercentage = ((matricPct + interPct) / 2).toFixed(2);
+        } else if (interPct !== null) {
+          avgPercentage = interPct.toFixed(2);
+        } else if (matricPct !== null) {
+          avgPercentage = matricPct.toFixed(2);
+        }
+
+        const interPassingYear = profile.inter_passing_year || '';
+        const interBoard = profile.inter_board || '';
+
+        setFormData(prev => ({
+          ...prev,
+          academic_records: {
+            ...prev.academic_records,
+            percentage: avgPercentage || prev.academic_records.percentage,
+            passing_year: interPassingYear || prev.academic_records.passing_year,
+            board: interBoard || prev.academic_records.board
+          }
+        }));
+      } catch (error) {
+        console.error('Academic profile fetch error:', error);
       }
-    }));
+    };
+
+    loadAcademicProfile();
+    return () => { cancelled = true; };
   }, [user]);
 
   const fetchProgramsAndRecommendations = async () => {
     try {
       const token = localStorage.getItem('token');
-      const [programsRes, recsRes] = await Promise.all([
+      const [programsRes, recsRes, myAppsRes] = await Promise.all([
         fetch('/api/applications/programs', { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch('/api/recommendations/programs', { headers: { 'Authorization': `Bearer ${token}` } })
+        fetch('/api/recommendations/programs', { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch('/api/applications/my-applications', { headers: { 'Authorization': `Bearer ${token}` } })
       ]);
 
+      let loadedPrograms = [];
       if (programsRes.ok) {
         const data = await programsRes.json();
-        setPrograms(data.programs || []);
+        loadedPrograms = data.programs || [];
+        setPrograms(loadedPrograms);
       }
 
       if (recsRes.ok) {
         const data = await recsRes.json();
         setRecommendations(data.recommendations?.slice(0, 5) || []);
+      }
+
+      if (myAppsRes.ok) {
+        const myAppsData = await myAppsRes.json();
+        const validApps = (myAppsData.applications || []).filter(a => a.status !== 'dropped');
+        setExistingAppsCount(validApps.length);
+      }
+
+      // SD-11: Carry exact selected recommendation from URL parameter and pre-select it
+      const targetProgramId = searchParams.get('program') || searchParams.get('program_id');
+      if (targetProgramId && loadedPrograms.length > 0) {
+        const matched = loadedPrograms.find(p => (p._id || p.id)?.toString() === targetProgramId.toString());
+        if (matched) {
+          handleProgramSelect(matched);
+        }
       }
     } catch (error) {
       console.error('Fetch error:', error);
@@ -125,7 +164,7 @@ const NewApplication = () => {
   const handleProgramSelect = (program) => {
     setSelectedProgram(program);
     const programId = program._id || program.id;
-    setFormData({ ...formData, program_id: programId });
+    setFormData(prev => ({ ...prev, program_id: programId }));
     checkEligibility(programId);
     setStep(2);
   };
@@ -148,6 +187,12 @@ const NewApplication = () => {
     const minPct = selectedProgram?.min_percentage ?? 0;
     if (!isNaN(enteredPct) && enteredPct < minPct) {
       toast.error(`Your percentage (${enteredPct}%) is below the minimum required (${minPct}%) for ${selectedProgram?.name}. Application rejected.`);
+      return;
+    }
+
+    // SD-13: Frontend maximum 4 valid applications guard
+    if (existingAppsCount >= 4) {
+      toast.error('Maximum application limit reached. You can only submit a maximum of 4 valid applications.');
       return;
     }
 
@@ -198,6 +243,19 @@ const NewApplication = () => {
           <p className="text-gray-500 dark:text-gray-400 mt-1">Apply for your desired program</p>
         </div>
       </div>
+
+      {/* SD-13: Maximum 4 Applications Limit Warning Banner */}
+      {existingAppsCount >= 4 && (
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700/60 rounded-xl p-5 flex items-start gap-3 shadow-md">
+          <AlertCircle className="h-6 w-6 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+          <div>
+            <h4 className="text-sm font-bold text-amber-800 dark:text-amber-300">Maximum Application Limit Reached (4 / 4)</h4>
+            <p className="text-xs text-amber-700 dark:text-amber-300/80 mt-1 leading-relaxed">
+              You have already submitted {existingAppsCount} valid applications, which is the maximum allowed limit. Direct submissions and additional program applications are blocked.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Mandatory Document & Profile Verification Advisory Banner */}
       {(!user?.is_verified || !['cnic', 'photograph', 'matric', 'intermediate'].every(t => (user?.uploaded_documents || []).includes(t))) && (
@@ -255,7 +313,7 @@ const NewApplication = () => {
                 </div>
                 {showRecommendations ? <ChevronUp className="h-5 w-5 text-gray-500 dark:text-gray-400" /> : <ChevronDown className="h-5 w-5 text-gray-500 dark:text-gray-400" />}
               </button>
-              
+
               {showRecommendations && (
                 <div className="mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {recommendations.filter(r => r.match_level !== 'low').map((rec, index) => (
@@ -265,11 +323,10 @@ const NewApplication = () => {
                       className="text-left p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-primary-500 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
                     >
                       <div className="flex items-center justify-between mb-2">
-                        <span className={`text-xs font-medium px-2 py-1 rounded ${
-                          rec.match_level === 'high' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
-                          rec.match_level === 'medium' ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400' :
-                          'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
-                        }`}>
+                        <span className={`text-xs font-medium px-2 py-1 rounded ${rec.match_level === 'high' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
+                            rec.match_level === 'medium' ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400' :
+                              'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
+                          }`}>
                           {rec.eligibility_score}% Match
                         </span>
                       </div>
@@ -286,20 +343,33 @@ const NewApplication = () => {
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">All Available Programs</h3>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {programs.map((program) => (
-                <button
-                  key={program._id || program.id}
-                  onClick={() => handleProgramSelect(program)}
-                  className="text-left p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-primary-500 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
-                >
-                  <h4 className="font-medium text-gray-900 dark:text-white">{program.name}</h4>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{program.department}</p>
-                  <div className="mt-3 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                    <Info className="h-3 w-3" />
-                    <span>Min {program.min_percentage}% required</span>
-                  </div>
-                </button>
-              ))}
+              {programs.map((program) => {
+                const isSelected = (selectedProgram?._id || selectedProgram?.id) === (program._id || program.id);
+                return (
+                  <button
+                    key={program._id || program.id}
+                    onClick={() => handleProgramSelect(program)}
+                    className={`text-left p-4 border rounded-lg transition-all ${isSelected
+                        ? 'border-primary-600 dark:border-primary-500 ring-2 ring-primary-500/20 bg-primary-50/50 dark:bg-primary-900/20'
+                        : 'border-gray-200 dark:border-gray-700 hover:border-primary-500 hover:bg-gray-50 dark:hover:bg-gray-700'
+                      }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <h4 className="font-medium text-gray-900 dark:text-white">{program.name}</h4>
+                      {program.shift && (
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 whitespace-nowrap">
+                          {program.shift}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{program.department}</p>
+                    <div className="mt-3 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                      <Info className="h-3 w-3" />
+                      <span>Min {program.min_percentage}% required</span>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -320,7 +390,7 @@ const NewApplication = () => {
                 Change
               </button>
             </div>
-            
+
             {eligibility && (() => {
               const currentPercentage = parseFloat(formData.academic_records.percentage) || parseFloat(eligibility.percentage?.obtained) || 0;
               const requiredPercentage = eligibility.percentage?.required ?? selectedProgram?.min_percentage ?? 0;
@@ -360,27 +430,23 @@ const NewApplication = () => {
                   step="any"
                   min="0"
                   max="100"
-                  className={`w-full px-4 py-2 bg-white dark:bg-gray-700 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 ${
-                    formData.academic_records.percentage !== '' &&
-                    parseFloat(formData.academic_records.percentage) < (selectedProgram?.min_percentage ?? 0)
+                  className={`w-full px-4 py-2 bg-white dark:bg-gray-700 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 ${formData.academic_records.percentage !== '' &&
+                      parseFloat(formData.academic_records.percentage) < (selectedProgram?.min_percentage ?? 0)
                       ? 'border-red-500'
                       : 'border-gray-300 dark:border-gray-600'
-                  }`}
+                    }`}
                   placeholder="e.g., 85"
                   value={formData.academic_records.percentage}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    academic_records: { ...formData.academic_records, percentage: e.target.value }
-                  })}
+                  readOnly
                   required
                 />
                 {formData.academic_records.percentage !== '' &&
                   parseFloat(formData.academic_records.percentage) < (selectedProgram?.min_percentage ?? 0) && (
-                  <p className="mt-1 text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
-                    <AlertCircle className="h-3 w-3" />
-                    Below minimum required percentage ({selectedProgram?.min_percentage}%). Application will be rejected.
-                  </p>
-                )}
+                    <p className="mt-1 text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      Below minimum required percentage ({selectedProgram?.min_percentage}%). Application will be rejected.
+                    </p>
+                  )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Passing Year</label>
@@ -391,10 +457,7 @@ const NewApplication = () => {
                   className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                   placeholder="e.g., 2024"
                   value={formData.academic_records.passing_year}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    academic_records: { ...formData.academic_records, passing_year: e.target.value }
-                  })}
+                  readOnly
                   required
                 />
               </div>
@@ -405,10 +468,7 @@ const NewApplication = () => {
                   className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                   placeholder="e.g., BISE Lahore"
                   value={formData.academic_records.board}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    academic_records: { ...formData.academic_records, board: e.target.value }
-                  })}
+                  readOnly
                   required
                 />
               </div>
@@ -426,7 +486,7 @@ const NewApplication = () => {
             </button>
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || existingAppsCount >= 4}
               className="px-8 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 font-medium"
             >
               {submitting ? (

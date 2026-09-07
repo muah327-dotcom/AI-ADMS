@@ -3222,10 +3222,10 @@ const DocumentUpload = () => {
                   Matric / SSC Details
                 </h4>
                 <div className="grid sm:grid-cols-2 gap-4 pl-6 border-l-2 border-yellow-500/20">
-                  {renderField('Board', 'matric_board', 'text', { placeholder: 'e.g., BISE Lahore' })}
-                  {renderField('Passing Year', 'matric_passing_year', 'number', { placeholder: 'e.g., 2022' })}
-                  {renderField('Marks Obtained', 'matric_obtained_marks', 'number', { placeholder: 'e.g., 950' })}
-                  {renderField('Total Marks', 'matric_total_marks', 'number', { placeholder: 'e.g., 1100' })}
+                  {renderField('Board', 'matric_board', 'text', { placeholder: 'e.g., BISE Lahore', disabled: true })}
+                  {renderField('Passing Year', 'matric_passing_year', 'number', { placeholder: 'e.g., 2022', disabled: true })}
+                  {renderField('Marks Obtained', 'matric_obtained_marks', 'number', { placeholder: 'e.g., 950', disabled: true })}
+                  {renderField('Total Marks', 'matric_total_marks', 'number', { placeholder: 'e.g., 1100', disabled: true })}
                   {renderSubjects(uploadedFiles.find(f => f.type === 'matric' || f.extractedData?.document_level === 'matric')?.extractedData?.subjects || user?.education?.matric?.subjects)}
                 </div>
               </div>
@@ -3237,10 +3237,10 @@ const DocumentUpload = () => {
                   Intermediate / HSSC Details
                 </h4>
                 <div className="grid sm:grid-cols-2 gap-4 pl-6 border-l-2 border-blue-500/20">
-                  {renderField('Board', 'inter_board', 'text', { placeholder: 'e.g., BISE Lahore' })}
-                  {renderField('Passing Year', 'inter_passing_year', 'number', { placeholder: 'e.g., 2024' })}
-                  {renderField('Marks Obtained', 'inter_obtained_marks', 'number', { placeholder: 'e.g., 450' })}
-                  {renderField('Total Marks', 'inter_total_marks', 'number', { placeholder: 'e.g., 550' })}
+                  {renderField('Board', 'inter_board', 'text', { placeholder: 'e.g., BISE Lahore', disabled: true })}
+                  {renderField('Passing Year', 'inter_passing_year', 'number', { placeholder: 'e.g., 2024', disabled: true })}
+                  {renderField('Marks Obtained', 'inter_obtained_marks', 'number', { placeholder: 'e.g., 450', disabled: true })}
+                  {renderField('Total Marks', 'inter_total_marks', 'number', { placeholder: 'e.g., 550', disabled: true })}
                   {renderSubjects(uploadedFiles.find(f => f.type === 'intermediate' || f.type === 'transcript' || f.extractedData?.document_level === 'intermediate')?.extractedData?.subjects || user?.education?.intermediate?.subjects)}
                 </div>
               </div>

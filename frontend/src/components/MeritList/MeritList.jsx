@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams, Link } from 'react-router-dom';
 import {
   Award,
   Download,
@@ -24,6 +25,7 @@ import toast from 'react-hot-toast';
 import SkeletonLoader from '../Common/SkeletonLoader';
 
 const MeritList = ({ admin = false }) => {
+  const [searchParams] = useSearchParams();
   const [meritList, setMeritList] = useState([]);
   const [programs, setPrograms] = useState([]);
   const [selectedProgram, setSelectedProgram] = useState('');
@@ -60,25 +62,70 @@ const MeritList = ({ admin = false }) => {
   const fetchPrograms = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/applications/programs', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const paramProg = searchParams.get('program');
 
-      if (response.ok) {
-        const data = await response.json();
-        const progList = data.programs || [];
-        setPrograms(progList);
-        if (progList.length > 0) {
-          const defaultVal = progList[0]._id || progList[0].id || progList[0].name;
-          setSelectedProgram(defaultVal);
+      if (admin) {
+        const response = await fetch('/api/applications/programs', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const progList = data.programs || [];
+          setPrograms(progList);
+          if (progList.length > 0) {
+            const matched = paramProg ? progList.find(p => (p._id || p.id || p.name) === paramProg) : null;
+            const defaultVal = matched ? (matched._id || matched.id || matched.name) : (progList[0]._id || progList[0].id || progList[0].name);
+            setSelectedProgram(defaultVal);
+          } else {
+            setSelectedProgram('');
+            setLoading(false);
+          }
+        }
+      } else {
+        // SD-14: For students, fetch only their applied programs
+        const response = await fetch('/api/applications/my-applications', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const apps = data.applications || [];
+          const uniqueProgramsMap = new Map();
+          apps.forEach(app => {
+            const p = app.program_id || app.program;
+            if (p && (p._id || p.id)) {
+              const pid = (p._id || p.id).toString();
+              if (!uniqueProgramsMap.has(pid)) {
+                uniqueProgramsMap.set(pid, p);
+              }
+            }
+          });
+          const progList = Array.from(uniqueProgramsMap.values());
+          setPrograms(progList);
+          if (progList.length > 0) {
+            const matched = paramProg ? progList.find(p => (p._id || p.id || p.name) === paramProg) : null;
+            const defaultVal = matched ? (matched._id || matched.id || matched.name) : (progList[0]._id || progList[0].id || progList[0].name);
+            setSelectedProgram(defaultVal);
+          } else {
+            setSelectedProgram('');
+            setLoading(false);
+          }
         }
       }
     } catch (error) {
       console.error('Fetch programs error:', error);
+      setLoading(false);
     }
   };
 
   const fetchMeritList = async (programId) => {
+    if (!programId) {
+      setMeritList([]);
+      setProgramDetails(null);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
@@ -111,6 +158,11 @@ const MeritList = ({ admin = false }) => {
           waitlisted: list.filter(e => e.status === 'waitlisted').length,
           dropped: list.filter(e => e.status === 'dropped').length
         });
+      } else if (response.status === 403) {
+        const err = await response.json();
+        toast.error(err.error || 'Access denied to this merit list');
+        setMeritList([]);
+        setProgramDetails(null);
       }
     } catch (error) {
       console.error('Fetch merit list error:', error);
@@ -514,11 +566,16 @@ const MeritList = ({ admin = false }) => {
               className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white"
               value={selectedProgram}
               onChange={(e) => setSelectedProgram(e.target.value)}
+              disabled={programs.length === 0}
             >
-              {programs.map((program) => {
-                const val = program._id || program.id || program.name;
-                return <option key={val} value={val}>{program.name}</option>;
-              })}
+              {programs.length === 0 ? (
+                <option value="">No applicable programs found</option>
+              ) : (
+                programs.map((program) => {
+                  const val = program._id || program.id || program.name;
+                  return <option key={val} value={val}>{program.name}</option>;
+                })
+              )}
             </select>
           </div>
           {admin && (
@@ -589,12 +646,26 @@ const MeritList = ({ admin = false }) => {
         ) : meritList.length === 0 ? (
           <div className="p-12 text-center">
             <Award className="h-16 w-16 text-gray-600 dark:text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No Merit List Available</h3>
-            <p className="text-gray-500 dark:text-gray-400">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+              {!admin && programs.length === 0 ? "No Applicable Merit Lists" : "No Merit List Available"}
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
               {admin
                 ? "Generate a merit list to see the rankings"
-                : "Merit list has not been published yet"}
+                : programs.length === 0
+                ? "You have not submitted an application to any academic program yet. Merit lists are only available for programs you have applied to."
+                : "Merit list has not been published yet for this program"}
             </p>
+            {!admin && programs.length === 0 && (
+              <div className="mt-4">
+                <Link
+                  to="/dashboard/applications/new"
+                  className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium shadow-sm"
+                >
+                  Start New Application
+                </Link>
+              </div>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
