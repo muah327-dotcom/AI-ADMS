@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Users,
   FileText,
@@ -41,6 +41,7 @@ ChartJS.register(
 const AdminDashboard = () => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [recentApplications, setRecentApplications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -133,25 +134,29 @@ const AdminDashboard = () => {
       {/* Stats Cards - Dynamic DB Data */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total Applications', value: stats?.totalApplications ?? 0, subtext: `${stats?.totalApplications || 0} Total Received`, icon: FileText, color: 'text-cyan-400' },
-          { label: 'Admitted Students', value: stats?.admittedStudents ?? 0, subtext: `${stats?.confirmedApplications || 0} Paid Confirmed`, icon: Users, color: 'text-green-400' },
-          { label: 'Admission Rate', value: `${stats?.admissionRate ?? 0}%`, subtext: `${stats?.admittedStudents || 0} of ${stats?.totalApplications || 0}`, icon: TrendingUp, color: 'text-cyan-400' },
-          { label: 'Pending Review', value: stats?.pendingApplications ?? 0, subtext: `${stats?.waitlistedApplications || 0} Waitlisted`, icon: Clock, color: 'text-yellow-400' },
+          { label: 'Total Applications', value: stats?.totalApplications ?? 0, subtext: `${stats?.totalApplications || 0} Total Received`, icon: FileText, color: 'text-cyan-400', path: '/admin/applications' },
+          { label: 'Admitted Students', value: stats?.admittedStudents ?? 0, subtext: `${stats?.confirmedApplications || 0} Paid Confirmed`, icon: Users, color: 'text-green-400', path: '/admin/students' },
+          { label: 'Admission Rate', value: `${stats?.admissionRate ?? 0}%`, subtext: `${stats?.admittedStudents || 0} of ${stats?.totalApplications || 0}`, icon: TrendingUp, color: 'text-cyan-400', path: '/admin/analytics' },
+          { label: 'Pending Review', value: stats?.pendingApplications ?? 0, subtext: `${stats?.waitlistedApplications || 0} Waitlisted`, icon: Clock, color: 'text-yellow-400', path: '/admin/applications' },
         ].map((stat, index) => {
           const Icon = stat.icon;
           return (
-            <div key={index} className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+            <button
+              key={index}
+              onClick={() => navigate(stat.path)}
+              className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md hover:border-primary-300 dark:hover:border-primary-600 transition-all cursor-pointer text-left group"
+            >
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">{stat.label}</p>
-                  <p className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">{stat.value}</p>
+                  <p className="mt-2 text-2xl font-bold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">{stat.value}</p>
                   <p className="text-xs mt-1 text-cyan-400 font-medium">
                     {stat.subtext}
                   </p>
                 </div>
                 <Icon className={`h-5 w-5 ${stat.color}`} />
               </div>
-            </div>
+            </button>
           );
         })}
       </div>
