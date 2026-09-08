@@ -76,17 +76,6 @@ const connectDB = async () => {
       });
       console.log('✅ Admin user created: admin@university.edu / admin123');
     }
-
-    const programCount = await Program.countDocuments();
-    if (programCount === 0) {
-      console.log('Seeding default Programs...');
-      await Program.insertMany([
-        { name: 'BS Computer Science', description: 'Bachelor of Science in Computer Science', department: 'Computer Science', duration_years: 4, total_seats: 120, min_percentage: 60, required_subjects: ['Mathematics', 'Physics'], is_active: true },
-        { name: 'BE Electrical Engineering', description: 'Bachelor of Engineering in Electrical Engineering', department: 'Engineering', duration_years: 4, total_seats: 60, min_percentage: 65, required_subjects: ['Mathematics', 'Physics'], is_active: true },
-        { name: 'BBA', description: 'Bachelor of Business Administration', department: 'Business', duration_years: 4, total_seats: 150, min_percentage: 50, required_subjects: ['Mathematics'], is_active: true },
-      ]);
-      console.log('✅ Default programs seeded!');
-    }
   } catch (seedError) {
     console.error(`Seeding warning: ${seedError.message}`);
   }
