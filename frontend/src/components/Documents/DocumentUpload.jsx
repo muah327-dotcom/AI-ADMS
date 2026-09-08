@@ -1887,6 +1887,8 @@ const DocumentUpload = () => {
   const [saving, setSaving] = useState(false);
   const [uploadingDocType, setUploadingDocType] = useState(null);
   const fileInputRef = useRef(null);
+  const [formErrors, setFormErrors] = useState({});
+  const formRefs = useRef({});
 
   // Formal Document Rejection Modal state
   const [rejectionModal, setRejectionModal] = useState({
@@ -2723,6 +2725,14 @@ const DocumentUpload = () => {
     }
 
     setFormData(prev => ({ ...prev, [field]: processedValue }));
+    // Clear error for this field when user types
+    if (formErrors[field]) {
+      setFormErrors(prev => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
     // If user manually changes an OCR-filled field, remove the OCR indicator
     if (ocrFilledFields.has(field)) {
       setOcrFilledFields(prev => {
@@ -2756,33 +2766,37 @@ const DocumentUpload = () => {
       { key: 'inter_total_marks', label: 'Intermediate Total Marks' },
     ];
 
-    const missingFields = requiredFields.filter(f => !formData[f.key] || String(formData[f.key]).trim() === '');
-    if (missingFields.length > 0) {
-      const fieldNames = missingFields.slice(0, 3).map(f => f.label).join(', ');
-      const extra = missingFields.length > 3 ? ` and ${missingFields.length - 3} more` : '';
-      toast.error(`Please fill all required fields: ${fieldNames}${extra}`, { duration: 6000 });
-      return;
-    }
+    const errors = {};
+    requiredFields.forEach(f => {
+      if (!formData[f.key] || String(formData[f.key]).trim() === '') {
+        errors[f.key] = `${f.label} is required.`;
+      }
+    });
 
-    // Validate Pakistani Phone Numbers
-    if (!isValidPakistaniPhone(formData.phone)) {
-      toast.error('Please enter a valid Pakistani Mobile Number (format: 03XX-XXXXXXX)', { duration: 5000 });
-      return;
+    // Format-specific validation
+    if (formData.phone && !isValidPakistaniPhone(formData.phone)) {
+      errors.phone = 'Please enter a valid Pakistani Mobile Number (format: 03XX-XXXXXXX).';
     }
-
-    if (!isValidPakistaniPhone(formData.father_phone)) {
-      toast.error("Please enter a valid Father's / Guardian Mobile Number (format: 03XX-XXXXXXX)", { duration: 5000 });
-      return;
+    if (formData.father_phone && !isValidPakistaniPhone(formData.father_phone)) {
+      errors.father_phone = "Please enter a valid Father's / Guardian Mobile Number (format: 03XX-XXXXXXX).";
     }
-
     if (formData.alternate_phone && !isValidPakistaniPhone(formData.alternate_phone, true)) {
-      toast.error('Please enter a valid Alternate Mobile Number in Pakistani format (03XX-XXXXXXX)', { duration: 5000 });
-      return;
+      errors.alternate_phone = 'Please enter a valid Alternate Mobile Number (03XX-XXXXXXX).';
+    }
+    if (formData.cnic && !/^\d{5}-\d{7}-\d{1}$/.test(formData.cnic.trim())) {
+      errors.cnic = 'Please enter a valid CNIC / B-Form Number in format XXXXX-XXXXXXX-X.';
     }
 
-    // Validate CNIC format
-    if (!/^\d{5}-\d{7}-\d{1}$/.test(formData.cnic.trim())) {
-      toast.error('Please enter a valid CNIC / B-Form Number in format XXXXX-XXXXXXX-X', { duration: 5000 });
+    setFormErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      // Scroll to first error field
+      const firstErrorKey = Object.keys(errors)[0];
+      const ref = formRefs.current[firstErrorKey];
+      if (ref) {
+        ref.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        ref.focus({ preventScroll: true });
+      }
       return;
     }
 
@@ -2902,10 +2916,13 @@ const DocumentUpload = () => {
   // Input field helper with OCR indicator
   const renderField = (label, field, type = 'text', options = {}) => {
     const isOcrFilled = ocrFilledFields.has(field);
+    const hasError = !!formErrors[field];
+    const isRequired = !options.optional;
     return (
-      <div className={options.colSpan2 ? 'sm:col-span-2' : ''}>
+      <div className={options.colSpan2 ? 'sm:col-span-2' : ''} ref={el => { formRefs.current[field] = el; }}>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           {label}
+          {isRequired && <span className="text-red-500 dark:text-red-400 ml-1">*</span>}
           {isOcrFilled && (
             <span className="ml-2 inline-flex items-center gap-1 text-xs text-purple-400 dark:text-purple-300 font-normal">
               <Sparkles className="h-3 w-3" />
@@ -2918,8 +2935,10 @@ const DocumentUpload = () => {
             value={formData[field] || ''}
             onChange={(e) => handleFormChange(field, e.target.value)}
             disabled={options.disabled}
-            className={`w-full px-4 py-2.5 bg-white dark:bg-gray-700 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white transition-all ${isOcrFilled ? 'border-purple-500/50' : 'border-gray-300 dark:border-gray-600'
-              } ${options.disabled ? 'text-gray-500 dark:text-gray-400 cursor-not-allowed' : ''}`}
+            className={`w-full px-4 py-2.5 bg-white dark:bg-gray-700 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white transition-all ${
+              hasError ? 'border-red-500 dark:border-red-400 ring-1 ring-red-500/30' :
+              isOcrFilled ? 'border-purple-500/50' : 'border-gray-300 dark:border-gray-600'
+            } ${options.disabled ? 'text-gray-500 dark:text-gray-400 cursor-not-allowed' : ''}`}
           >
             <option value="">{options.placeholder || 'Select...'}</option>
             {(options.selectOptions || []).map(opt => (
@@ -2928,15 +2947,24 @@ const DocumentUpload = () => {
           </select>
         ) : (
           <input
+            ref={el => { formRefs.current[field] = el; }}
             type={type}
             value={formData[field] || ''}
             onChange={(e) => handleFormChange(field, e.target.value)}
             placeholder={options.placeholder || ''}
             maxLength={options.maxLength}
             disabled={options.disabled}
-            className={`w-full px-4 py-2.5 bg-white dark:bg-gray-700 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-all ${isOcrFilled ? 'border-purple-500/50' : 'border-gray-300 dark:border-gray-600'
-              } ${options.disabled ? 'text-gray-500 dark:text-gray-400 cursor-not-allowed' : ''}`}
+            className={`w-full px-4 py-2.5 bg-white dark:bg-gray-700 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-all ${
+              hasError ? 'border-red-500 dark:border-red-400 ring-1 ring-red-500/30' :
+              isOcrFilled ? 'border-purple-500/50' : 'border-gray-300 dark:border-gray-600'
+            } ${options.disabled ? 'text-gray-500 dark:text-gray-400 cursor-not-allowed' : ''}`}
           />
+        )}
+        {hasError && (
+          <p className="mt-1.5 text-xs text-red-500 dark:text-red-400 flex items-center gap-1">
+            <AlertCircle className="h-3 w-3 flex-shrink-0" />
+            {formErrors[field]}
+          </p>
         )}
       </div>
     );
