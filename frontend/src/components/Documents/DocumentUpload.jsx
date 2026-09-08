@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Tesseract from 'tesseract.js';
 import { useDropzone } from 'react-dropzone';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import {
   Upload,
@@ -1880,6 +1881,7 @@ const readFileAsBase64 = (file) => {
 
 const DocumentUpload = () => {
   const { user, setUser } = useAuth();
+  const navigate = useNavigate();
   const [uploading, setUploading] = useState(false);
   const [documentType, setDocumentType] = useState('cnic');
   const [uploadedFiles, setUploadedFiles] = useState([]);
@@ -2870,6 +2872,9 @@ const DocumentUpload = () => {
       if (response.ok) {
         setUser({ ...user, ...data.user, is_verified: true, uploaded_documents: uploadedFiles.map(f => f.type) });
         toast.success('Profile & all mandatory documents verified successfully!');
+        setTimeout(() => {
+          navigate('/dashboard/applications');
+        }, 1500);
       } else {
         toast.error(data.error || 'Failed to save profile');
       }
