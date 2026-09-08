@@ -78,7 +78,7 @@ const TermsOfService = () => {
                 <p className="text-gray-700"><strong>"Personal Information"</strong> means any information that identifies or can be used to identify an individual.</p>
               </div>
               <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <p className="text-gray-700"><strong>"AI Services"</strong> refers to the automated features including OCR document processing, merit calculation, and recommendation systems.</p>
+                <p className="text-gray-700"><strong>"AI Services"</strong> refers to the automated features including OCR document processing and merit calculation.</p>
               </div>
             </div>
           </section>
@@ -137,12 +137,11 @@ const TermsOfService = () => {
               <li>OCR technology extracts text from uploaded documents automatically</li>
               <li>AI algorithms calculate merit scores based on academic records</li>
               <li>Document verification systems detect potential fraud or inconsistencies</li>
-              <li>Recommendation systems suggest suitable programs based on academic profiles</li>
             </ul>
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-4">
               <p className="text-yellow-800 text-sm">
                 <strong>Important:</strong> While AI assists in processing, final admission decisions are made by human 
-                administrators. AI-generated recommendations are advisory and do not guarantee admission.
+                administrators.
               </p>
             </div>
           </section>

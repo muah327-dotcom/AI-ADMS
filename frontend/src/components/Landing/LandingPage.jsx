@@ -753,10 +753,6 @@ const FAQSection = () => {
       answer: "Absolutely. We use enterprise-grade encryption and security measures to protect your data. All documents are stored securely, and access is strictly controlled. We comply with data protection regulations and never share your information with third parties."
     },
     {
-      question: "How are AI program recommendations generated?",
-      answer: "Our AI analyzes your academic credentials, interests, and eligibility criteria to suggest the most suitable programs. The system considers your marks, subject combinations, and program requirements to provide personalized recommendations that maximize your chances of admission."
-    },
-    {
       question: "What happens after I submit my application?",
       answer: "Once submitted, your application enters our automated verification pipeline. The system validates your documents, checks eligibility, and provides real-time status updates. You'll receive notifications at each stage, from document verification to final merit list publication."
     },

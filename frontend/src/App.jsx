@@ -14,7 +14,6 @@ const AdminDashboard = lazy(() => import('./components/Dashboard/AdminDashboard'
 const Applications = lazy(() => import('./components/Applications/Applications'));
 const NewApplication = lazy(() => import('./components/Applications/NewApplication'));
 const ApplicationTracking = lazy(() => import('./components/Applications/ApplicationTracking'));
-const ProgramRecommendations = lazy(() => import('./components/Recommendations/ProgramRecommendations'));
 const DocumentUpload = lazy(() => import('./components/Documents/DocumentUpload'));
 const MeritList = lazy(() => import('./components/MeritList/MeritList'));
 const FeeChallan = lazy(() => import('./components/Fee/FeeChallan'));
@@ -108,7 +107,6 @@ function AppRoutes() {
           <Route path="applications" element={<Applications />} />
           <Route path="applications/new" element={<NewApplication />} />
           <Route path="applications/track/:id" element={<ApplicationTracking />} />
-          <Route path="recommendations" element={<ProgramRecommendations />} />
           <Route path="documents" element={<DocumentUpload />} />
           <Route path="merit-list" element={<MeritList />} />
           <Route path="fee-challan" element={<FeeChallan />} />

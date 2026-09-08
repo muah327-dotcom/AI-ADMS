@@ -106,7 +106,6 @@ const PrivacyPolicy = () => {
                 <h3 className="font-medium text-gray-900 mb-2">4. AI-Processed Data</h3>
                 <ul className="list-disc list-inside text-gray-700 space-y-1 ml-4">
                   <li>OCR-extracted data from uploaded documents</li>
-                  <li>AI-generated recommendations and analysis</li>
                   <li>Merit calculation scores and rankings</li>
                   <li>Application status and processing history</li>
                 </ul>
@@ -134,7 +133,6 @@ const PrivacyPolicy = () => {
               <li>Generate merit lists using AI algorithms to ensure unbiased selection</li>
               <li>Verify academic credentials and documents using OCR technology</li>
               <li>Communicate with applicants regarding their application status</li>
-              <li>Provide personalized program recommendations based on academic records</li>
               <li>Maintain records for institutional and regulatory compliance</li>
               <li>Prevent fraud and ensure the integrity of the admission process</li>
               <li>Improve our AI systems and admission processes</li>
@@ -154,7 +152,6 @@ const PrivacyPolicy = () => {
             <ul className="list-disc list-inside text-gray-700 space-y-2 ml-4 mb-4">
               <li>Extract and verify information from uploaded documents (OCR)</li>
               <li>Calculate merit scores based on predefined criteria</li>
-              <li>Generate recommendations for suitable academic programs</li>
               <li>Detect potential document fraud or inconsistencies</li>
             </ul>
             <p className="text-gray-700 leading-relaxed">

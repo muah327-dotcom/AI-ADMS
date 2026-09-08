@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import {
   FileText,
-  Sparkles,
   Upload,
   Award,
   Clock,
@@ -23,7 +22,6 @@ const StudentDashboard = () => {
   const isDark = theme === 'dark';
   const [stats, setStats] = useState(null);
   const [recentApplications, setRecentApplications] = useState([]);
-  const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,17 +32,11 @@ const StudentDashboard = () => {
     try {
       const token = localStorage.getItem('token');
 
-      const [appsRes, recsRes] = await Promise.all([
-        fetch('/api/applications/my-applications', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        }),
-        fetch('/api/recommendations/best-fit?limit=3', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        })
-      ]);
+      const appsRes = await fetch('/api/applications/my-applications', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
 
       const appsData = await appsRes.json();
-      const recsData = await recsRes.json();
 
       if (appsRes.ok) {
         setRecentApplications(appsData.applications || []);
@@ -57,10 +49,6 @@ const StudentDashboard = () => {
           approved: apps.filter(a => a.status === 'approved' || a.status === 'confirmed').length,
           rejected: apps.filter(a => a.status === 'rejected' || a.status === 'dropped').length
         });
-      }
-
-      if (recsRes.ok) {
-        setRecommendations(recsData.bestFit || []);
       }
     } catch (error) {
       console.error('Dashboard data error:', error);
@@ -153,10 +141,6 @@ const StudentDashboard = () => {
           <Link to="/dashboard/applications/new" className="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-800 text-cyan-700 rounded-lg font-medium hover:bg-cyan-50 transition-colors">
             <FileText className="h-4 w-4 mr-2" />
             New Application
-          </Link>
-          <Link to="/dashboard/recommendations" className="inline-flex items-center px-4 py-2 bg-cyan-700 text-white rounded-lg font-medium hover:bg-cyan-600 transition-colors border border-cyan-500/30">
-            <Sparkles className="h-4 w-4 mr-2" />
-            Get Recommendations
           </Link>
         </div>
       </div>

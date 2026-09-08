@@ -18,7 +18,6 @@ import adminRoutes from './routes/admin.js';
 import meritRoutes from './routes/merit.js';
 import analyticsRoutes from './routes/analytics.js';
 import ocrRoutes from './routes/ocr.js';
-import recommendationRoutes from './routes/recommendations.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, '.env') });
@@ -92,7 +91,6 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/merit', meritRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/ocr', ocrRoutes);
-app.use('/api/recommendations', recommendationRoutes);
 
 app.get('/api/stats/public', async (req, res) => {
   try {

@@ -6,7 +6,6 @@ import {
   CheckCircle,
   AlertCircle,
   Loader2,
-  Sparkles,
   Info,
   ChevronDown,
   ChevronUp
@@ -19,13 +18,11 @@ const NewApplication = () => {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const [programs, setPrograms] = useState([]);
-  const [recommendations, setRecommendations] = useState([]);
   const [existingAppsCount, setExistingAppsCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [selectedProgram, setSelectedProgram] = useState(null);
   const [eligibility, setEligibility] = useState(null);
-  const [showRecommendations, setShowRecommendations] = useState(false);
   const [step, setStep] = useState(1);
 
   const [formData, setFormData] = useState({
@@ -106,9 +103,8 @@ const NewApplication = () => {
   const fetchProgramsAndRecommendations = async () => {
     try {
       const token = localStorage.getItem('token');
-      const [programsRes, recsRes, myAppsRes] = await Promise.all([
+      const [programsRes, myAppsRes] = await Promise.all([
         fetch('/api/applications/programs', { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch('/api/recommendations/programs', { headers: { 'Authorization': `Bearer ${token}` } }),
         fetch('/api/applications/my-applications', { headers: { 'Authorization': `Bearer ${token}` } })
       ]);
 
@@ -119,24 +115,10 @@ const NewApplication = () => {
         setPrograms(loadedPrograms);
       }
 
-      if (recsRes.ok) {
-        const data = await recsRes.json();
-        setRecommendations(data.recommendations?.slice(0, 5) || []);
-      }
-
       if (myAppsRes.ok) {
         const myAppsData = await myAppsRes.json();
         const validApps = (myAppsData.applications || []).filter(a => a.status !== 'dropped');
         setExistingAppsCount(validApps.length);
-      }
-
-      // SD-11: Carry exact selected recommendation from URL parameter and pre-select it
-      const targetProgramId = searchParams.get('program') || searchParams.get('program_id');
-      if (targetProgramId && loadedPrograms.length > 0) {
-        const matched = loadedPrograms.find(p => (p._id || p.id)?.toString() === targetProgramId.toString());
-        if (matched) {
-          handleProgramSelect(matched);
-        }
       }
     } catch (error) {
       console.error('Fetch error:', error);
@@ -297,47 +279,6 @@ const NewApplication = () => {
 
       {step === 1 ? (
         <div className="space-y-6">
-          {/* AI Recommendations */}
-          {recommendations.length > 0 && (
-            <div className="bg-gradient-to-r from-purple-900/50 to-pink-900/50 rounded-xl p-6 border border-purple-700/50">
-              <button
-                onClick={() => setShowRecommendations(!showRecommendations)}
-                className="flex items-center justify-between w-full"
-              >
-                <div className="flex items-center gap-3">
-                  <Sparkles className="h-6 w-6 text-purple-400" />
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">AI Recommended Programs</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Based on your academic profile</p>
-                  </div>
-                </div>
-                {showRecommendations ? <ChevronUp className="h-5 w-5 text-gray-500 dark:text-gray-400" /> : <ChevronDown className="h-5 w-5 text-gray-500 dark:text-gray-400" />}
-              </button>
-
-              {showRecommendations && (
-                <div className="mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {recommendations.filter(r => r.match_level !== 'low').map((rec, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleProgramSelect(rec.program)}
-                      className="text-left p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-primary-500 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <span className={`text-xs font-medium px-2 py-1 rounded ${rec.match_level === 'high' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
-                            rec.match_level === 'medium' ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400' :
-                              'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
-                          }`}>
-                          {rec.eligibility_score}% Match
-                        </span>
-                      </div>
-                      <h4 className="font-medium text-gray-900 dark:text-white">{rec.program.name}</h4>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{rec.program.department}</p>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
 
           {/* All Programs */}
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">

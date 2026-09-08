@@ -5,7 +5,6 @@ import { useTheme } from '../../contexts/ThemeContext';
 import {
   LayoutDashboard,
   FileText,
-  Sparkles,
   Upload,
   Award,
   CreditCard,
@@ -56,7 +55,6 @@ const Layout = () => {
     { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
     { name: 'Document Upload', icon: Upload, path: '/dashboard/documents' },
     { name: 'My Applications', icon: FileText, path: '/dashboard/applications' },
-    { name: 'Program Recommendations', icon: Sparkles, path: '/dashboard/recommendations' },
     { name: 'Merit List', icon: Award, path: '/dashboard/merit-list' },
     { name: 'Fee Challan', icon: CreditCard, path: '/dashboard/fee-challan' },
   ];
