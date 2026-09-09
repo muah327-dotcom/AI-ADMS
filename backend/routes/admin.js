@@ -524,7 +524,7 @@ router.get('/students', async (req, res) => {
 // DEPARTMENT ROUTES
 // ============================================
 
-router.get('/departments', async (req, res) => {
+router.get('/departments', requireMainAdmin, async (req, res) => {
   try {
     const departments = await Department.find().sort({ name: 1 });
     res.json({ departments: departments || [] });

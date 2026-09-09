@@ -18,8 +18,10 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import SkeletonLoader from '../Common/SkeletonLoader';
+import { useAuth } from '../../hooks/useAuth';
 
 const ManagePrograms = () => {
+  const { isMainAdmin, isDepartmentAdmin, department } = useAuth();
   const [departments, setDepartments] = useState([]);
   const [programs, setPrograms] = useState([]);
   const [selectedDepartment, setSelectedDepartment] = useState(null);
@@ -64,19 +66,24 @@ const ManagePrograms = () => {
     try {
       const token = localStorage.getItem('token');
       
-      const [programsRes, deptsRes] = await Promise.all([
-        fetch('/api/applications/programs', { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch('/api/admin/departments', { headers: { 'Authorization': `Bearer ${token}` } })
-      ]);
-
+      // Department admins: only fetch programs, skip departments (they can't manage them)
+      const programsRes = await fetch('/api/applications/programs', { headers: { 'Authorization': `Bearer ${token}` } });
+      
       if (programsRes.ok) {
         const data = await programsRes.json();
         setPrograms(data.programs || []);
       }
-      
-      if (deptsRes.ok) {
-        const data = await deptsRes.json();
-        setDepartments(data.departments || []);
+
+      // Only main admins can fetch departments
+      if (isMainAdmin) {
+        const deptsRes = await fetch('/api/admin/departments', { headers: { 'Authorization': `Bearer ${token}` } });
+        if (deptsRes.ok) {
+          const data = await deptsRes.json();
+          setDepartments(data.departments || []);
+        }
+      } else if (isDepartmentAdmin && department) {
+        // Department admin: auto-select their department
+        setSelectedDepartment({ name: department, _id: null });
       }
     } catch (error) {
       console.error('Fetch error:', error);
@@ -283,9 +290,12 @@ const ManagePrograms = () => {
     });
   };
 
-  const filteredItems = selectedDepartment
-    ? programs.filter(p => p.department === selectedDepartment.name && p.name.toLowerCase().includes(searchTerm.toLowerCase()))
-    : departments.filter(d => d.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  // Department admins always see programs; main admins see departments list when no dept selected
+  const filteredItems = isDepartmentAdmin
+    ? programs.filter(p => p.department === department && p.name.toLowerCase().includes(searchTerm.toLowerCase()))
+    : selectedDepartment
+      ? programs.filter(p => p.department === selectedDepartment.name && p.name.toLowerCase().includes(searchTerm.toLowerCase()))
+      : departments.filter(d => d.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
   if (loading) {
     return <SkeletonLoader variant="table" theme="dark" />;
@@ -297,7 +307,7 @@ const ManagePrograms = () => {
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            {selectedDepartment && (
+            {selectedDepartment && isMainAdmin && (
               <button
                 onClick={() => {
                   setSelectedDepartment(null);
@@ -318,13 +328,14 @@ const ManagePrograms = () => {
           </p>
         </div>
         
+        {/* Add button: only show Add Program for department admins, or Add Department/Add Program for main admin */}
         <button
           onClick={() => {
             if (selectedDepartment) {
               setEditingProgram(null);
               resetProgramForm();
               setShowProgramModal(true);
-            } else {
+            } else if (isMainAdmin) {
               setEditingDept(null);
               resetDeptForm();
               setShowDeptModal(true);
@@ -343,7 +354,7 @@ const ManagePrograms = () => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 dark:text-gray-400" />
           <input
             type="text"
-            placeholder={selectedDepartment ? "Search programs..." : "Search departments..."}
+            placeholder={selectedDepartment || isDepartmentAdmin ? "Search programs..." : "Search departments..."}
             className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -353,8 +364,8 @@ const ManagePrograms = () => {
 
       {/* Grid View */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {!selectedDepartment ? (
-          // Departments List
+        {!selectedDepartment && isMainAdmin ? (
+          // Departments List (Main Admin only)
           filteredItems.map((dept) => {
             const deptProgramsCount = programs.filter(p => p.department === dept.name).length;
             
@@ -414,7 +425,7 @@ const ManagePrograms = () => {
             );
           })
         ) : (
-          // Programs List
+          // Programs List (shown for department admins always, or main admin when dept selected)
           filteredItems.map((program) => (
             <div key={program._id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:border-gray-200 dark:hover:border-gray-600 transition-colors shadow-sm">
               <div className="p-6">
