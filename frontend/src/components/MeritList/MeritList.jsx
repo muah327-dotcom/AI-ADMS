@@ -23,8 +23,10 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import SkeletonLoader from '../Common/SkeletonLoader';
+import { useAuth } from '../../hooks/useAuth';
 
 const MeritList = ({ admin = false }) => {
+  const { isMainAdmin, isDepartmentAdmin, department } = useAuth();
   const [searchParams] = useSearchParams();
   const [meritList, setMeritList] = useState([]);
   const [programs, setPrograms] = useState([]);
@@ -71,7 +73,13 @@ const MeritList = ({ admin = false }) => {
 
         if (response.ok) {
           const data = await response.json();
-          const progList = data.programs || [];
+          let progList = data.programs || [];
+
+          // Department admin: only show programs from their department
+          if (isDepartmentAdmin && department) {
+            progList = progList.filter(p => p.department === department);
+          }
+
           setPrograms(progList);
           if (progList.length > 0) {
             const matched = paramProg ? progList.find(p => (p._id || p.id || p.name) === paramProg) : null;
