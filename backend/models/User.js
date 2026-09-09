@@ -61,10 +61,6 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null
   },
-  matric_board: {
-    type: String,
-    default: null
-  },
   matric_passing_year: {
     type: Number,
     default: null
@@ -75,10 +71,6 @@ const userSchema = new mongoose.Schema({
   },
   matric_total_marks: {
     type: Number,
-    default: null
-  },
-  inter_board: {
-    type: String,
     default: null
   },
   inter_passing_year: {

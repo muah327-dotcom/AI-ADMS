@@ -712,10 +712,6 @@ const AllApplications = () => {
                     </div>
                     <div className="grid grid-cols-2 gap-3 mt-3 text-xs">
                       <div>
-                        <span className="text-gray-500 dark:text-gray-400 block">Board / Institution</span>
-                        <span className="font-medium text-gray-700 dark:text-gray-300">{selectedApplication.student?.matric_board || 'N/A'}</span>
-                      </div>
-                      <div>
                         <span className="text-gray-500 dark:text-gray-400 block">Passing Year</span>
                         <span className="font-medium text-gray-700 dark:text-gray-300">{selectedApplication.student?.matric_passing_year || 'N/A'}</span>
                       </div>
@@ -746,10 +742,6 @@ const AllApplications = () => {
                       )}
                     </div>
                     <div className="grid grid-cols-2 gap-3 mt-3 text-xs">
-                      <div>
-                        <span className="text-gray-500 dark:text-gray-400 block">Board / Institution</span>
-                        <span className="font-medium text-gray-700 dark:text-gray-300">{selectedApplication.student?.inter_board || 'N/A'}</span>
-                      </div>
                       <div>
                         <span className="text-gray-500 dark:text-gray-400 block">Passing Year</span>
                         <span className="font-medium text-gray-700 dark:text-gray-300">{selectedApplication.student?.inter_passing_year || 'N/A'}</span>

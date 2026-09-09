@@ -1922,12 +1922,10 @@ const DocumentUpload = () => {
     address: '',
     permanent_address: '',
     // Academic Information - Matric
-    matric_board: '',
     matric_passing_year: '',
     matric_obtained_marks: '',
     matric_total_marks: '',
     // Academic Information - Intermediate
-    inter_board: '',
     inter_passing_year: '',
     inter_obtained_marks: '',
     inter_total_marks: '',
@@ -1995,11 +1993,9 @@ const DocumentUpload = () => {
         father_phone: user.father_phone || prev.father_phone,
         address: user.address || prev.address,
         permanent_address: user.permanent_address || prev.permanent_address,
-        matric_board: user.matric_board || prev.matric_board,
         matric_passing_year: user.matric_passing_year || prev.matric_passing_year,
         matric_obtained_marks: user.matric_obtained_marks || prev.matric_obtained_marks,
         matric_total_marks: user.matric_total_marks || prev.matric_total_marks,
-        inter_board: user.inter_board || prev.inter_board,
         inter_passing_year: user.inter_passing_year || prev.inter_passing_year,
         inter_obtained_marks: user.inter_obtained_marks || prev.inter_obtained_marks,
         inter_total_marks: user.inter_total_marks || prev.inter_total_marks,
@@ -2062,10 +2058,6 @@ const DocumentUpload = () => {
           updated.father_name = sanitizeToEnglishName(extractedData.father_name);
           newFilledFields.add('father_name');
         }
-        if (extractedData.board) {
-          updated.matric_board = extractedData.board;
-          newFilledFields.add('matric_board');
-        }
         if (extractedData.passing_year) {
           updated.matric_passing_year = extractedData.passing_year;
           newFilledFields.add('matric_passing_year');
@@ -2088,10 +2080,6 @@ const DocumentUpload = () => {
         if (extractedData.father_name && (!updated.father_name || updated.father_name.trim() === '')) {
           updated.father_name = sanitizeToEnglishName(extractedData.father_name);
           newFilledFields.add('father_name');
-        }
-        if (extractedData.board) {
-          updated.inter_board = extractedData.board;
-          newFilledFields.add('inter_board');
         }
         if (extractedData.passing_year) {
           updated.inter_passing_year = extractedData.passing_year;
@@ -2164,9 +2152,8 @@ const DocumentUpload = () => {
     }
     if (docType === 'matric') {
       return {
-        formFields: ['matric_board', 'matric_passing_year', 'matric_obtained_marks', 'matric_total_marks'],
+        formFields: ['matric_passing_year', 'matric_obtained_marks', 'matric_total_marks'],
         dbFields: {
-          matric_board: null,
           matric_passing_year: null,
           matric_obtained_marks: null,
           matric_total_marks: null
@@ -2175,9 +2162,8 @@ const DocumentUpload = () => {
     }
     if (docType === 'intermediate' || docType === 'transcript') {
       return {
-        formFields: ['inter_board', 'inter_passing_year', 'inter_obtained_marks', 'inter_total_marks'],
+        formFields: ['inter_passing_year', 'inter_obtained_marks', 'inter_total_marks'],
         dbFields: {
-          inter_board: null,
           inter_passing_year: null,
           inter_obtained_marks: null,
           inter_total_marks: null
@@ -2760,11 +2746,9 @@ const DocumentUpload = () => {
       { key: 'father_phone', label: "Father's Phone" },
       { key: 'address', label: 'Current Address' },
       { key: 'permanent_address', label: 'Permanent Address' },
-      { key: 'matric_board', label: 'Matric Board' },
       { key: 'matric_passing_year', label: 'Matric Passing Year' },
       { key: 'matric_obtained_marks', label: 'Matric Obtained Marks' },
       { key: 'matric_total_marks', label: 'Matric Total Marks' },
-      { key: 'inter_board', label: 'Intermediate Board' },
       { key: 'inter_passing_year', label: 'Intermediate Passing Year' },
       { key: 'inter_obtained_marks', label: 'Intermediate Obtained Marks' },
       { key: 'inter_total_marks', label: 'Intermediate Total Marks' },
@@ -2847,11 +2831,9 @@ const DocumentUpload = () => {
         alternate_phone: formData.alternate_phone,
         father_phone: formData.father_phone,
         permanent_address: formData.permanent_address,
-        matric_board: formData.matric_board,
         matric_passing_year: formData.matric_passing_year ? parseInt(formData.matric_passing_year) : undefined,
         matric_obtained_marks: formData.matric_obtained_marks ? parseInt(formData.matric_obtained_marks) : undefined,
         matric_total_marks: formData.matric_total_marks ? parseInt(formData.matric_total_marks) : undefined,
-        inter_board: formData.inter_board,
         inter_passing_year: formData.inter_passing_year ? parseInt(formData.inter_passing_year) : undefined,
         inter_obtained_marks: formData.inter_obtained_marks ? parseInt(formData.inter_obtained_marks) : undefined,
         inter_total_marks: formData.inter_total_marks ? parseInt(formData.inter_total_marks) : undefined,
@@ -3234,7 +3216,6 @@ const DocumentUpload = () => {
                   Matric / SSC Details
                 </h4>
                 <div className="grid sm:grid-cols-2 gap-4 pl-6 border-l-2 border-yellow-500/20">
-                  {renderField('Board', 'matric_board', 'text', { placeholder: 'e.g., BISE Lahore', disabled: true })}
                   {renderField('Passing Year', 'matric_passing_year', 'number', { placeholder: 'e.g., 2022', disabled: true })}
                   {renderField('Marks Obtained', 'matric_obtained_marks', 'number', { placeholder: 'e.g., 950', disabled: true })}
                   {renderField('Total Marks', 'matric_total_marks', 'number', { placeholder: 'e.g., 1100', disabled: true })}
@@ -3267,7 +3248,6 @@ const DocumentUpload = () => {
                       <option value="Other">Other</option>
                     </select>
                   </div>
-                  {renderField('Board', 'inter_board', 'text', { placeholder: 'e.g., BISE Lahore', disabled: true })}
                   {renderField('Passing Year', 'inter_passing_year', 'number', { placeholder: 'e.g., 2024', disabled: true })}
                   {renderField('Marks Obtained', 'inter_obtained_marks', 'number', { placeholder: 'e.g., 450', disabled: true })}
                   {renderField('Total Marks', 'inter_total_marks', 'number', { placeholder: 'e.g., 550', disabled: true })}

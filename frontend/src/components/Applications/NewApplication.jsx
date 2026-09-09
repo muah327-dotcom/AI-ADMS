@@ -30,7 +30,6 @@ const NewApplication = () => {
     academic_records: {
       percentage: '',
       passing_year: '',
-      board: '',
       subjects: []
     },
     documents: [],
@@ -80,15 +79,13 @@ const NewApplication = () => {
         }
 
         const interPassingYear = profile.inter_passing_year || '';
-        const interBoard = profile.inter_board || '';
 
         setFormData(prev => ({
           ...prev,
           academic_records: {
             ...prev.academic_records,
             percentage: avgPercentage || prev.academic_records.percentage,
-            passing_year: interPassingYear || prev.academic_records.passing_year,
-            board: interBoard || prev.academic_records.board
+            passing_year: interPassingYear || prev.academic_records.passing_year
           }
         }));
       } catch (error) {
@@ -418,17 +415,6 @@ const NewApplication = () => {
                   className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                   placeholder="e.g., 2024"
                   value={formData.academic_records.passing_year}
-                  readOnly
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Board/University</label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-                  placeholder="e.g., BISE Lahore"
-                  value={formData.academic_records.board}
                   readOnly
                   required
                 />
