@@ -1930,7 +1930,8 @@ const DocumentUpload = () => {
     inter_board: '',
     inter_passing_year: '',
     inter_obtained_marks: '',
-    inter_total_marks: ''
+    inter_total_marks: '',
+    inter_qualification: ''
   });
 
   // Track which fields were auto-filled by OCR
@@ -2001,7 +2002,8 @@ const DocumentUpload = () => {
         inter_board: user.inter_board || prev.inter_board,
         inter_passing_year: user.inter_passing_year || prev.inter_passing_year,
         inter_obtained_marks: user.inter_obtained_marks || prev.inter_obtained_marks,
-        inter_total_marks: user.inter_total_marks || prev.inter_total_marks
+        inter_total_marks: user.inter_total_marks || prev.inter_total_marks,
+        inter_qualification: user.inter_qualification || prev.inter_qualification
       }));
     }
   }, [user]);
@@ -2853,6 +2855,7 @@ const DocumentUpload = () => {
         inter_passing_year: formData.inter_passing_year ? parseInt(formData.inter_passing_year) : undefined,
         inter_obtained_marks: formData.inter_obtained_marks ? parseInt(formData.inter_obtained_marks) : undefined,
         inter_total_marks: formData.inter_total_marks ? parseInt(formData.inter_total_marks) : undefined,
+        inter_qualification: formData.inter_qualification || undefined,
         is_verified: true,
         uploaded_documents: uploadedFiles.map(f => f.type),
         education: educationPayload
@@ -3246,6 +3249,24 @@ const DocumentUpload = () => {
                   Intermediate / HSSC Details
                 </h4>
                 <div className="grid sm:grid-cols-2 gap-4 pl-6 border-l-2 border-blue-500/20">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Intermediate Qualification</label>
+                    <select
+                      value={formData.inter_qualification || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, inter_qualification: e.target.value }))}
+                      disabled={true}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                    >
+                      <option value="">Select Qualification</option>
+                      <option value="FA">FA</option>
+                      <option value="FSc Pre-Medical">FSc Pre-Medical</option>
+                      <option value="FSc Pre-Engineering">FSc Pre-Engineering</option>
+                      <option value="ICS">ICS</option>
+                      <option value="I.Com">I.Com</option>
+                      <option value="DAE">DAE</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
                   {renderField('Board', 'inter_board', 'text', { placeholder: 'e.g., BISE Lahore', disabled: true })}
                   {renderField('Passing Year', 'inter_passing_year', 'number', { placeholder: 'e.g., 2024', disabled: true })}
                   {renderField('Marks Obtained', 'inter_obtained_marks', 'number', { placeholder: 'e.g., 450', disabled: true })}

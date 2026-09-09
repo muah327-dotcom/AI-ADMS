@@ -74,6 +74,16 @@ router.post('/', [
         error: `Your percentage (${submittedPercentage}%) is below the minimum required percentage (${program.min_percentage}%) for ${program.name}. Application cannot be submitted.`
       });
     }
+
+    // Check intermediate qualification eligibility
+    const requiredQuals = program.requiredIntermediateQualifications || [];
+    const studentQualification = user?.inter_qualification || null;
+    if (requiredQuals.length > 0 && (!studentQualification || !requiredQuals.includes(studentQualification))) {
+      return res.status(400).json({
+        error: `You are not eligible for ${program.name} because your Intermediate qualification (${studentQualification || 'Not specified'}) does not meet the program requirement. Required: ${requiredQuals.join(', ')}.`
+      });
+    }
+
     const allowedDocTypes = ['cnic', 'photograph', 'matric', 'intermediate', 'fsc', 'transcript', 'domicile', 'entry_test', 'other'];
 
     let sanitizedDocuments = (documents || []).map(doc => {
@@ -220,12 +230,22 @@ router.get('/programs/:id/eligibility', async (req, res) => {
 
     const meetsPercentage = studentPercentage >= program.min_percentage;
 
+    // Check intermediate qualification eligibility
+    const requiredQuals = program.requiredIntermediateQualifications || [];
+    const studentQualification = user?.inter_qualification || null;
+    const meetsQualification = requiredQuals.length === 0 || (studentQualification && requiredQuals.includes(studentQualification));
+
     const eligibility = {
-      eligible: meetsPercentage,
+      eligible: meetsPercentage && meetsQualification,
       percentage: {
         required: program.min_percentage,
         obtained: studentPercentage,
         meets: meetsPercentage
+      },
+      qualification: {
+        required: requiredQuals,
+        obtained: studentQualification,
+        meets: meetsQualification
       },
       subjects: {
         required: program.required_subjects || [],

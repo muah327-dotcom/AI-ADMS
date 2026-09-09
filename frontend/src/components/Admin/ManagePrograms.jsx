@@ -37,6 +37,8 @@ const ManagePrograms = () => {
   
   const [saving, setSaving] = useState(false);
 
+  const QUALIFICATION_OPTIONS = ['FA', 'FSc Pre-Medical', 'FSc Pre-Engineering', 'ICS', 'I.Com', 'DAE', 'Other'];
+
   const [formData, setFormData] = useState({
     name: '',
     department: '',
@@ -46,7 +48,7 @@ const ManagePrograms = () => {
     quota_seats: '',
     self_finance_seats: '',
     min_percentage: '',
-    required_subjects: '',
+    requiredIntermediateQualifications: [],
     duration_years: '',
     is_active: true
   });
@@ -208,7 +210,7 @@ const ManagePrograms = () => {
         self_finance_seats: parseInt(formData.self_finance_seats),
         min_percentage: parseFloat(formData.min_percentage),
         duration_years: parseInt(formData.duration_years),
-        required_subjects: formData.required_subjects.split(',').map(s => s.trim()).filter(Boolean)
+        requiredIntermediateQualifications: formData.requiredIntermediateQualifications
       };
 
       const response = await fetch(url, {
@@ -248,7 +250,7 @@ const ManagePrograms = () => {
       quota_seats: program.quota_seats,
       self_finance_seats: program.self_finance_seats,
       min_percentage: program.min_percentage,
-      required_subjects: program.required_subjects?.join(', ') || '',
+      requiredIntermediateQualifications: program.requiredIntermediateQualifications || [],
       duration_years: program.duration_years || '',
       is_active: program.is_active
     });
@@ -284,7 +286,7 @@ const ManagePrograms = () => {
       quota_seats: '',
       self_finance_seats: '',
       min_percentage: '',
-      required_subjects: '',
+      requiredIntermediateQualifications: [],
       duration_years: '',
       is_active: true
     });
@@ -468,11 +470,11 @@ const ManagePrograms = () => {
                 </div>
 
                 <div className="mt-4">
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Required Subjects:</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Required Intermediate Qualification:</p>
                   <div className="flex flex-wrap gap-1">
-                    {program.required_subjects?.map((subject, idx) => (
+                    {program.requiredIntermediateQualifications?.map((qual, idx) => (
                       <span key={idx} className="px-2 py-1 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 text-xs rounded border border-primary-200 dark:border-primary-800">
-                        {subject}
+                        {qual}
                       </span>
                     )) || <span className="text-xs text-gray-500 dark:text-gray-400">None specified</span>}
                   </div>
@@ -671,14 +673,36 @@ const ManagePrograms = () => {
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Required Subjects (comma-separated)</label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-                    placeholder="e.g., Mathematics, Physics, Chemistry"
-                    value={formData.required_subjects}
-                    onChange={(e) => setFormData({ ...formData, required_subjects: e.target.value })}
-                  />
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Required Intermediate Qualification</label>
+                  <div className="flex flex-wrap gap-2">
+                    {QUALIFICATION_OPTIONS.map((qual) => (
+                      <label
+                        key={qual}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm cursor-pointer transition-colors ${
+                          formData.requiredIntermediateQualifications.includes(qual)
+                            ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-300 dark:border-primary-700 text-primary-700 dark:text-primary-300'
+                            : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-primary-300 dark:hover:border-primary-600'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          className="sr-only"
+                          checked={formData.requiredIntermediateQualifications.includes(qual)}
+                          onChange={(e) => {
+                            const current = formData.requiredIntermediateQualifications;
+                            const updated = e.target.checked
+                              ? [...current, qual]
+                              : current.filter(q => q !== qual);
+                            setFormData({ ...formData, requiredIntermediateQualifications: updated });
+                          }}
+                        />
+                        {qual}
+                      </label>
+                    ))}
+                  </div>
+                  {formData.requiredIntermediateQualifications.length === 0 && (
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">No qualification selected — all intermediate backgrounds will be accepted</p>
+                  )}
                 </div>
                 <div className="sm:col-span-2">
                   <label className="flex items-center gap-2">

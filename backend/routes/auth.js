@@ -338,7 +338,8 @@ router.put('/profile', authenticateToken, [
   body('inter_board').optional({ checkFalsy: true }).trim(),
   body('inter_passing_year').optional({ checkFalsy: true }).isInt(),
   body('inter_obtained_marks').optional({ checkFalsy: true }).isInt(),
-  body('inter_total_marks').optional({ checkFalsy: true }).isInt()
+  body('inter_total_marks').optional({ checkFalsy: true }).isInt(),
+  body('inter_qualification').optional({ checkFalsy: true }).trim()
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -351,6 +352,7 @@ router.put('/profile', authenticateToken, [
       father_name, date_of_birth, gender, alternate_phone, father_phone, permanent_address,
       matric_board, matric_passing_year, matric_obtained_marks, matric_total_marks,
       inter_board, inter_passing_year, inter_obtained_marks, inter_total_marks,
+      inter_qualification,
       is_verified, uploaded_documents, education
     } = req.body;
     const updates = {};
@@ -374,6 +376,7 @@ router.put('/profile', authenticateToken, [
     if (inter_passing_year !== undefined) updates.inter_passing_year = inter_passing_year || null;
     if (inter_obtained_marks !== undefined) updates.inter_obtained_marks = inter_obtained_marks || null;
     if (inter_total_marks !== undefined) updates.inter_total_marks = inter_total_marks || null;
+    if (inter_qualification !== undefined) updates.inter_qualification = inter_qualification || null;
     if (is_verified !== undefined) updates.is_verified = is_verified;
     if (uploaded_documents !== undefined) updates.uploaded_documents = uploaded_documents;
 

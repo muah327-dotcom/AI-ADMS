@@ -172,6 +172,14 @@ const NewApplication = () => {
       return;
     }
 
+    // Frontend qualification eligibility guard
+    if (eligibility && eligibility.qualification && !eligibility.qualification.meets) {
+      const requiredQuals = eligibility.qualification.required || [];
+      const studentQual = eligibility.qualification.obtained || 'Not specified';
+      toast.error(`You are not eligible for ${selectedProgram?.name} because your Intermediate qualification (${studentQual}) does not meet the program requirement. Required: ${requiredQuals.join(', ')}.`);
+      return;
+    }
+
     // SD-13: Frontend maximum 4 valid applications guard
     if (existingAppsCount >= 4) {
       toast.error('Maximum application limit reached. You can only submit a maximum of 4 valid applications.');
@@ -335,7 +343,11 @@ const NewApplication = () => {
             {eligibility && (() => {
               const currentPercentage = parseFloat(formData.academic_records.percentage) || parseFloat(eligibility.percentage?.obtained) || 0;
               const requiredPercentage = eligibility.percentage?.required ?? selectedProgram?.min_percentage ?? 0;
-              const isEligible = currentPercentage >= requiredPercentage;
+              const meetsPercentage = currentPercentage >= requiredPercentage;
+              const meetsQualification = eligibility.qualification?.meets ?? true;
+              const isEligible = meetsPercentage && meetsQualification;
+              const requiredQuals = eligibility.qualification?.required || [];
+              const studentQual = eligibility.qualification?.obtained || null;
 
               return (
                 <div className="mt-4 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
@@ -343,18 +355,26 @@ const NewApplication = () => {
                     {isEligible ? (
                       <>
                         <CheckCircle className="h-5 w-5 text-green-500" />
-                        <span className="font-medium text-green-800 dark:text-green-300">You are eligible</span>
+                        <span className="font-medium text-green-800 dark:text-green-300">You are eligible for this program</span>
                       </>
                     ) : (
                       <>
                         <AlertCircle className="h-5 w-5 text-red-500 dark:text-red-400" />
-                        <span className="font-medium text-red-800 dark:text-red-300">You do not meet minimum percentage requirements</span>
+                        <span className="font-medium text-red-800 dark:text-red-300">You are not eligible for this program</span>
                       </>
                     )}
                   </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Required: {requiredPercentage}% | Your percentage: {currentPercentage}%
-                  </p>
+                  <div className="text-sm text-gray-500 dark:text-gray-400 space-y-1">
+                    {!meetsPercentage && (
+                      <p>Required: {requiredPercentage}% | Your percentage: {currentPercentage}%</p>
+                    )}
+                    {!meetsQualification && requiredQuals.length > 0 && (
+                      <p>Required Intermediate Qualification: {requiredQuals.join(', ')} | Your qualification: {studentQual || 'Not specified'}</p>
+                    )}
+                    {meetsPercentage && !meetsQualification && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400">Please complete your Intermediate qualification in your profile before applying.</p>
+                    )}
+                  </div>
                 </div>
               );
             })()}
@@ -427,7 +447,7 @@ const NewApplication = () => {
             </button>
             <button
               type="submit"
-              disabled={submitting || existingAppsCount >= 4}
+              disabled={submitting || existingAppsCount >= 4 || (eligibility && !eligibility.eligible)}
               className="px-8 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 font-medium"
             >
               {submitting ? (

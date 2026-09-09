@@ -93,6 +93,11 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: null
   },
+  inter_qualification: {
+    type: String,
+    enum: ['FA', 'FSc Pre-Medical', 'FSc Pre-Engineering', 'ICS', 'I.Com', 'DAE', 'Other', null],
+    default: null
+  },
   education: {
     matric: {
       totalMarks: { type: Number, default: null },

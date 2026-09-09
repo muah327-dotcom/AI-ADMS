@@ -593,8 +593,7 @@ router.post('/programs', [
   body('name').trim().notEmpty(),
   body('department').trim().notEmpty(),
   body('total_seats').isInt({ min: 1 }),
-  body('min_percentage').isFloat({ min: 0, max: 100 }),
-  body('required_subjects').isArray()
+  body('min_percentage').isFloat({ min: 0, max: 100 })
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
