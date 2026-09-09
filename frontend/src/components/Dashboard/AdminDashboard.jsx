@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import SkeletonLoader from '../Common/SkeletonLoader';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../hooks/useAuth';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -42,6 +43,7 @@ const AdminDashboard = () => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const navigate = useNavigate();
+  const { user, isMainAdmin, isDepartmentAdmin, department } = useAuth();
   const [stats, setStats] = useState(null);
   const [recentApplications, setRecentApplications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -126,8 +128,12 @@ const AdminDashboard = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Admin Dashboard</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Manage admissions and view real-time analytics</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            {isDepartmentAdmin ? `${department || 'Department'} Dashboard` : 'Admin Dashboard'}
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {isDepartmentAdmin ? `Manage ${department || 'department'} admissions and analytics` : 'Manage admissions and view real-time analytics'}
+          </p>
         </div>
       </div>
 

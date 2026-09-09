@@ -135,7 +135,8 @@ const generateToken = (user) => {
       id: user.id,
       email: user.email,
       role: user.role,
-      full_name: sanitizeToEnglishName(user.full_name)
+      full_name: sanitizeToEnglishName(user.full_name),
+      department: user.department || null
     },
     JWT_SECRET,
     { expiresIn: '24h' }
@@ -271,6 +272,7 @@ router.post('/login', [
         email: user.email,
         full_name: sanitizeToEnglishName(user.full_name) || user.full_name,
         role: user.role,
+        department: user.department || null,
         cnic: user.cnic,
         phone: user.phone,
         address: user.address,

@@ -22,6 +22,7 @@ const ManagePrograms = lazy(() => import('./components/Admin/ManagePrograms'));
 const AllApplications = lazy(() => import('./components/Admin/AllApplications'));
 const StudentManagement = lazy(() => import('./components/Admin/StudentManagement'));
 const Settings = lazy(() => import('./components/Settings/Settings'));
+const AdminManagement = lazy(() => import('./components/Admin/AdminManagement'));
 const PrivacyPolicy = lazy(() => import('./components/Legal/PrivacyPolicy'));
 const TermsOfService = lazy(() => import('./components/Legal/TermsOfService'));
 const ContactPage = lazy(() => import('./components/Legal/ContactPage'));
@@ -67,7 +68,7 @@ const PublicRoute = ({ children }) => {
   }
 
   if (user) {
-    return <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} replace />;
+    return <Navigate to={user.role === 'admin' || user.role === 'department_admin' ? '/admin' : '/dashboard'} replace />;
   }
 
   return children;
@@ -115,7 +116,7 @@ function AppRoutes() {
 
         {/* Admin Routes */}
         <Route path="/admin" element={
-          <ProtectedRoute allowedRoles={['admin']}>
+          <ProtectedRoute allowedRoles={['admin', 'department_admin']}>
             <Layout />
           </ProtectedRoute>
         }>
@@ -126,6 +127,7 @@ function AppRoutes() {
           <Route path="students" element={<StudentManagement />} />
           <Route path="merit-list" element={<MeritList admin />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="manage-admins" element={<AdminManagement />} />
         </Route>
       </Routes>
     </Suspense>

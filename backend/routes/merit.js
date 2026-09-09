@@ -1,6 +1,6 @@
 import express from 'express';
 import mongoose from 'mongoose';
-import { authenticateToken, requireRole } from '../middleware/auth.js';
+import { authenticateToken, requireRole, getDepartmentFilter, isMainAdmin } from '../middleware/auth.js';
 import Application from '../models/Application.js';
 import Program from '../models/Program.js';
 
@@ -25,7 +25,7 @@ const findProgram = async (identifier) => {
 };
 
 // 1. Configure Program Fee & Deadline (Admin)
-router.post('/program-fee/:programId', requireRole(['admin']), async (req, res) => {
+router.post('/program-fee/:programId', requireRole(['admin', 'department_admin']), async (req, res) => {
   try {
     const { programId } = req.params;
     const { admission_fee, tuition_fee, bank_name, account_number, account_title, fee_deadline } = req.body;
@@ -33,6 +33,13 @@ router.post('/program-fee/:programId', requireRole(['admin']), async (req, res) 
     const program = await findProgram(programId);
     if (!program) {
       return res.status(404).json({ error: `Program '${programId}' not found` });
+    }
+
+    // Department admin: verify program belongs to their department
+    const deptFilter = getDepartmentFilter(req);
+    const mainAdmin = isMainAdmin(req);
+    if (!mainAdmin && deptFilter && program.department !== deptFilter.department) {
+      return res.status(403).json({ error: 'Access denied: program not in your department' });
     }
 
     if (admission_fee !== undefined) program.admission_fee = Number(admission_fee);
@@ -53,7 +60,7 @@ router.post('/program-fee/:programId', requireRole(['admin']), async (req, res) 
 });
 
 // 2. Generate 1st Merit List (Admin)
-router.post('/generate/:programId', requireRole(['admin']), async (req, res) => {
+router.post('/generate/:programId', requireRole(['admin', 'department_admin']), async (req, res) => {
   try {
     const { programId } = req.params;
     const { quota_percentages = { merit: 80, quota: 10, self_finance: 10 }, fee_deadline } = req.body;
@@ -61,6 +68,13 @@ router.post('/generate/:programId', requireRole(['admin']), async (req, res) => 
     const program = await findProgram(programId);
     if (!program) {
       return res.status(404).json({ error: `Program '${programId}' not found` });
+    }
+
+    // Department admin: verify program belongs to their department
+    const deptFilter = getDepartmentFilter(req);
+    const mainAdmin = isMainAdmin(req);
+    if (!mainAdmin && deptFilter && program.department !== deptFilter.department) {
+      return res.status(403).json({ error: 'Access denied: program not in your department' });
     }
 
     if (fee_deadline) {
@@ -177,7 +191,7 @@ router.post('/generate/:programId', requireRole(['admin']), async (req, res) => 
 // 3. Generate Next (2nd / 3rd) Merit List (Admin)
 // Drops unpaid students whose deadline has passed & promotes waitlisted students into vacant seats
 // Limited to a maximum of 3 merit lists per program
-router.post('/generate-next/:programId', requireRole(['admin']), async (req, res) => {
+router.post('/generate-next/:programId', requireRole(['admin', 'department_admin']), async (req, res) => {
   try {
     const { programId } = req.params;
     const { fee_deadline } = req.body;
@@ -185,6 +199,13 @@ router.post('/generate-next/:programId', requireRole(['admin']), async (req, res
     const program = await findProgram(programId);
     if (!program) {
       return res.status(404).json({ error: `Program '${programId}' not found` });
+    }
+
+    // Department admin: verify program belongs to their department
+    const deptFilter = getDepartmentFilter(req);
+    const mainAdmin = isMainAdmin(req);
+    if (!mainAdmin && deptFilter && program.department !== deptFilter.department) {
+      return res.status(403).json({ error: 'Access denied: program not in your department' });
     }
 
     // Enforce maximum of 3 merit lists per program
@@ -293,13 +314,20 @@ const getOrdinal = (n) => {
 
 // 3b. Reset Merit Lists for a Program (Admin)
 // Resets all application statuses back to pending and sets current_merit_list to 0
-router.post('/reset-merit/:programId', requireRole(['admin']), async (req, res) => {
+router.post('/reset-merit/:programId', requireRole(['admin', 'department_admin']), async (req, res) => {
   try {
     const { programId } = req.params;
 
     const program = await findProgram(programId);
     if (!program) {
       return res.status(404).json({ error: `Program '${programId}' not found` });
+    }
+
+    // Department admin: verify program belongs to their department
+    const deptFilter = getDepartmentFilter(req);
+    const mainAdmin = isMainAdmin(req);
+    if (!mainAdmin && deptFilter && program.department !== deptFilter.department) {
+      return res.status(403).json({ error: 'Access denied: program not in your department' });
     }
 
     // Reset all applications for this program back to pending
@@ -426,7 +454,7 @@ router.post('/upload-paid-challan/:applicationId', async (req, res) => {
 });
 
 // 6. Verify Fee Payment (Admin)
-router.patch('/verify-fee/:applicationId', requireRole(['admin']), async (req, res) => {
+router.patch('/verify-fee/:applicationId', requireRole(['admin', 'department_admin']), async (req, res) => {
   try {
     const { applicationId } = req.params;
     const { action } = req.body; // 'verify' or 'reject'
@@ -434,6 +462,16 @@ router.patch('/verify-fee/:applicationId', requireRole(['admin']), async (req, r
     const application = await Application.findById(applicationId);
     if (!application) {
       return res.status(404).json({ error: 'Application not found' });
+    }
+
+    // Department admin: verify application belongs to their department
+    const deptFilter = getDepartmentFilter(req);
+    const mainAdmin = isMainAdmin(req);
+    if (!mainAdmin && deptFilter) {
+      const program = await Program.findById(application.program_id);
+      if (!program || program.department !== deptFilter.department) {
+        return res.status(403).json({ error: 'Access denied: application not in your department' });
+      }
     }
 
     if (action === 'verify') {
@@ -581,11 +619,20 @@ router.get('/student/my-position', async (req, res) => {
 });
 
 // 9. All Merit Lists (Admin)
-router.get('/all', requireRole(['admin']), async (req, res) => {
+router.get('/all', requireRole(['admin', 'department_admin']), async (req, res) => {
   try {
-    const applications = await Application.find({
-      status: { $in: ['approved', 'confirmed', 'waitlisted', 'dropped'] }
-    }).populate('user_id', 'full_name email cnic')
+    const deptFilter = getDepartmentFilter(req);
+    const mainAdmin = isMainAdmin(req);
+
+    // Build filter for department admin
+    const filter = { status: { $in: ['approved', 'confirmed', 'waitlisted', 'dropped'] } };
+    if (!mainAdmin && deptFilter) {
+      const deptPrograms = await Program.find({ department: deptFilter.department }).select('_id');
+      filter.program_id = { $in: deptPrograms.map(p => p._id) };
+    }
+
+    const applications = await Application.find(filter)
+      .populate('user_id', 'full_name email cnic')
       .populate('program_id', 'name department')
       .sort({ created_at: -1 });
 

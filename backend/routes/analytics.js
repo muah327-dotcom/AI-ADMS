@@ -1,17 +1,30 @@
 import express from 'express';
-import { authenticateToken, requireRole } from '../middleware/auth.js';
+import { authenticateToken, requireRole, getDepartmentFilter, isMainAdmin } from '../middleware/auth.js';
 import Application from '../models/Application.js';
 import Program from '../models/Program.js';
 
 const router = express.Router();
 
 router.use(authenticateToken);
-router.use(requireRole(['admin']));
+router.use(requireRole(['admin', 'department_admin']));
+
+// Helper to get program IDs for department
+const getDeptProgramIds = async (req) => {
+  const deptFilter = getDepartmentFilter(req);
+  const mainAdmin = isMainAdmin(req);
+  if (!mainAdmin && deptFilter) {
+    const programs = await Program.find({ department: deptFilter.department }).select('_id');
+    return programs.map(p => p._id);
+  }
+  return null;
+};
 
 router.get('/admissions-by-category', async (req, res) => {
   try {
-    const totalCount = await Application.countDocuments();
+    const programIds = await getDeptProgramIds(req);
+    const filter = programIds ? { program_id: { $in: programIds } } : {};
 
+    const totalCount = await Application.countDocuments(filter);
     const chartData = [
       { category: 'Merit', count: totalCount, percentage: '100' }
     ];
@@ -25,8 +38,11 @@ router.get('/admissions-by-category', async (req, res) => {
 
 router.get('/applications-by-program', async (req, res) => {
   try {
-    // Single aggregation instead of loading all apps into memory
+    const programIds = await getDeptProgramIds(req);
+    const matchStage = programIds ? { program_id: { $in: programIds } } : {};
+
     const data = await Application.aggregate([
+      ...(Object.keys(matchStage).length > 0 ? [{ $match: matchStage }] : []),
       { $group: { _id: '$program_id', count: { $sum: 1 } } },
       { $lookup: { from: 'programs', localField: '_id', foreignField: '_id', as: 'program' } },
       { $unwind: { path: '$program', preserveNullAndEmptyArrays: true } },
@@ -42,7 +58,9 @@ router.get('/applications-by-program', async (req, res) => {
 
 router.get('/performance-insights', async (req, res) => {
   try {
-    // Aggregation pipeline instead of loading all applications
+    const programIds = await getDeptProgramIds(req);
+    const filter = programIds ? { program_id: { $in: programIds } } : {};
+
     const ranges = [
       { label: '90-100', min: 90, max: 101 },
       { label: '80-89', min: 80, max: 90 },
@@ -51,10 +69,11 @@ router.get('/performance-insights', async (req, res) => {
       { label: 'Below 60', min: 0, max: 60 }
     ];
 
-    const totalCount = await Application.countDocuments();
+    const totalCount = await Application.countDocuments(filter);
 
     const chartData = await Promise.all(ranges.map(async ({ label, min, max }) => {
       const count = await Application.countDocuments({
+        ...filter,
         $expr: {
           $let: {
             vars: { avg: { $avg: ['$matric_percentage', '$fsc_percentage'] } },
@@ -78,8 +97,11 @@ router.get('/performance-insights', async (req, res) => {
 
 router.get('/monthly-trends', async (req, res) => {
   try {
-    // Single aggregation instead of loading all applications into memory
+    const programIds = await getDeptProgramIds(req);
+    const matchStage = programIds ? { program_id: { $in: programIds } } : {};
+
     const data = await Application.aggregate([
+      ...(Object.keys(matchStage).length > 0 ? [{ $match: matchStage }] : []),
       {
         $group: {
           _id: {
@@ -117,18 +139,13 @@ router.get('/monthly-trends', async (req, res) => {
 
 router.get('/seat-occupancy', async (req, res) => {
   try {
-    // Single aggregation instead of N+1 queries
+    const programIds = await getDeptProgramIds(req);
+    const matchStage = programIds ? { program_id: { $in: programIds } } : {};
+
     const occupancyData = await Application.aggregate([
-      { $match: { status: 'approved' } },
+      { $match: { status: 'approved', ...matchStage } },
       { $group: { _id: '$program_id', filled: { $sum: 1 } } },
-      {
-        $lookup: {
-          from: 'programs',
-          localField: '_id',
-          foreignField: '_id',
-          as: 'program'
-        }
-      },
+      { $lookup: { from: 'programs', localField: '_id', foreignField: '_id', as: 'program' } },
       { $unwind: '$program' },
       {
         $project: {

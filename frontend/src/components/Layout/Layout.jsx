@@ -22,7 +22,7 @@ import {
 import toast from 'react-hot-toast';
 
 const Layout = () => {
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout, isAdmin, isMainAdmin, isDepartmentAdmin, isAnyAdmin, department } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -66,9 +66,20 @@ const Layout = () => {
     { name: 'Manage Programs', icon: GraduationCap, path: '/admin/programs' },
     { name: 'Students', icon: Users, path: '/admin/students' },
     { name: 'Merit Lists', icon: Award, path: '/admin/merit-list' },
+    // Main Admin only: Admin Management
+    ...(isMainAdmin ? [{ name: 'Admin Management', icon: Users, path: '/admin/manage-admins' }] : [])
   ];
 
-  const navItems = isAdmin ? adminNavItems : studentNavItems;
+  const departmentAdminNavItems = [
+    { name: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
+    { name: 'Analytics', icon: BarChart3, path: '/admin/analytics' },
+    { name: 'Applications', icon: FileText, path: '/admin/applications' },
+    { name: 'Programs', icon: GraduationCap, path: '/admin/programs' },
+    { name: 'Students', icon: Users, path: '/admin/students' },
+    { name: 'Merit Lists', icon: Award, path: '/admin/merit-list' },
+  ];
+
+  const navItems = isMainAdmin ? adminNavItems : (isDepartmentAdmin ? departmentAdminNavItems : studentNavItems);
 
   const isActive = (path) => {
     if (path === '/admin' || path === '/dashboard') {
@@ -95,13 +106,15 @@ const Layout = () => {
       >
         {/* Logo */}
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-            <Link to={isAdmin ? '/admin' : '/dashboard'} className="flex items-center space-x-2">
+            <Link to={isAnyAdmin ? '/admin' : '/dashboard'} className="flex items-center space-x-2">
               <div className="w-10 h-10 flex items-center justify-center">
                 <img src="/logo.png" alt="GGC Township Logo" className="w-10 h-10 object-contain" />
               </div>
               <div>
                 <h1 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">GGC Township</h1>
-                <p className="text-xs text-gray-500 dark:text-gray-400">AI-Enhanced Admissions</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {isDepartmentAdmin ? department || 'Department Admin' : 'AI-Enhanced Admissions'}
+                </p>
               </div>
             </Link>
             <button
@@ -156,7 +169,9 @@ const Layout = () => {
                 </div>
                 <div className="flex-1 text-left">
                   <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{user?.full_name}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{user?.role}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+                    {isDepartmentAdmin ? `Dept Admin - ${department || 'N/A'}` : user?.role}
+                  </p>
                 </div>
                 <ChevronDown className={`h-4 w-4 text-gray-400 dark:text-gray-500 transition-transform ${profileOpen ? 'rotate-180' : ''}`} />
               </button>
@@ -164,7 +179,7 @@ const Layout = () => {
               {profileOpen && (
                 <div className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1">
                   <Link
-                    to={isAdmin ? '/admin/settings' : '/dashboard/settings'}
+                    to={isAnyAdmin ? '/admin/settings' : '/dashboard/settings'}
                     className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                   >
                     <Settings className="h-4 w-4 mr-2" />

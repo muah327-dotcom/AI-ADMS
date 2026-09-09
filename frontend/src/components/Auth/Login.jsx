@@ -29,7 +29,12 @@ const Login = () => {
       
       if (result.success) {
         toast.success('Login successful!');
-        navigate(result.user.role === 'admin' ? '/admin' : '/dashboard');
+        const role = result.user.role;
+        if (role === 'admin' || role === 'department_admin') {
+          navigate('/admin');
+        } else {
+          navigate('/dashboard');
+        }
       } else {
         toast.error(result.error || 'Login failed');
       }
