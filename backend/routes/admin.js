@@ -589,6 +589,25 @@ router.delete('/departments/:id', requireMainAdmin, async (req, res) => {
 // PROGRAM ROUTES
 // ============================================
 
+// GET /admin/programs — department-scoped programs for dropdowns
+router.get('/programs', async (req, res) => {
+  try {
+    const deptFilter = getDepartmentFilter(req);
+    const mainAdmin = isMainAdmin(req);
+
+    const filter = {};
+    if (!mainAdmin && deptFilter) {
+      filter.department = deptFilter.department;
+    }
+
+    const programs = await Program.find(filter).sort({ name: 1 });
+    res.json({ programs });
+  } catch (error) {
+    console.error('Fetch programs error:', error);
+    res.status(500).json({ error: 'Failed to fetch programs' });
+  }
+});
+
 router.post('/programs', [
   body('name').trim().notEmpty(),
   body('department').trim().notEmpty(),

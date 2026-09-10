@@ -68,8 +68,8 @@ const ManagePrograms = () => {
     try {
       const token = localStorage.getItem('token');
       
-      // Department admins: only fetch programs, skip departments (they can't manage them)
-      const programsRes = await fetch('/api/applications/programs', { headers: { 'Authorization': `Bearer ${token}` } });
+      // Department admins: only fetch their department's programs via admin-scoped endpoint
+      const programsRes = await fetch('/api/admin/programs', { headers: { 'Authorization': `Bearer ${token}` } });
       
       if (programsRes.ok) {
         const data = await programsRes.json();
@@ -113,7 +113,7 @@ const ManagePrograms = () => {
   const fetchPrograms = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/applications/programs', {
+      const response = await fetch('/api/admin/programs', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {

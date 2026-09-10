@@ -67,18 +67,13 @@ const MeritList = ({ admin = false }) => {
       const paramProg = searchParams.get('program');
 
       if (admin) {
-        const response = await fetch('/api/applications/programs', {
+        const response = await fetch('/api/admin/programs', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
 
         if (response.ok) {
           const data = await response.json();
           let progList = data.programs || [];
-
-          // Department admin: only show programs from their department
-          if (isDepartmentAdmin && department) {
-            progList = progList.filter(p => p.department === department);
-          }
 
           setPrograms(progList);
           if (progList.length > 0) {

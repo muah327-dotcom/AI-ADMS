@@ -71,7 +71,7 @@ const AllApplications = () => {
         fetch(`/api/admin/all-applications?${params}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         }),
-        fetch('/api/applications/programs', {
+        fetch('/api/admin/programs', {
           headers: { 'Authorization': `Bearer ${token}` }
         })
       ]);
