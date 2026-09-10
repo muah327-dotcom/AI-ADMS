@@ -277,7 +277,7 @@ router.get('/all-applications', async (req, res) => {
       query
         .populate('user_id', 'full_name email cnic phone father_name father_phone alternate_phone date_of_birth gender address permanent_address matric_passing_year matric_obtained_marks matric_total_marks inter_passing_year inter_obtained_marks inter_total_marks inter_qualification is_verified uploaded_documents avatar_url')
         .populate('program_id', 'name department min_percentage required_subjects total_seats admission_fee tuition_fee total_fee')
-        .sort({ application_date: -1 })
+        .sort({ fsc_percentage: -1, application_date: -1 })
         .skip((page - 1) * limit)
         .limit(parseInt(limit)),
       Application.countDocuments(query.getFilter())
