@@ -279,12 +279,7 @@ const runSeeder = async () => {
 
       const scoredApps = pendingApps.map(app => {
         const fsc = app.fsc_percentage || 0;
-        const matric = app.matric_percentage || fsc;
-        const entryTest = app.entry_test_marks || 0;
-        let score = entryTest > 0
-          ? (fsc * 0.5) + (entryTest * 0.3) + (matric * 0.2)
-          : (fsc * 0.7) + (matric * 0.3);
-        return { app, score: Math.round(score * 100) / 100 };
+        return { app, score: Math.round(fsc * 100) / 100 };
       });
 
       scoredApps.sort((a, b) => b.score - a.score);

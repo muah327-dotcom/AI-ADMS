@@ -57,26 +57,12 @@ const NewApplication = () => {
 
         const data = await response.json();
         const profile = data.user;
-        const matricObt = parseFloat(profile.matric_obtained_marks);
-        const matricTot = parseFloat(profile.matric_total_marks);
         const interObt = parseFloat(profile.inter_obtained_marks);
         const interTot = parseFloat(profile.inter_total_marks);
 
-        // Calculate individual percentages
-        const matricPct = (!isNaN(matricObt) && !isNaN(matricTot) && matricTot > 0)
-          ? (matricObt / matricTot) * 100 : null;
+        // Use Intermediate percentage only for merit calculation
         const interPct = (!isNaN(interObt) && !isNaN(interTot) && interTot > 0)
-          ? (interObt / interTot) * 100 : null;
-
-        // Average of available percentages
-        let avgPercentage = null;
-        if (matricPct !== null && interPct !== null) {
-          avgPercentage = ((matricPct + interPct) / 2).toFixed(2);
-        } else if (interPct !== null) {
-          avgPercentage = interPct.toFixed(2);
-        } else if (matricPct !== null) {
-          avgPercentage = matricPct.toFixed(2);
-        }
+          ? ((interObt / interTot) * 100).toFixed(2) : null;
 
         const interPassingYear = profile.inter_passing_year || '';
 
@@ -84,7 +70,7 @@ const NewApplication = () => {
           ...prev,
           academic_records: {
             ...prev.academic_records,
-            percentage: avgPercentage || prev.academic_records.percentage,
+            percentage: interPct || prev.academic_records.percentage,
             passing_year: interPassingYear || prev.academic_records.passing_year
           }
         }));

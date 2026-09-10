@@ -102,19 +102,10 @@ router.post('/generate/:programId', requireRole(['admin', 'department_admin']), 
 
     const scoredApplications = applications.map(app => {
       const fsc = app.fsc_percentage || 0;
-      const matric = app.matric_percentage || fsc;
-      const entryTest = app.entry_test_marks || 0;
-
-      let totalScore = 0;
-      if (entryTest > 0) {
-        totalScore = (fsc * 0.5) + (entryTest * 0.3) + (matric * 0.2);
-      } else {
-        totalScore = (fsc * 0.7) + (matric * 0.3);
-      }
 
       return {
         app,
-        calculated_score: Math.round(totalScore * 100) / 100,
+        calculated_score: Math.round(fsc * 100) / 100,
         academic_percentage: fsc
       };
     });
@@ -263,10 +254,7 @@ router.post('/generate-next/:programId', requireRole(['admin', 'department_admin
 
       const scoredWaitlisted = waitlistedApps.map(app => {
         const fsc = app.fsc_percentage || 0;
-        const matric = app.matric_percentage || fsc;
-        const entryTest = app.entry_test_marks || 0;
-        const score = entryTest > 0 ? (fsc * 0.5 + entryTest * 0.3 + matric * 0.2) : (fsc * 0.7 + matric * 0.3);
-        return { app, score };
+        return { app, score: fsc };
       }).sort((a, b) => b.score - a.score);
 
       const appsToPromote = scoredWaitlisted.slice(0, vacantSeats);
@@ -515,14 +503,6 @@ router.get('/program/:programId', async (req, res) => {
 
     const scoredApps = applications.map(app => {
       const fsc = app.fsc_percentage || 0;
-      const matric = app.matric_percentage || fsc;
-      const entry = app.entry_test_marks || 0;
-      let score = 0;
-      if (entry > 0) {
-        score = (fsc * 0.5) + (entry * 0.3) + (matric * 0.2);
-      } else {
-        score = (fsc * 0.7) + (matric * 0.3);
-      }
 
       let cat = 'merit';
       if (app.remarks?.toLowerCase().includes('category: quota') || app.remarks?.toLowerCase().includes('quota')) cat = 'quota';
@@ -530,7 +510,7 @@ router.get('/program/:programId', async (req, res) => {
 
       return {
         app,
-        score: Math.round(score * 100) / 100,
+        score: Math.round(fsc * 100) / 100,
         category: cat
       };
     });
@@ -595,9 +575,6 @@ router.get('/student/my-position', async (req, res) => {
 
     const meritEntries = applications.map((app, index) => {
       const fsc = app.fsc_percentage || 0;
-      const matric = app.matric_percentage || fsc;
-      const entry = app.entry_test_marks || 0;
-      const score = entry > 0 ? (fsc * 0.5 + entry * 0.3 + matric * 0.2) : (fsc * 0.7 + matric * 0.3);
 
       return {
         id: app._id,
@@ -607,7 +584,7 @@ router.get('/student/my-position', async (req, res) => {
         status: app.status === 'approved' ? 'selected' : app.status,
         fee_status: app.fee_status || 'unpaid',
         fee_deadline: app.fee_deadline || app.program_id?.fee_deadline,
-        score: Math.round(score * 100) / 100
+        score: Math.round(fsc * 100) / 100
       };
     });
 
@@ -638,9 +615,6 @@ router.get('/all', requireRole(['admin', 'department_admin']), async (req, res) 
 
     const meritLists = applications.map((app, index) => {
       const fsc = app.fsc_percentage || 0;
-      const matric = app.matric_percentage || fsc;
-      const entry = app.entry_test_marks || 0;
-      const score = entry > 0 ? (fsc * 0.5 + entry * 0.3 + matric * 0.2) : (fsc * 0.7 + matric * 0.3);
 
       return {
         id: app._id,
@@ -651,7 +625,7 @@ router.get('/all', requireRole(['admin', 'department_admin']), async (req, res) 
         fee_status: app.fee_status || 'unpaid',
         fee_receipt_url: app.fee_challan?.paid_receipt_url || null,
         rank: index + 1,
-        score: Math.round(score * 100) / 100,
+        score: Math.round(fsc * 100) / 100,
         generated_at: app.created_at
       };
     });
