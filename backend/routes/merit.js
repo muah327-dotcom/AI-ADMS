@@ -63,7 +63,7 @@ router.post('/program-fee/:programId', requireRole(['admin', 'department_admin']
 router.post('/generate/:programId', requireRole(['admin', 'department_admin']), async (req, res) => {
   try {
     const { programId } = req.params;
-    const { quota_percentages = { merit: 80, quota: 10, self_finance: 10 }, fee_deadline } = req.body;
+    const { quota_percentages = { merit: 80, quota: 10, self_finance: 10 }, fee_deadline, minimum_merit } = req.body;
 
     const program = await findProgram(programId);
     if (!program) {
@@ -110,7 +110,14 @@ router.post('/generate/:programId', requireRole(['admin', 'department_admin']), 
       };
     });
 
-    scoredApplications.sort((a, b) => b.calculated_score - a.calculated_score);
+    // Apply minimum merit threshold if provided
+    let filteredApplications = scoredApplications;
+    if (minimum_merit !== undefined && minimum_merit !== null && minimum_merit !== '' && !isNaN(parseFloat(minimum_merit))) {
+      const threshold = parseFloat(minimum_merit);
+      filteredApplications = scoredApplications.filter(item => item.calculated_score >= threshold);
+    }
+
+    filteredApplications.sort((a, b) => b.calculated_score - a.calculated_score);
 
     const totalSeats = program.total_seats || 50;
     const meritSeats = Math.floor(totalSeats * (quota_percentages.merit || 80) / 100);
@@ -119,8 +126,8 @@ router.post('/generate/:programId', requireRole(['admin', 'department_admin']), 
     const defaultDeadline = program.fee_deadline || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     const meritList = [];
 
-    for (let i = 0; i < scoredApplications.length; i++) {
-      const item = scoredApplications[i];
+    for (let i = 0; i < filteredApplications.length; i++) {
+      const item = filteredApplications[i];
       const app = item.app;
       let category = 'merit';
 
@@ -185,7 +192,7 @@ router.post('/generate/:programId', requireRole(['admin', 'department_admin']), 
 router.post('/generate-next/:programId', requireRole(['admin', 'department_admin']), async (req, res) => {
   try {
     const { programId } = req.params;
-    const { fee_deadline } = req.body;
+    const { fee_deadline, minimum_merit } = req.body;
 
     const program = await findProgram(programId);
     if (!program) {
@@ -255,9 +262,18 @@ router.post('/generate-next/:programId', requireRole(['admin', 'department_admin
       const scoredWaitlisted = waitlistedApps.map(app => {
         const fsc = app.fsc_percentage || 0;
         return { app, score: fsc };
-      }).sort((a, b) => b.score - a.score);
+      });
 
-      const appsToPromote = scoredWaitlisted.slice(0, vacantSeats);
+      // Apply minimum merit threshold if provided
+      let filteredWaitlisted = scoredWaitlisted;
+      if (minimum_merit !== undefined && minimum_merit !== null && minimum_merit !== '' && !isNaN(parseFloat(minimum_merit))) {
+        const threshold = parseFloat(minimum_merit);
+        filteredWaitlisted = scoredWaitlisted.filter(item => item.score >= threshold);
+      }
+
+      filteredWaitlisted.sort((a, b) => b.score - a.score);
+
+      const appsToPromote = filteredWaitlisted.slice(0, vacantSeats);
 
       for (const item of appsToPromote) {
         const app = item.app;
