@@ -482,6 +482,19 @@ router.get('/students', async (req, res) => {
       baseAppFilter.program_id = programFilter;
     }
 
+    // --- Data migration: reset stale merit_list_number values ---
+    // Old schema defaulted merit_list_number to 1, so existing non-merit applications
+    // still have merit_list_number=1 in MongoDB. fee_challan.challan_number is ONLY
+    // set during merit generation, so use it as the source of truth.
+    // Reset merit_list_number to null for applications that were never merit-generated.
+    await Application.updateMany(
+      { merit_list_number: { $ne: null }, $or: [
+        { 'fee_challan.challan_number': null },
+        { 'fee_challan.challan_number': { $exists: false } }
+      ]},
+      { $set: { merit_list_number: null } }
+    );
+
     // --- Compute counts for all 3 categories (always, regardless of active filter) ---
     // Count scope: same program filter applies
     const countScope = baseAppFilter;
@@ -490,11 +503,12 @@ router.get('/students', async (req, res) => {
     const totalUserIds = await Application.distinct('user_id', countScope);
     const totalCount = totalUserIds.length;
 
-    // Merit: distinct users with at least one application actually in a generated merit list
-    // merit_list_number is null by default; only set to a number during merit list generation
+    // Merit: distinct users with at least one application that was ACTUALLY merit-generated.
+    // fee_challan.challan_number is ONLY created during merit list generation (merit.js).
+    // This is the reliable source of truth — not merit_list_number which had a stale default.
     const meritUserIds = await Application.distinct('user_id', {
       ...countScope,
-      merit_list_number: { $ne: null }
+      'fee_challan.challan_number': { $ne: null }
     });
     const meritCount = meritUserIds.length;
 
@@ -541,12 +555,15 @@ router.get('/students', async (req, res) => {
       return sObj;
     });
 
+    // Use category-specific count for pagination
+    const categoryCount = category === 'merit' ? meritCount : category === 'registered' ? registeredCount : totalCount;
+
     res.json({
       students: mappedStudents,
-      total: totalCount,
+      total: categoryCount,
       stats: { total: totalCount, merit: meritCount, registered: registeredCount },
       page: parseInt(page),
-      totalPages: Math.ceil(totalCount / parseInt(limit))
+      totalPages: Math.ceil(categoryCount / parseInt(limit))
     });
   } catch (error) {
     console.error('Fetch students error:', error);
@@ -583,7 +600,7 @@ router.get('/students/export', async (req, res) => {
 
     let userIds;
     if (category === 'merit') {
-      userIds = await Application.distinct('user_id', { ...baseAppFilter, merit_list_number: { $ne: null } });
+      userIds = await Application.distinct('user_id', { ...baseAppFilter, 'fee_challan.challan_number': { $ne: null } });
     } else if (category === 'registered') {
       userIds = await Application.distinct('user_id', { ...baseAppFilter, status: 'confirmed', fee_status: 'verified' });
     } else {
