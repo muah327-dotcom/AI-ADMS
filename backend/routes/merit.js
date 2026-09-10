@@ -325,7 +325,7 @@ router.post('/reset-merit/:programId', requireRole(['admin', 'department_admin']
       {
         $set: {
           status: 'pending',
-          merit_list_number: 1,
+          merit_list_number: null,
           fee_status: 'unpaid',
           fee_deadline: null,
           remarks: null

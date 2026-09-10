@@ -1,16 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   Users,
   Search,
-  Filter,
   Award,
   FileText,
-  Loader2,
   Download,
   ChevronLeft,
   ChevronRight,
   Crown,
-  Star,
   GraduationCap,
   Eye,
   CreditCard,
@@ -19,11 +16,9 @@ import {
   MapPin,
   FileCheck,
   Sparkles,
-  ZoomIn,
-  ZoomOut,
-  RotateCw,
   AlertCircle,
-  X
+  X,
+  CheckCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import SkeletonLoader from '../Common/SkeletonLoader';
@@ -32,11 +27,12 @@ const StudentManagement = () => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [activeCard, setActiveCard] = useState('total');
+  const [selectedProgram, setSelectedProgram] = useState('all');
+  const [programs, setPrograms] = useState([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [totalStudents, setTotalStudents] = useState(0);
-  const [categoryStats, setCategoryStats] = useState({ merit: 0, quota: 0, self_finance: 0 });
+  const [stats, setStats] = useState({ total: 0, merit: 0, registered: 0 });
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
@@ -45,16 +41,32 @@ const StudentManagement = () => {
   const [zoomLevel, setZoomLevel] = useState(1);
   const [rotation, setRotation] = useState(0);
 
+  // Fetch programs on mount
   useEffect(() => {
-    fetchStudents();
-  }, [categoryFilter, page]);
+    const fetchPrograms = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/admin/programs', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setPrograms(data.programs || []);
+        }
+      } catch (error) {
+        console.error('Fetch programs error:', error);
+      }
+    };
+    fetchPrograms();
+  }, []);
 
-  const fetchStudents = async () => {
+  const fetchStudents = useCallback(async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
       const params = new URLSearchParams();
-      if (categoryFilter !== 'all') params.append('category', categoryFilter);
+      params.append('category', activeCard);
+      if (selectedProgram !== 'all') params.append('program', selectedProgram);
       params.append('page', page);
       params.append('limit', 20);
 
@@ -66,9 +78,8 @@ const StudentManagement = () => {
         const data = await response.json();
         setStudents(data.students || []);
         setTotalPages(data.totalPages || 1);
-        setTotalStudents(data.total || 0);
         if (data.stats) {
-          setCategoryStats(data.stats);
+          setStats(data.stats);
         }
       }
     } catch (error) {
@@ -77,18 +88,51 @@ const StudentManagement = () => {
     } finally {
       setLoading(false);
     }
+  }, [activeCard, selectedProgram, page]);
+
+  useEffect(() => {
+    fetchStudents();
+  }, [fetchStudents]);
+
+  const handleCardClick = (card) => {
+    setActiveCard(card);
+    setPage(1);
+    setSearchTerm('');
   };
 
-  const getCategoryIcon = (category) => {
-    switch (category) {
-      case 'merit':
-        return <Crown className="h-4 w-4 text-yellow-500" />;
-      case 'quota':
-        return <Star className="h-4 w-4 text-blue-500" />;
-      case 'self_finance':
-        return <GraduationCap className="h-4 w-4 text-green-500" />;
-      default:
-        return null;
+  const handleProgramChange = (e) => {
+    setSelectedProgram(e.target.value);
+    setPage(1);
+  };
+
+  const handleExport = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const params = new URLSearchParams();
+      params.append('category', activeCard);
+      if (selectedProgram !== 'all') params.append('program', selectedProgram);
+
+      const response = await fetch(`/api/admin/students/export?${params}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `students_${activeCard}_${selectedProgram}_${Date.now()}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        toast.success('Export downloaded successfully');
+      } else {
+        toast.error('Failed to export students');
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export students');
     }
   };
 
@@ -134,17 +178,15 @@ const StudentManagement = () => {
     toast.success('Download started');
   };
 
-  const getCategoryColor = (category) => {
-    switch (category) {
-      case 'merit':
-        return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300';
-      case 'quota':
-        return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300';
-      case 'self_finance':
-        return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300';
-      default:
-        return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300';
-    }
+  const getStatusBadge = (applications) => {
+    if (!applications || applications.length === 0) return null;
+    const statuses = applications.map(a => a.status);
+    if (statuses.includes('confirmed')) return { label: 'Registered', color: 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' };
+    if (statuses.includes('approved')) return { label: 'Approved', color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' };
+    if (statuses.includes('waitlisted')) return { label: 'Waitlisted', color: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' };
+    if (statuses.includes('pending')) return { label: 'Pending', color: 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300' };
+    if (statuses.includes('rejected')) return { label: 'Rejected', color: 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' };
+    return null;
   };
 
   const filteredStudents = students.filter(student =>
@@ -152,6 +194,12 @@ const StudentManagement = () => {
     student.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     student.cnic?.includes(searchTerm)
   );
+
+  const cardConfig = [
+    { key: 'total', label: 'Total Students', icon: Users, color: 'primary', count: stats.total },
+    { key: 'merit', label: 'Merit Students', icon: Crown, color: 'yellow', count: stats.merit },
+    { key: 'registered', label: 'Registered Students', icon: CheckCircle, color: 'green', count: stats.registered }
+  ];
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -162,60 +210,61 @@ const StudentManagement = () => {
           <p className="text-gray-500 dark:text-gray-400 mt-1">View and manage enrolled students</p>
         </div>
         <div className="flex gap-3">
-          <button className="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+          <button
+            onClick={handleExport}
+            className="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          >
             <Download className="h-5 w-5 mr-2" />
             Export
           </button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div className="p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-primary-500/20">
-              <Users className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+      {/* Stats Cards — 3 clickable cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {cardConfig.map(({ key, label, icon: Icon, color, count }) => {
+          const isActive = activeCard === key;
+          const colorClasses = {
+            primary: isActive
+              ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 ring-2 ring-primary-500/30'
+              : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-primary-300 dark:hover:border-primary-700',
+            yellow: isActive
+              ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20 ring-2 ring-yellow-500/30'
+              : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-yellow-300 dark:hover:border-yellow-700',
+            green: isActive
+              ? 'border-green-500 bg-green-50 dark:bg-green-900/20 ring-2 ring-green-500/30'
+              : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-green-300 dark:hover:border-green-700'
+          };
+          const iconBg = {
+            primary: 'bg-primary-50 dark:bg-primary-900/20 border-primary-500/20',
+            yellow: 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-500/20',
+            green: 'bg-green-50 dark:bg-green-900/20 border-green-500/20'
+          };
+          const iconText = {
+            primary: 'text-primary-600 dark:text-primary-400',
+            yellow: 'text-yellow-500 dark:text-yellow-400',
+            green: 'text-green-600 dark:text-green-400'
+          };
+
+          return (
+            <div
+              key={key}
+              onClick={() => handleCardClick(key)}
+              className={`rounded-xl p-4 border shadow-sm cursor-pointer transition-all duration-200 ${colorClasses[color]}`}
+            >
+              <div className="flex items-center justify-between">
+                <div className={`p-3 rounded-lg border ${iconBg[color]}`}>
+                  <Icon className={`h-5 w-5 ${iconText[color]}`} />
+                </div>
+              </div>
+              <p className="mt-3 text-2xl font-bold text-gray-900 dark:text-white">{count}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
             </div>
-          </div>
-          <p className="mt-3 text-2xl font-bold text-gray-900 dark:text-white">{totalStudents}</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Total Students</p>
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div className="p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
-              <Crown className="h-5 w-5 text-yellow-400" />
-            </div>
-          </div>
-          <p className="mt-3 text-2xl font-bold text-gray-900 dark:text-white">
-            {categoryStats.merit}
-          </p>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Merit Category</p>
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div className="p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
-              <Star className="h-5 w-5 text-blue-400" />
-            </div>
-          </div>
-          <p className="mt-3 text-2xl font-bold text-gray-900 dark:text-white">
-            {categoryStats.quota}
-          </p>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Quota Category</p>
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div className="p-3 bg-green-500/10 rounded-lg border border-green-500/20">
-              <GraduationCap className="h-5 w-5 text-green-400" />
-            </div>
-          </div>
-          <p className="mt-3 text-2xl font-bold text-gray-900 dark:text-white">
-            {categoryStats.self_finance}
-          </p>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Self Finance</p>
-        </div>
+          );
+        })}
       </div>
 
-      {/* Filters */}
+      {/* Filters: Search + Program Dropdown */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="relative flex-1">
@@ -229,16 +278,15 @@ const StudentManagement = () => {
             />
           </div>
           <div className="flex items-center gap-2">
-            <Filter className="h-5 w-5 text-gray-500 dark:text-gray-400" />
             <select
               className="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white"
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
+              value={selectedProgram}
+              onChange={handleProgramChange}
             >
-              <option value="all">All Categories</option>
-              <option value="merit">Merit</option>
-              <option value="quota">Quota</option>
-              <option value="self_finance">Self Finance</option>
+              <option value="all">All Programs</option>
+              {programs.map(prog => (
+                <option key={prog._id} value={prog._id}>{prog.name}</option>
+              ))}
             </select>
           </div>
         </div>
@@ -260,66 +308,66 @@ const StudentManagement = () => {
               <thead className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
                 <tr>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Student</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Category</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Applications</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Joined</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {filteredStudents.map((student) => (
-                  <tr
-                    key={student.id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
-                    onClick={() => { setSelectedStudent(student); setShowModal(true); }}
-                  >
-                    <td className="px-6 py-4">
-                      <div className="flex items-center">
-                        <div className="h-10 w-10 rounded-full bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center mr-3 border border-primary-500/20">
-                          <span className="text-primary-600 dark:text-primary-400 font-semibold">
-                            {student.full_name?.charAt(0)}
-                          </span>
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900 dark:text-white">{student.full_name}</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">{student.email}</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">{student.cnic}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      {student.admission_category ? (
-                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${student.admission_category === 'merit' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
-                            student.admission_category === 'quota' ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300' :
-                              'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
-                          }`}>
-                          {getCategoryIcon(student.admission_category)}
-                          <span className="ml-2 capitalize">{student.admission_category.replace('_', ' ')}</span>
-                        </span>
-                      ) : (
-                        <span className="text-gray-500 dark:text-gray-400 text-sm">Not categorized</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="space-y-1">
-                        {student.applications?.slice(0, 2).map((app, idx) => (
-                          <div key={idx} className="flex items-center gap-2">
-                            <span className={`w-2 h-2 rounded-full ${app.status === 'approved' ? 'bg-green-500' :
-                                app.status === 'rejected' ? 'bg-red-500' :
-                                  'bg-yellow-500'
-                              }`} />
-                            <span className="text-sm text-gray-500 dark:text-gray-400">{app.program?.name}</span>
+                {filteredStudents.map((student) => {
+                  const statusBadge = getStatusBadge(student.applications);
+                  return (
+                    <tr
+                      key={student.id}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                      onClick={() => { setSelectedStudent(student); setShowModal(true); }}
+                    >
+                      <td className="px-6 py-4">
+                        <div className="flex items-center">
+                          <div className="h-10 w-10 rounded-full bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center mr-3 border border-primary-500/20">
+                            <span className="text-primary-600 dark:text-primary-400 font-semibold">
+                              {student.full_name?.charAt(0)}
+                            </span>
                           </div>
-                        ))}
-                        {student.applications?.length > 2 && (
-                          <p className="text-xs text-gray-500 dark:text-gray-400">+{student.applications.length - 2} more</p>
+                          <div>
+                            <p className="font-medium text-gray-900 dark:text-white">{student.full_name}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{student.email}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{student.cnic}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        {statusBadge ? (
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${statusBadge.color}`}>
+                            {statusBadge.label}
+                          </span>
+                        ) : (
+                          <span className="text-gray-500 dark:text-gray-400 text-sm">Applied</span>
                         )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                      {new Date(student.created_at).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="space-y-1">
+                          {student.applications?.slice(0, 2).map((app, idx) => (
+                            <div key={idx} className="flex items-center gap-2">
+                              <span className={`w-2 h-2 rounded-full ${app.status === 'confirmed' || app.status === 'approved' ? 'bg-green-500' :
+                                  app.status === 'rejected' ? 'bg-red-500' :
+                                    app.status === 'waitlisted' ? 'bg-yellow-500' :
+                                      'bg-gray-400'
+                                }`} />
+                              <span className="text-sm text-gray-500 dark:text-gray-400">{app.program_id?.name || 'Program'}</span>
+                            </div>
+                          ))}
+                          {student.applications?.length > 2 && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400">+{student.applications.length - 2} more</p>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                        {new Date(student.created_at).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -377,15 +425,14 @@ const StudentManagement = () => {
                 <div>
                   <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{selectedStudent.full_name}</h3>
                   <p className="text-gray-500 dark:text-gray-400">{selectedStudent.email}</p>
-                  {selectedStudent.admission_category && (
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium mt-2 ${selectedStudent.admission_category === 'merit' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
-                        selectedStudent.admission_category === 'quota' ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300' :
-                          'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
-                      }`}>
-                      {getCategoryIcon(selectedStudent.admission_category)}
-                      <span className="ml-2 capitalize">{selectedStudent.admission_category.replace('_', ' ')}</span>
-                    </span>
-                  )}
+                  {(() => {
+                    const badge = getStatusBadge(selectedStudent.applications);
+                    return badge ? (
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium mt-2 ${badge.color}`}>
+                        {badge.label}
+                      </span>
+                    ) : null;
+                  })()}
                 </div>
               </div>
 
@@ -444,7 +491,6 @@ const StudentManagement = () => {
                               )}
                             </div>
 
-                            {/* OCR Extracted summary */}
                             {doc.extracted_data && Object.keys(doc.extracted_data).length > 0 && (
                               <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 text-[11px] text-gray-500 dark:text-gray-400 space-y-0.5">
                                 {doc.extracted_data.cnic && (
@@ -460,7 +506,6 @@ const StudentManagement = () => {
                             )}
                           </div>
 
-                          {/* Action Buttons */}
                           <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-200/80 dark:border-gray-700/80">
                             <button
                               onClick={() => handleOpenDocViewer(doc)}
@@ -500,8 +545,8 @@ const StudentManagement = () => {
                     <div key={idx} className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-medium text-gray-900 dark:text-white">{app.program?.name || app.program_id?.name}</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">{app.program?.department || app.program_id?.department}</p>
+                          <p className="font-medium text-gray-900 dark:text-white">{app.program_id?.name || 'Program'}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{app.program_id?.department || ''}</p>
                         </div>
                         <span className={`px-2 py-1 rounded text-xs font-medium capitalize ${app.status === 'approved' || app.status === 'confirmed' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
                             app.status === 'rejected' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' :
@@ -510,11 +555,6 @@ const StudentManagement = () => {
                           {app.status}
                         </span>
                       </div>
-                      {app.admission_category && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          Category: <span className="capitalize">{app.admission_category.replace('_', ' ')}</span>
-                        </p>
-                      )}
                     </div>
                   )) || <p className="text-gray-500 dark:text-gray-400">No applications</p>}
                 </div>
@@ -554,7 +594,6 @@ const StudentManagement = () => {
                 </div>
               </div>
 
-              {/* Header Actions */}
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => handleDownloadDoc(previewDoc)}
@@ -572,11 +611,9 @@ const StudentManagement = () => {
               </div>
             </div>
 
-            {/* Viewer Body — Side-by-Side */}
+            {/* Viewer Body */}
             <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-              {/* Left: Document Canvas */}
               <div className="flex-1 bg-gray-50 dark:bg-gray-700/30 relative flex items-center justify-center overflow-auto">
-                {/* Document Render */}
                 <div className="w-full h-full flex items-center justify-center p-6">
                   {(() => {
                     const src = previewDoc.file_data || previewDoc.file_url || previewDoc.url;
@@ -629,7 +666,6 @@ const StudentManagement = () => {
               {/* Right: OCR Sidebar */}
               {previewDoc.extracted_data && Object.keys(previewDoc.extracted_data).length > 0 && (
                 <div className="w-full lg:w-[340px] bg-gray-50 dark:bg-gray-800 border-t lg:border-t-0 lg:border-l border-gray-200 dark:border-gray-700 flex flex-col flex-shrink-0 overflow-hidden">
-                  {/* Sidebar Header */}
                   <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
                     <div className="flex items-center gap-2">
                       <div className="p-1.5 rounded-lg bg-gradient-to-br from-purple-500/20 to-cyan-500/20">
@@ -640,7 +676,6 @@ const StudentManagement = () => {
                     <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1 ml-8">AI-powered OCR extraction results</p>
                   </div>
 
-                  {/* Sidebar Content */}
                   <div className="flex-1 overflow-y-auto p-5 space-y-2.5">
                     {previewDoc.extracted_data.name && (
                       <div className="group p-3.5 rounded-xl bg-white dark:bg-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all">

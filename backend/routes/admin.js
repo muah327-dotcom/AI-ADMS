@@ -449,53 +449,87 @@ router.get('/all-users', async (req, res) => {
 
 router.get('/students', async (req, res) => {
   try {
-    const { category, program, page = 1, limit = 20 } = req.query;
+    const { category = 'total', program, page = 1, limit = 20 } = req.query;
     const deptFilter = getDepartmentFilter(req);
     const mainAdmin = isMainAdmin(req);
 
-    // For department admin, get students who have applications in their department
-    let studentIdsInDept = null;
+    // Determine which programs this admin can access
+    let allowedProgramIds = null;
     if (!mainAdmin && deptFilter) {
       const deptPrograms = await Program.find({ department: deptFilter.department }).select('_id');
-      const deptProgramIds = deptPrograms.map(p => p._id);
-      const appsInDept = await Application.find({ program_id: { $in: deptProgramIds } }).select('user_id');
-      studentIdsInDept = [...new Set(appsInDept.map(a => a.user_id.toString()))];
+      allowedProgramIds = deptPrograms.map(p => p._id);
     }
 
-    let query = User.find({ role: 'student' });
-
-    if (studentIdsInDept) {
-      query = query.where('_id').in(studentIdsInDept);
-    }
-
-    if (category && category !== 'all') {
-      query = query.where('admission_category').equals(category);
-    }
+    // Validate requested program if provided
+    let programFilter = null;
     if (program && program !== 'all') {
-      query = query.where('program_id').equals(program);
+      const requestedProgram = await Program.findById(program).select('_id department');
+      if (!requestedProgram) {
+        return res.status(404).json({ error: 'Program not found' });
+      }
+      if (!mainAdmin && deptFilter && requestedProgram.department !== deptFilter.department) {
+        return res.status(403).json({ error: 'Access denied: program not in your department' });
+      }
+      programFilter = requestedProgram._id;
     }
 
-    const baseFilter = query.getFilter();
-    const baseFilterNoCategory = { ...baseFilter };
-    delete baseFilterNoCategory.admission_category;
+    // Base application filter (department-scoped)
+    const baseAppFilter = {};
+    if (allowedProgramIds) {
+      baseAppFilter.program_id = { $in: allowedProgramIds };
+    }
+    if (programFilter) {
+      baseAppFilter.program_id = programFilter;
+    }
 
-    const [students, count, meritCount, quotaCount, selfFinanceCount] = await Promise.all([
-      query
-        .select('full_name email cnic phone father_name date_of_birth gender address admission_category program_id is_verified created_at uploaded_documents avatar_url')
-        .sort({ created_at: -1 })
-        .skip((page - 1) * limit)
-        .limit(parseInt(limit)),
-      User.countDocuments(baseFilter),
-      User.countDocuments({ ...baseFilterNoCategory, admission_category: 'merit' }),
-      User.countDocuments({ ...baseFilterNoCategory, admission_category: 'quota' }),
-      User.countDocuments({ ...baseFilterNoCategory, admission_category: 'self_ffinance' })
-    ]);
+    // --- Compute counts for all 3 categories (always, regardless of active filter) ---
+    // Count scope: same program filter applies
+    const countScope = baseAppFilter;
 
+    // Total: distinct users with any application in scope
+    const totalUserIds = await Application.distinct('user_id', countScope);
+    const totalCount = totalUserIds.length;
+
+    // Merit: distinct users with at least one application actually in a generated merit list
+    // merit_list_number is null by default; only set to a number during merit list generation
+    const meritUserIds = await Application.distinct('user_id', {
+      ...countScope,
+      merit_list_number: { $ne: null }
+    });
+    const meritCount = meritUserIds.length;
+
+    // Registered: distinct users with at least one application status 'confirmed' and fee_status 'verified'
+    const registeredUserIds = await Application.distinct('user_id', {
+      ...countScope,
+      status: 'confirmed',
+      fee_status: 'verified'
+    });
+    const registeredCount = registeredUserIds.length;
+
+    // --- Fetch paginated student list for active category ---
+    let userFilter = { role: 'student' };
+
+    if (category === 'merit') {
+      userFilter._id = { $in: meritUserIds };
+    } else if (category === 'registered') {
+      userFilter._id = { $in: registeredUserIds };
+    } else {
+      // total
+      userFilter._id = { $in: totalUserIds };
+    }
+
+    const students = await User.find(userFilter)
+      .select('full_name email cnic phone father_name date_of_birth gender address is_verified created_at uploaded_documents avatar_url')
+      .sort({ created_at: -1 })
+      .skip((page - 1) * parseInt(limit))
+      .limit(parseInt(limit));
+
+    // Fetch documents and applications for displayed students
     const studentIds = students.map(s => s._id);
     const [documents, userApplications] = await Promise.all([
       Document.find({ user_id: { $in: studentIds } }).select('-file_data').sort({ uploaded_at: 1 }),
-      Application.find({ user_id: { $in: studentIds } })
-        .select('user_id program_id status application_date')
+      Application.find({ user_id: { $in: studentIds }, ...(programFilter ? { program_id: programFilter } : (allowedProgramIds ? { program_id: { $in: allowedProgramIds } } : {})) })
+        .select('user_id program_id status fee_status merit_list_number application_date')
         .populate('program_id', 'name department')
     ]);
 
@@ -509,14 +543,89 @@ router.get('/students', async (req, res) => {
 
     res.json({
       students: mappedStudents,
-      total: count,
-      stats: { merit: meritCount, quota: quotaCount, self_finance: selfFinanceCount },
+      total: totalCount,
+      stats: { total: totalCount, merit: meritCount, registered: registeredCount },
       page: parseInt(page),
-      totalPages: Math.ceil(count / limit)
+      totalPages: Math.ceil(totalCount / parseInt(limit))
     });
   } catch (error) {
     console.error('Fetch students error:', error);
     res.status(500).json({ error: 'Failed to fetch students' });
+  }
+});
+
+// GET /admin/students/export — export filtered students as CSV
+router.get('/students/export', async (req, res) => {
+  try {
+    const { category = 'total', program } = req.query;
+    const deptFilter = getDepartmentFilter(req);
+    const mainAdmin = isMainAdmin(req);
+
+    let allowedProgramIds = null;
+    if (!mainAdmin && deptFilter) {
+      const deptPrograms = await Program.find({ department: deptFilter.department }).select('_id');
+      allowedProgramIds = deptPrograms.map(p => p._id);
+    }
+
+    let programFilter = null;
+    if (program && program !== 'all') {
+      const requestedProgram = await Program.findById(program).select('_id department');
+      if (!requestedProgram) return res.status(404).json({ error: 'Program not found' });
+      if (!mainAdmin && deptFilter && requestedProgram.department !== deptFilter.department) {
+        return res.status(403).json({ error: 'Access denied: program not in your department' });
+      }
+      programFilter = requestedProgram._id;
+    }
+
+    const baseAppFilter = {};
+    if (allowedProgramIds) baseAppFilter.program_id = { $in: allowedProgramIds };
+    if (programFilter) baseAppFilter.program_id = programFilter;
+
+    let userIds;
+    if (category === 'merit') {
+      userIds = await Application.distinct('user_id', { ...baseAppFilter, merit_list_number: { $ne: null } });
+    } else if (category === 'registered') {
+      userIds = await Application.distinct('user_id', { ...baseAppFilter, status: 'confirmed', fee_status: 'verified' });
+    } else {
+      userIds = await Application.distinct('user_id', baseAppFilter);
+    }
+
+    const students = await User.find({ _id: { $in: userIds }, role: 'student' })
+      .select('full_name email cnic phone father_name date_of_birth gender address created_at');
+
+    const appFilter = { user_id: { $in: userIds } };
+    if (programFilter) appFilter.program_id = programFilter;
+    else if (allowedProgramIds) appFilter.program_id = { $in: allowedProgramIds };
+    const applications = await Application.find(appFilter)
+      .select('user_id program_id status fee_status merit_list_number')
+      .populate('program_id', 'name');
+
+    const appMap = {};
+    applications.forEach(a => {
+      const uid = a.user_id.toString();
+      if (!appMap[uid]) appMap[uid] = [];
+      appMap[uid].push(a);
+    });
+
+    // Build CSV
+    const header = 'Name,Email,CNIC,Phone,Program,Status,Fee Status,Merit List,Applied Date\n';
+    const rows = students.map(s => {
+      const apps = appMap[s._id.toString()] || [];
+      if (apps.length === 0) {
+        return `"${s.full_name || ''}","${s.email || ''}","${s.cnic || ''}","${s.phone || ''}","","","","","${s.created_at ? new Date(s.created_at).toLocaleDateString() : ''}"`;
+      }
+      return apps.map(a => {
+        const progName = a.program_id?.name || '';
+        return `"${s.full_name || ''}","${s.email || ''}","${s.cnic || ''}","${s.phone || ''}","${progName}","${a.status || ''}","${a.fee_status || ''}","${a.merit_list_number || ''}","${s.created_at ? new Date(s.created_at).toLocaleDateString() : ''}"`;
+      }).join('\n');
+    }).join('\n');
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="students_${category}_${Date.now()}.csv"`);
+    res.send(header + rows);
+  } catch (error) {
+    console.error('Export students error:', error);
+    res.status(500).json({ error: 'Failed to export students' });
   }
 });
 

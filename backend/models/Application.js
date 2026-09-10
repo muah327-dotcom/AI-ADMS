@@ -37,7 +37,7 @@ const applicationSchema = new mongoose.Schema({
   },
   merit_list_number: {
     type: Number,
-    default: 1
+    default: null
   },
   priority: {
     type: Number,
