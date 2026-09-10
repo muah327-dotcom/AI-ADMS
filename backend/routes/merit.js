@@ -63,7 +63,7 @@ router.post('/program-fee/:programId', requireRole(['admin', 'department_admin']
 router.post('/generate/:programId', requireRole(['admin', 'department_admin']), async (req, res) => {
   try {
     const { programId } = req.params;
-    const { quota_percentages = { merit: 80, quota: 10, self_finance: 10 }, fee_deadline, minimum_merit } = req.body;
+    const { fee_deadline, minimum_merit } = req.body;
 
     // Validate minimum_merit is provided and valid
     const parsedMerit = parseFloat(minimum_merit);
@@ -83,32 +83,29 @@ router.post('/generate/:programId', requireRole(['admin', 'department_admin']), 
       return res.status(403).json({ error: 'Access denied: program not in your department' });
     }
 
+    // Prevent regeneration if a merit list already exists — require reset first
+    if (program.current_merit_list >= 1) {
+      return res.status(400).json({ error: 'A merit list already exists for this program. Please reset merit lists before generating a new 1st list.' });
+    }
+
     if (fee_deadline) {
       program.fee_deadline = new Date(fee_deadline);
     }
     program.current_merit_list = 1;
     await program.save();
 
-    let applications = await Application.find({
+    // Fetch only pending applications (not yet evaluated)
+    const applications = await Application.find({
       program_id: program._id,
       status: 'pending'
     }).populate('user_id', 'full_name email cnic phone');
 
-    // Fallback: If no pending applications, re-evaluate approved, waitlisted, confirmed, dropped
     if (!applications || applications.length === 0) {
-      applications = await Application.find({
-        program_id: program._id,
-        status: { $in: ['approved', 'waitlisted', 'confirmed', 'dropped'] }
-      }).populate('user_id', 'full_name email cnic phone');
-    }
-
-    if (!applications || applications.length === 0) {
-      return res.status(400).json({ error: 'No applications found for this program' });
+      return res.status(400).json({ error: 'No pending applications found for this program' });
     }
 
     const scoredApplications = applications.map(app => {
       const fsc = app.fsc_percentage || 0;
-
       return {
         app,
         calculated_score: Math.round(fsc * 100) / 100,
@@ -118,41 +115,30 @@ router.post('/generate/:programId', requireRole(['admin', 'department_admin']), 
 
     // Apply minimum merit threshold (required)
     const filteredApplications = scoredApplications.filter(item => item.calculated_score >= parsedMerit);
-
     filteredApplications.sort((a, b) => b.calculated_score - a.calculated_score);
 
+    // Select up to total program seats
     const totalSeats = program.total_seats || 50;
-    const meritSeats = Math.floor(totalSeats * (quota_percentages.merit || 80) / 100);
-    const quotaSeats = Math.floor(totalSeats * (quota_percentages.quota || 10) / 100);
+    const selectedApps = filteredApplications.slice(0, totalSeats);
 
     const defaultDeadline = program.fee_deadline || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     const meritList = [];
 
-    for (let i = 0; i < filteredApplications.length; i++) {
-      const item = filteredApplications[i];
+    for (let i = 0; i < selectedApps.length; i++) {
+      const item = selectedApps[i];
       const app = item.app;
-      let category = 'merit';
-
-      if (i >= meritSeats && i < meritSeats + quotaSeats) {
-        category = 'quota';
-      } else if (i >= meritSeats + quotaSeats) {
-        category = 'self_finance';
-      }
-
-      const isSelected = i < totalSeats;
-      const status = isSelected ? 'approved' : 'waitlisted';
       const challanNum = `CHL-${program.name.substring(0, 3).toUpperCase()}-${app._id.toString().slice(-6).toUpperCase()}`;
 
       await Application.findByIdAndUpdate(app._id, {
-        status,
+        status: 'approved',
         merit_list_number: 1,
-        fee_deadline: isSelected ? defaultDeadline : null,
+        fee_deadline: defaultDeadline,
         fee_challan: {
           challan_number: challanNum,
           amount: program.total_fee || 80000,
           fee_deadline: defaultDeadline
         },
-        remarks: `Category: ${category}, Rank: ${i + 1}, Score: ${item.calculated_score}%`
+        remarks: `Rank: ${i + 1}, Score: ${item.calculated_score}%`
       });
 
       meritList.push({
@@ -163,9 +149,8 @@ router.post('/generate/:programId', requireRole(['admin', 'department_admin']), 
         program_id: program._id,
         rank: i + 1,
         score: item.calculated_score,
-        category,
         academic_percentage: item.academic_percentage,
-        status: isSelected ? 'selected' : 'waitlisted',
+        status: 'selected',
         fee_status: app.fee_status || 'unpaid',
         fee_deadline: defaultDeadline,
         generated_at: new Date().toISOString()
@@ -177,8 +162,8 @@ router.post('/generate/:programId', requireRole(['admin', 'department_admin']), 
       program: program.name,
       meritListNumber: 1,
       totalApplications: applications.length,
-      selected: meritList.filter(e => e.status === 'selected').length,
-      waitlisted: meritList.filter(e => e.status === 'waitlisted').length,
+      qualifiedApplications: filteredApplications.length,
+      selected: meritList.length,
       fee_deadline: defaultDeadline,
       meritList
     });
@@ -189,8 +174,9 @@ router.post('/generate/:programId', requireRole(['admin', 'department_admin']), 
 });
 
 // 3. Generate Next (2nd / 3rd) Merit List (Admin)
-// Drops unpaid students whose deadline has passed & promotes waitlisted students into vacant seats
-// Limited to a maximum of 3 merit lists per program
+// Excludes students already selected in previous merit lists for this program.
+// Selects new eligible students up to remaining seats.
+// Limited to a maximum of 3 merit lists per program.
 router.post('/generate-next/:programId', requireRole(['admin', 'department_admin']), async (req, res) => {
   try {
     const { programId } = req.params;
@@ -215,84 +201,98 @@ router.post('/generate-next/:programId', requireRole(['admin', 'department_admin
     }
 
     // Enforce maximum of 3 merit lists per program
-    const currentList = program.current_merit_list || 1;
+    const currentList = program.current_merit_list || 0;
     if (currentList >= 3) {
       return res.status(400).json({ error: 'Maximum of 3 merit lists have already been generated for this program. Please reset merit lists to start over.' });
+    }
+    if (currentList < 1) {
+      return res.status(400).json({ error: 'No merit list has been generated yet. Please generate the 1st merit list first.' });
     }
 
     const nextListNum = currentList + 1;
     const newDeadline = fee_deadline ? new Date(fee_deadline) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
+    // 1. Find ALL user_ids already selected in ANY previous merit list for this program
+    const previouslySelectedUserIds = await Application.distinct('user_id', {
+      program_id: program._id,
+      merit_list_number: { $ne: null, $lte: currentList }
+    });
+    const previouslySelectedSet = new Set(previouslySelectedUserIds.map(id => id.toString()));
+
+    // 2. Find ALL applications for this program that are NOT yet in any merit list
+    //    These are candidates for the next list (pending + any other non-merit-listed)
+    const candidateApplications = await Application.find({
+      program_id: program._id,
+      merit_list_number: null
+    }).populate('user_id', 'full_name email cnic phone');
+
+    // 3. Calculate remaining seats
+    const totalSeats = program.total_seats || 50;
+    const previouslySelectedCount = previouslySelectedUserIds.length;
+    const remainingSeats = Math.max(0, totalSeats - previouslySelectedCount);
+
+    if (remainingSeats <= 0) {
+      return res.status(400).json({ error: 'All program seats have been filled. No remaining seats for additional merit lists.' });
+    }
+
+    // 4. Score and filter candidates
+    const scoredCandidates = candidateApplications.map(app => {
+      const fsc = app.fsc_percentage || 0;
+      return {
+        app,
+        calculated_score: Math.round(fsc * 100) / 100,
+        academic_percentage: fsc
+      };
+    });
+
+    // Apply minimum merit threshold
+    const qualifiedCandidates = scoredCandidates.filter(item => item.calculated_score >= parsedMerit);
+    qualifiedCandidates.sort((a, b) => b.calculated_score - a.calculated_score);
+
+    // 5. Select top candidates up to remaining seats
+    const selectedCandidates = qualifiedCandidates.slice(0, remainingSeats);
+
+    // 6. Update program
     program.current_merit_list = nextListNum;
     program.fee_deadline = newDeadline;
     await program.save();
 
-    // 1. Count confirmed students
-    const confirmedCount = await Application.countDocuments({
-      program_id: program._id,
-      status: 'confirmed'
-    });
-
-    // Count still active approved students
-    const activeApprovedCount = await Application.countDocuments({
-      program_id: program._id,
-      status: 'approved'
-    });
-
-    const vacantSeats = (program.total_seats || 50) - (confirmedCount + activeApprovedCount);
-
+    // 7. Update selected applications
     let promotedCount = 0;
-    if (vacantSeats > 0) {
-      // Find top waitlisted applicants sorted by score (re-evaluate score)
-      const waitlistedApps = await Application.find({
-        program_id: program._id,
-        status: 'waitlisted'
-      }).populate('user_id', 'full_name email cnic');
+    for (const item of selectedCandidates) {
+      const app = item.app;
+      const challanNum = `CHL-${program.name.substring(0, 3).toUpperCase()}-${app._id.toString().slice(-6).toUpperCase()}`;
 
-      const scoredWaitlisted = waitlistedApps.map(app => {
-        const fsc = app.fsc_percentage || 0;
-        return { app, score: fsc };
-      });
-
-      // Apply minimum merit threshold (required)
-      const filteredWaitlisted = scoredWaitlisted.filter(item => item.score >= parsedMerit);
-
-      filteredWaitlisted.sort((a, b) => b.score - a.score);
-
-      const appsToPromote = filteredWaitlisted.slice(0, vacantSeats);
-
-      for (const item of appsToPromote) {
-        const app = item.app;
-        const challanNum = `CHL-${program.name.substring(0, 3).toUpperCase()}-${app._id.toString().slice(-6).toUpperCase()}`;
-
-        app.status = 'approved';
-        app.priority = app.priority || 1;
-        app.merit_list_number = nextListNum;
-        app.fee_deadline = newDeadline;
-        app.fee_challan = {
-          challan_number: challanNum,
-          amount: program.total_fee || 80000,
-          fee_deadline: newDeadline
-        };
-        app.remarks += ` | Promoted to Selected in Merit List #${nextListNum}`;
-        await app.save();
-        promotedCount++;
-      }
+      app.status = 'approved';
+      app.merit_list_number = nextListNum;
+      app.fee_deadline = newDeadline;
+      app.fee_challan = {
+        challan_number: challanNum,
+        amount: program.total_fee || 80000,
+        fee_deadline: newDeadline
+      };
+      app.remarks = `Rank: ${promotedCount + 1}, Score: ${item.calculated_score}% | Selected in Merit List #${nextListNum}`;
+      await app.save();
+      promotedCount++;
     }
 
-const getOrdinal = (n) => {
-  const s = ['th', 'st', 'nd', 'rd'];
-  const v = n % 100;
-  return n + (s[(v - 20) % 10] || s[v] || s[0]);
-};
+    const getOrdinal = (n) => {
+      const s = ['th', 'st', 'nd', 'rd'];
+      const v = n % 100;
+      return n + (s[(v - 20) % 10] || s[v] || s[0]);
+    };
 
     res.json({
       message: `${getOrdinal(nextListNum)} Merit List generated successfully`,
       program: program.name,
       meritListNumber: nextListNum,
-      confirmedCount,
-      promotedWaitlistedCount: promotedCount,
-      vacantSeatsLeft: Math.max(0, vacantSeats - promotedCount),
+      totalSeats,
+      previouslySelected: previouslySelectedCount,
+      remainingSeats,
+      totalCandidates: candidateApplications.length,
+      qualifiedCandidates: qualifiedCandidates.length,
+      selected: promotedCount,
+      seatsLeftAfter: Math.max(0, remainingSeats - promotedCount),
       new_fee_deadline: newDeadline
     });
   } catch (error) {
@@ -490,17 +490,26 @@ router.patch('/verify-fee/:applicationId', requireRole(['admin', 'department_adm
 router.get('/program/:programId', async (req, res) => {
   try {
     const { programId } = req.params;
-    const { category } = req.query;
+    const { category, list } = req.query;
 
     const program = await findProgram(programId);
     if (!program) {
       return res.status(404).json({ error: `Program '${programId}' not found` });
     }
 
-    const applications = await Application.find({
+    // Build query: filter by specific merit_list_number if `list` param provided
+    const query = {
       program_id: program._id,
       status: { $in: ['approved', 'confirmed', 'waitlisted', 'dropped'] }
-    }).populate('user_id', 'full_name email cnic phone');
+    };
+    if (list && list !== 'all') {
+      const listNum = parseInt(list, 10);
+      if (!isNaN(listNum) && listNum >= 1) {
+        query.merit_list_number = listNum;
+      }
+    }
+
+    const applications = await Application.find(query).populate('user_id', 'full_name email cnic phone');
 
     const scoredApps = applications.map(app => {
       const fsc = app.fsc_percentage || 0;

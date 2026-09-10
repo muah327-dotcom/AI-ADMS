@@ -33,6 +33,7 @@ const MeritList = ({ admin = false }) => {
   const [selectedProgram, setSelectedProgram] = useState('');
   const [programDetails, setProgramDetails] = useState(null);
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [selectedListFilter, setSelectedListFilter] = useState('current');
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [generatingNext, setGeneratingNext] = useState(false);
@@ -60,7 +61,7 @@ const MeritList = ({ admin = false }) => {
     if (selectedProgram) {
       fetchMeritList(selectedProgram);
     }
-  }, [selectedProgram, categoryFilter]);
+  }, [selectedProgram, categoryFilter, selectedListFilter]);
 
   const fetchPrograms = async () => {
     try {
@@ -133,8 +134,16 @@ const MeritList = ({ admin = false }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
+      // Determine which list to fetch
+      let listParam = 'all';
+      if (selectedListFilter === 'current') {
+        // Use current_merit_list if we know it, otherwise 'all' (will post-filter)
+        listParam = programDetails?.current_merit_list ? String(programDetails.current_merit_list) : 'all';
+      } else if (selectedListFilter !== 'all') {
+        listParam = selectedListFilter;
+      }
       const url = admin
-        ? `/api/merit/program/${programId}?category=${categoryFilter}`
+        ? `/api/merit/program/${programId}?category=${categoryFilter}&list=${listParam}`
         : `/api/merit/program/${programId}`;
 
       const response = await fetch(url, {
@@ -143,7 +152,14 @@ const MeritList = ({ admin = false }) => {
 
       if (response.ok) {
         const data = await response.json();
-        const list = data.meritList || [];
+        let list = data.meritList || [];
+
+        // If 'current' filter, post-filter to only show current list's students
+        if (selectedListFilter === 'current' && data.program?.current_merit_list) {
+          const currentNum = data.program.current_merit_list;
+          list = list.filter(e => e.merit_list_number === currentNum);
+        }
+
         setMeritList(list);
         setProgramDetails(data.program || null);
         if (data.program) {
@@ -243,7 +259,7 @@ const MeritList = ({ admin = false }) => {
       if (response.ok) {
         const data = await response.json();
         fetchMeritList(selectedProgram);
-        toast.success(`${getOrdinal(data.meritListNumber)} Merit List Generated!\nPromoted: ${data.promotedWaitlistedCount}`);
+        toast.success(`${getOrdinal(data.meritListNumber)} Merit List Generated!\nSelected: ${data.selected}, Remaining Seats: ${data.seatsLeftAfter}`);
       } else {
         const error = await response.json();
         toast.error(error.error || 'Failed to generate merit list');
@@ -490,7 +506,7 @@ const MeritList = ({ admin = false }) => {
                     ) : (
                       <>
                         <RefreshCw className="h-5 w-5 mr-2" />
-                        Generate {nextListOrdinal} Merit List (Auto-Drop Unpaid)
+                        Generate {nextListOrdinal} Merit List
                       </>
                     )}
                   </button>
@@ -610,8 +626,24 @@ const MeritList = ({ admin = false }) => {
                 <option value="quota">Quota</option>
                 <option value="self_finance">Self Finance</option>
               </select>
-          </div>
-        )}
+            </div>
+          )}
+          {admin && programDetails?.current_merit_list > 0 && (
+            <div>
+              <label className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1 block">Merit List</label>
+              <select
+                className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white"
+                value={selectedListFilter}
+                onChange={(e) => setSelectedListFilter(e.target.value)}
+              >
+                <option value="current">Current List (#{programDetails.current_merit_list})</option>
+                <option value="all">All Lists</option>
+                {Array.from({ length: programDetails.current_merit_list }, (_, i) => (
+                  <option key={i + 1} value={String(i + 1)}>List #{i + 1}</option>
+                ))}
+              </select>
+            </div>
+          )}
       </div>
 
       {/* Minimum Merit Percentage — Always Required */}
