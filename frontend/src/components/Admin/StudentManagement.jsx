@@ -195,6 +195,18 @@ const StudentManagement = () => {
     student.cnic?.includes(searchTerm)
   );
 
+  const getOrdinal = (n) => {
+    if (!n || isNaN(n)) return '';
+    const s = ['th', 'st', 'nd', 'rd'];
+    const v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  };
+
+  const getMeritApp = (student) => {
+    if (!student.applications) return null;
+    return student.applications.find(a => a.merit_list_number != null) || null;
+  };
+
   const cardConfig = [
     { key: 'total', label: 'Total Students', icon: Users, color: 'primary', count: stats.total },
     { key: 'merit', label: 'Merit Students', icon: Crown, color: 'yellow', count: stats.merit },
@@ -310,6 +322,12 @@ const StudentManagement = () => {
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Student</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Applications</th>
+                  {activeCard === 'merit' && (
+                    <>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Merit List</th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Merit</th>
+                    </>
+                  )}
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Joined</th>
                 </tr>
               </thead>
@@ -362,6 +380,31 @@ const StudentManagement = () => {
                           )}
                         </div>
                       </td>
+                      {activeCard === 'merit' && (() => {
+                        const meritApp = getMeritApp(student);
+                        const meritListNum = meritApp?.merit_list_number;
+                        const meritPct = meritApp?.fsc_percentage;
+                        return (
+                          <>
+                            <td className="px-6 py-4">
+                              {meritListNum ? (
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300">
+                                  {getOrdinal(meritListNum)} Merit List
+                                </span>
+                              ) : (
+                                <span className="text-gray-400 dark:text-gray-500 text-sm">—</span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4">
+                              {meritPct != null ? (
+                                <span className="text-sm font-semibold text-gray-900 dark:text-white">{meritPct.toFixed(2)}%</span>
+                              ) : (
+                                <span className="text-gray-400 dark:text-gray-500 text-sm">—</span>
+                              )}
+                            </td>
+                          </>
+                        );
+                      })()}
                       <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
                         {new Date(student.created_at).toLocaleDateString()}
                       </td>

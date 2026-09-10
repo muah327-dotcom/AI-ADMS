@@ -543,7 +543,7 @@ router.get('/students', async (req, res) => {
     const [documents, userApplications] = await Promise.all([
       Document.find({ user_id: { $in: studentIds } }).select('-file_data').sort({ uploaded_at: 1 }),
       Application.find({ user_id: { $in: studentIds }, ...(programFilter ? { program_id: programFilter } : (allowedProgramIds ? { program_id: { $in: allowedProgramIds } } : {})) })
-        .select('user_id program_id status fee_status merit_list_number application_date')
+        .select('user_id program_id status fee_status merit_list_number fsc_percentage application_date')
         .populate('program_id', 'name department')
     ]);
 
@@ -614,7 +614,7 @@ router.get('/students/export', async (req, res) => {
     if (programFilter) appFilter.program_id = programFilter;
     else if (allowedProgramIds) appFilter.program_id = { $in: allowedProgramIds };
     const applications = await Application.find(appFilter)
-      .select('user_id program_id status fee_status merit_list_number')
+      .select('user_id program_id status fee_status merit_list_number fsc_percentage')
       .populate('program_id', 'name');
 
     const appMap = {};
@@ -625,15 +625,16 @@ router.get('/students/export', async (req, res) => {
     });
 
     // Build CSV
-    const header = 'Name,Email,CNIC,Phone,Program,Status,Fee Status,Merit List,Applied Date\n';
+    const header = 'Name,Email,CNIC,Phone,Program,Status,Fee Status,Merit List,Merit,Applied Date\n';
     const rows = students.map(s => {
       const apps = appMap[s._id.toString()] || [];
       if (apps.length === 0) {
-        return `"${s.full_name || ''}","${s.email || ''}","${s.cnic || ''}","${s.phone || ''}","","","","","${s.created_at ? new Date(s.created_at).toLocaleDateString() : ''}"`;
+        return `"${s.full_name || ''}","${s.email || ''}","${s.cnic || ''}","${s.phone || ''}","","","","","","${s.created_at ? new Date(s.created_at).toLocaleDateString() : ''}"`;
       }
       return apps.map(a => {
         const progName = a.program_id?.name || '';
-        return `"${s.full_name || ''}","${s.email || ''}","${s.cnic || ''}","${s.phone || ''}","${progName}","${a.status || ''}","${a.fee_status || ''}","${a.merit_list_number || ''}","${s.created_at ? new Date(s.created_at).toLocaleDateString() : ''}"`;
+        const meritPct = a.fsc_percentage != null ? `${a.fsc_percentage}%` : '';
+        return `"${s.full_name || ''}","${s.email || ''}","${s.cnic || ''}","${s.phone || ''}","${progName}","${a.status || ''}","${a.fee_status || ''}","${a.merit_list_number || ''}","${meritPct}","${s.created_at ? new Date(s.created_at).toLocaleDateString() : ''}"`;
       }).join('\n');
     }).join('\n');
 
