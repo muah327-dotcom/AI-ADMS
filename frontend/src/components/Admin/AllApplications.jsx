@@ -479,13 +479,7 @@ const AllApplications = () => {
                               </span>
                             </p>
                           ) : null}
-                          {app.matric_percentage || app.student?.matric_obtained_marks ? (
-                            <p className="text-gray-500 dark:text-gray-400 text-xs">
-                              <span className="text-gray-500 dark:text-gray-400 mr-1">Matric:</span>
-                              {app.matric_percentage ? `${app.matric_percentage}%` : `${app.student?.matric_obtained_marks}/${app.student?.matric_total_marks}`}
-                            </p>
-                          ) : null}
-                          {!app.fsc_percentage && !app.matric_percentage && !app.student?.inter_obtained_marks && (
+                          {!app.fsc_percentage && !app.student?.inter_obtained_marks && (
                             <span className="text-xs text-gray-500 dark:text-gray-400">Not recorded</span>
                           )}
                         </div>
