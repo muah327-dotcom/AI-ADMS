@@ -40,7 +40,6 @@ const MeritList = ({ admin = false }) => {
   const [showFeeConfig, setShowFeeConfig] = useState(false);
   const [showPreviousListsModal, setShowPreviousListsModal] = useState(false);
   const [stats, setStats] = useState({ selected: 0, waitlisted: 0, confirmed: 0, dropped: 0 });
-  const [percentageMode, setPercentageMode] = useState(false);
   const [minimumMerit, setMinimumMerit] = useState('');
 
   // Fee Config Form State
@@ -179,6 +178,12 @@ const MeritList = ({ admin = false }) => {
   const generateMeritList = async () => {
     if (!selectedProgram) return;
 
+    const parsedMerit = parseFloat(minimumMerit);
+    if (minimumMerit === '' || isNaN(parsedMerit) || parsedMerit < 0 || parsedMerit > 100) {
+      toast.error('Please enter a valid minimum merit percentage (0-100) before generating.');
+      return;
+    }
+
     setGenerating(true);
     try {
       const token = localStorage.getItem('token');
@@ -191,7 +196,7 @@ const MeritList = ({ admin = false }) => {
         body: JSON.stringify({
           quota_percentages: { merit: 80, quota: 10, self_finance: 10 },
           fee_deadline: feeForm.fee_deadline,
-          minimum_merit: percentageMode && minimumMerit !== '' ? parseFloat(minimumMerit) : undefined
+          minimum_merit: parsedMerit
         })
       });
 
@@ -214,6 +219,12 @@ const MeritList = ({ admin = false }) => {
   const generateNextMeritList = async () => {
     if (!selectedProgram) return;
 
+    const parsedMerit = parseFloat(minimumMerit);
+    if (minimumMerit === '' || isNaN(parsedMerit) || parsedMerit < 0 || parsedMerit > 100) {
+      toast.error('Please enter a valid minimum merit percentage (0-100) before generating.');
+      return;
+    }
+
     setGeneratingNext(true);
     try {
       const token = localStorage.getItem('token');
@@ -225,14 +236,14 @@ const MeritList = ({ admin = false }) => {
         },
         body: JSON.stringify({
           fee_deadline: feeForm.fee_deadline,
-          minimum_merit: percentageMode && minimumMerit !== '' ? parseFloat(minimumMerit) : undefined
+          minimum_merit: parsedMerit
         })
       });
 
       if (response.ok) {
         const data = await response.json();
         fetchMeritList(selectedProgram);
-        toast.success(`${getOrdinal(data.meritListNumber)} Merit List Generated!\nDropped Unpaid: ${data.droppedUnpaidCount}, Promoted: ${data.promotedWaitlistedCount}`);
+        toast.success(`${getOrdinal(data.meritListNumber)} Merit List Generated!\nPromoted: ${data.promotedWaitlistedCount}`);
       } else {
         const error = await response.json();
         toast.error(error.error || 'Failed to generate merit list');
@@ -603,37 +614,21 @@ const MeritList = ({ admin = false }) => {
         )}
       </div>
 
-      {/* Minimum Merit Percentage Option */}
+      {/* Minimum Merit Percentage — Always Required */}
       {admin && selectedProgram && (programDetails?.current_merit_list || 0) < 3 && (
         <div className="flex items-center gap-3 mt-3">
-          <label className="inline-flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={percentageMode}
-              onChange={(e) => {
-                setPercentageMode(e.target.checked);
-                if (!e.target.checked) setMinimumMerit('');
-              }}
-              className="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-            />
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Generate by Merit Percentage</span>
-          </label>
-          {percentageMode && (
-            <div className="flex items-center gap-2">
-              <label className="text-sm text-gray-600 dark:text-gray-400">Minimum Merit:</label>
-              <input
-                type="number"
-                min="0"
-                max="100"
-                step="0.01"
-                value={minimumMerit}
-                onChange={(e) => setMinimumMerit(e.target.value)}
-                placeholder="e.g. 80"
-                className="w-24 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white"
-              />
-              <span className="text-sm text-gray-500 dark:text-gray-400">%</span>
-            </div>
-          )}
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Minimum Merit Percentage:</label>
+          <input
+            type="number"
+            min="0"
+            max="100"
+            step="0.01"
+            value={minimumMerit}
+            onChange={(e) => setMinimumMerit(e.target.value)}
+            placeholder="e.g. 80"
+            className="w-28 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white"
+          />
+          <span className="text-sm text-gray-500 dark:text-gray-400">%</span>
         </div>
       )}
       </div>

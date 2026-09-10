@@ -65,6 +65,12 @@ router.post('/generate/:programId', requireRole(['admin', 'department_admin']), 
     const { programId } = req.params;
     const { quota_percentages = { merit: 80, quota: 10, self_finance: 10 }, fee_deadline, minimum_merit } = req.body;
 
+    // Validate minimum_merit is provided and valid
+    const parsedMerit = parseFloat(minimum_merit);
+    if (minimum_merit === undefined || minimum_merit === null || minimum_merit === '' || isNaN(parsedMerit) || parsedMerit < 0 || parsedMerit > 100) {
+      return res.status(400).json({ error: 'Please enter a valid minimum merit percentage (0-100) before generating the merit list.' });
+    }
+
     const program = await findProgram(programId);
     if (!program) {
       return res.status(404).json({ error: `Program '${programId}' not found` });
@@ -110,12 +116,8 @@ router.post('/generate/:programId', requireRole(['admin', 'department_admin']), 
       };
     });
 
-    // Apply minimum merit threshold if provided
-    let filteredApplications = scoredApplications;
-    if (minimum_merit !== undefined && minimum_merit !== null && minimum_merit !== '' && !isNaN(parseFloat(minimum_merit))) {
-      const threshold = parseFloat(minimum_merit);
-      filteredApplications = scoredApplications.filter(item => item.calculated_score >= threshold);
-    }
+    // Apply minimum merit threshold (required)
+    const filteredApplications = scoredApplications.filter(item => item.calculated_score >= parsedMerit);
 
     filteredApplications.sort((a, b) => b.calculated_score - a.calculated_score);
 
@@ -194,6 +196,12 @@ router.post('/generate-next/:programId', requireRole(['admin', 'department_admin
     const { programId } = req.params;
     const { fee_deadline, minimum_merit } = req.body;
 
+    // Validate minimum_merit is provided and valid
+    const parsedMerit = parseFloat(minimum_merit);
+    if (minimum_merit === undefined || minimum_merit === null || minimum_merit === '' || isNaN(parsedMerit) || parsedMerit < 0 || parsedMerit > 100) {
+      return res.status(400).json({ error: 'Please enter a valid minimum merit percentage (0-100) before generating the merit list.' });
+    }
+
     const program = await findProgram(programId);
     if (!program) {
       return res.status(404).json({ error: `Program '${programId}' not found` });
@@ -219,31 +227,13 @@ router.post('/generate-next/:programId', requireRole(['admin', 'department_admin
     program.fee_deadline = newDeadline;
     await program.save();
 
-    // 1. Find all selected ('approved') students for this program
-    const approvedApps = await Application.find({
-      program_id: program._id,
-      status: 'approved'
-    });
-
-    let droppedCount = 0;
-    // Auto-drop approved students who are still unpaid / rejected fee
-    for (const app of approvedApps) {
-      if (app.fee_status === 'unpaid' || app.fee_status === 'rejected') {
-        app.status = 'dropped';
-        app.priority = app.priority || 1;
-        app.remarks += ` | Dropped in List #${nextListNum} due to non-payment of fee.`;
-        await app.save();
-        droppedCount++;
-      }
-    }
-
-    // 2. Count confirmed students
+    // 1. Count confirmed students
     const confirmedCount = await Application.countDocuments({
       program_id: program._id,
       status: 'confirmed'
     });
 
-    // Count still active approved students (e.g. submitted fee pending verification)
+    // Count still active approved students
     const activeApprovedCount = await Application.countDocuments({
       program_id: program._id,
       status: 'approved'
@@ -264,12 +254,8 @@ router.post('/generate-next/:programId', requireRole(['admin', 'department_admin
         return { app, score: fsc };
       });
 
-      // Apply minimum merit threshold if provided
-      let filteredWaitlisted = scoredWaitlisted;
-      if (minimum_merit !== undefined && minimum_merit !== null && minimum_merit !== '' && !isNaN(parseFloat(minimum_merit))) {
-        const threshold = parseFloat(minimum_merit);
-        filteredWaitlisted = scoredWaitlisted.filter(item => item.score >= threshold);
-      }
+      // Apply minimum merit threshold (required)
+      const filteredWaitlisted = scoredWaitlisted.filter(item => item.score >= parsedMerit);
 
       filteredWaitlisted.sort((a, b) => b.score - a.score);
 
@@ -304,7 +290,6 @@ const getOrdinal = (n) => {
       message: `${getOrdinal(nextListNum)} Merit List generated successfully`,
       program: program.name,
       meritListNumber: nextListNum,
-      droppedUnpaidCount: droppedCount,
       confirmedCount,
       promotedWaitlistedCount: promotedCount,
       vacantSeatsLeft: Math.max(0, vacantSeats - promotedCount),
