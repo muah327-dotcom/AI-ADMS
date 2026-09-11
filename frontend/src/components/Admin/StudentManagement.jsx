@@ -321,7 +321,7 @@ const StudentManagement = () => {
                 <tr>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Student</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Applications</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Program</th>
                   {activeCard === 'merit' && (
                     <>
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Merit List</th>
@@ -365,17 +365,22 @@ const StudentManagement = () => {
                       </td>
                       <td className="px-6 py-4">
                         <div className="space-y-1">
-                          {student.applications?.slice(0, 2).map((app, idx) => (
-                            <div key={idx} className="flex items-center gap-2">
-                              <span className={`w-2 h-2 rounded-full ${app.status === 'confirmed' || app.status === 'approved' ? 'bg-green-500' :
-                                app.status === 'rejected' ? 'bg-red-500' :
-                                  app.status === 'waitlisted' ? 'bg-yellow-500' :
-                                    'bg-gray-400'
-                                }`} />
-                              <span className="text-sm text-gray-500 dark:text-gray-400">{app.program_id?.name || 'Program'}</span>
-                            </div>
-                          ))}
-                          {student.applications?.length > 2 && (
+                          {(() => {
+                            const displayApps = activeCard === 'registered'
+                              ? (student.applications || []).filter(a => a.status === 'confirmed')
+                              : (student.applications || []).slice(0, 2);
+                            return displayApps.map((app, idx) => (
+                              <div key={idx} className="flex items-center gap-2">
+                                <span className={`w-2 h-2 rounded-full ${app.status === 'confirmed' || app.status === 'approved' ? 'bg-green-500' :
+                                  app.status === 'rejected' ? 'bg-red-500' :
+                                    app.status === 'waitlisted' ? 'bg-yellow-500' :
+                                      'bg-gray-400'
+                                  }`} />
+                                <span className="text-sm text-gray-500 dark:text-gray-400">{app.program_id?.name || 'Program'}</span>
+                              </div>
+                            ));
+                          })()}
+                          {activeCard !== 'registered' && student.applications?.length > 2 && (
                             <p className="text-xs text-gray-500 dark:text-gray-400">+{student.applications.length - 2} more</p>
                           )}
                         </div>

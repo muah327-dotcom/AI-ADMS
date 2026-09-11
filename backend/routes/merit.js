@@ -85,7 +85,16 @@ router.post('/generate/:programId', requireRole(['admin', 'department_admin']), 
 
     // Prevent regeneration if a merit list already exists — require reset first
     if (program.current_merit_list >= 1) {
-      return res.status(400).json({ error: 'A merit list already exists for this program. Please reset merit lists before generating a new 1st list.' });
+      // Check if there are actually any merit-listed applications (stale counter detection)
+      const existingMeritApps = await Application.countDocuments({
+        program_id: program._id,
+        merit_list_number: { $ne: null }
+      });
+      if (existingMeritApps > 0) {
+        return res.status(400).json({ error: 'A merit list already exists for this program. Please reset merit lists before generating a new 1st list.' });
+      }
+      // Stale counter — reset and proceed with generation
+      program.current_merit_list = 0;
     }
 
     if (fee_deadline) {
