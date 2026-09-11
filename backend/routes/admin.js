@@ -169,9 +169,7 @@ router.get('/dashboard-stats', async (req, res) => {
       dropped,
       totalStudents,
       totalPrograms,
-      programAgg,
-      quotaCount,
-      selfFinanceCount
+      programAgg
     ] = await Promise.all([
       Application.countDocuments(appFilter),
       Application.countDocuments({ ...appFilter, status: 'pending' }),
@@ -182,7 +180,7 @@ router.get('/dashboard-stats', async (req, res) => {
       Application.countDocuments({ ...appFilter, status: 'dropped' }),
       mainAdmin
         ? User.countDocuments({ role: 'student' })
-        : User.countDocuments({ role: 'student' }), // students are global, filtered by program
+        : User.countDocuments({ role: 'student' }),
       mainAdmin
         ? Program.countDocuments()
         : Program.countDocuments(deptFilter || {}),
@@ -201,24 +199,13 @@ router.get('/dashboard-stats', async (req, res) => {
             { $unwind: '$program' },
             { $project: { name: '$program.name', count: 1, _id: 0 } }
           ])
-      ),
-      // Category counts using regex
-      Application.countDocuments({
-        ...appFilter,
-        status: { $in: ['approved', 'confirmed', 'waitlisted'] },
-        remarks: { $regex: /quota/i }
-      }),
-      Application.countDocuments({
-        ...appFilter,
-        status: { $in: ['approved', 'confirmed', 'waitlisted'] },
-        remarks: { $regex: /self_finance/i }
-      })
+      )
     ]);
 
     const admittedCount = approved + confirmed;
     const admissionRate = total > 0 ? (admittedCount / total) * 100 : 0;
     const totalAdmittedApps = approved + confirmed + waitlisted;
-    const meritCount = Math.max(0, totalAdmittedApps - quotaCount - selfFinanceCount);
+    const meritCount = totalAdmittedApps;
 
     res.json({
       stats: {
@@ -235,9 +222,7 @@ router.get('/dashboard-stats', async (req, res) => {
         totalPrograms,
         programDistribution: programAgg,
         categoryDistribution: {
-          merit: meritCount,
-          quota: quotaCount,
-          self_finance: selfFinanceCount
+          merit: meritCount
         }
       }
     });

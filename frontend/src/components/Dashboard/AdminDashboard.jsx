@@ -78,15 +78,13 @@ const AdminDashboard = () => {
   };
 
   const admissionData = {
-    labels: ['Merit', 'Quota', 'Self Finance'],
+    labels: ['Merit'],
     datasets: [
       {
         data: [
-          stats?.categoryDistribution?.merit || 0,
-          stats?.categoryDistribution?.quota || 0,
-          stats?.categoryDistribution?.self_finance || 0
+          stats?.categoryDistribution?.merit || 0
         ],
-        backgroundColor: ['#06b6d4', '#10b981', '#f59e0b'],
+        backgroundColor: ['#06b6d4'],
         borderWidth: 0,
       },
     ],
@@ -207,7 +205,7 @@ const AdminDashboard = () => {
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
           <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Admissions by Category</h2>
           <div className="relative w-full" style={{ height: '200px' }}>
-            {(stats?.categoryDistribution?.merit || 0) + (stats?.categoryDistribution?.quota || 0) + (stats?.categoryDistribution?.self_finance || 0) > 0 ? (
+            {(stats?.categoryDistribution?.merit || 0) > 0 ? (
               <Doughnut
                 data={admissionData}
                 options={{

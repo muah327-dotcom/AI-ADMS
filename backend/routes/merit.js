@@ -514,9 +514,7 @@ router.get('/program/:programId', async (req, res) => {
     const scoredApps = applications.map(app => {
       const fsc = app.fsc_percentage || 0;
 
-      let cat = 'merit';
-      if (app.remarks?.toLowerCase().includes('category: quota') || app.remarks?.toLowerCase().includes('quota')) cat = 'quota';
-      else if (app.remarks?.toLowerCase().includes('category: self_finance') || app.remarks?.toLowerCase().includes('self_finance')) cat = 'self_finance';
+      const cat = 'merit';
 
       return {
         app,

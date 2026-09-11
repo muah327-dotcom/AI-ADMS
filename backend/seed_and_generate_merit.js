@@ -285,15 +285,11 @@ const runSeeder = async () => {
       scoredApps.sort((a, b) => b.score - a.score);
 
       const totalSeats = program.total_seats || 8;
-      const meritSeats = Math.floor(totalSeats * 0.8);
-      const quotaSeats = Math.floor(totalSeats * 0.1);
 
       let rank = 1;
       for (let i = 0; i < scoredApps.length; i++) {
         const { app, score } = scoredApps[i];
-        let category = 'merit';
-        if (i >= meritSeats && i < meritSeats + quotaSeats) category = 'quota';
-        else if (i >= meritSeats + quotaSeats) category = 'self_finance';
+        const category = 'merit';
 
         const status = i < totalSeats ? 'approved' : 'waitlisted';
 

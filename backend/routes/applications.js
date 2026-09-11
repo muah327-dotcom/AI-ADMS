@@ -146,7 +146,7 @@ router.get('/my-applications', async (req, res) => {
     const userId = req.user.id;
 
     const applications = await Application.find({ user_id: userId })
-      .populate('program_id', 'name department total_seats merit_seats quota_seats self_finance_seats')
+      .populate('program_id', 'name department total_seats')
       .sort({ application_date: -1 });
 
     const mappedApplications = applications.map(app => {

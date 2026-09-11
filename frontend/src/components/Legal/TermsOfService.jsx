@@ -152,7 +152,7 @@ const TermsOfService = () => {
             <ul className="list-disc list-inside text-gray-700 space-y-2 ml-4">
               <li>Merit is calculated based on published criteria (academic performance, entry tests, etc.)</li>
               <li>Merit lists are generated transparently and published on the System</li>
-              <li>Category-based quotas (merit, quota, self-finance) are applied as per institutional policy</li>
+              <li>Admission is purely merit-based, determined by intermediate percentage</li>
               <li>Selected candidates must confirm admission within the specified timeframe</li>
               <li>Failure to confirm within the deadline will result in forfeiture of the seat</li>
               <li>Waitlisted candidates will be contacted if seats become available</li>

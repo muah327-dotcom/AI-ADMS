@@ -210,7 +210,6 @@ const MeritList = ({ admin = false }) => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          quota_percentages: { merit: 80, quota: 10, self_finance: 10 },
           fee_deadline: feeForm.fee_deadline,
           minimum_merit: parsedMerit
         })
@@ -314,7 +313,7 @@ const MeritList = ({ admin = false }) => {
       return;
     }
 
-    const headers = ['Rank', 'Student Name', 'CNIC', 'Category', 'Score', 'Status', 'Fee Status', 'List Number'];
+    const headers = ['Rank', 'Student Name', 'CNIC', 'Score', 'Status', 'Fee Status', 'List Number'];
     
     const csvContent = [
       headers.join(','),
@@ -322,7 +321,6 @@ const MeritList = ({ admin = false }) => {
         e.rank,
         `"${e.student?.full_name || ''}"`,
         e.student?.cnic || '',
-        e.category,
         e.score,
         e.status,
         e.fee_status,
@@ -394,16 +392,7 @@ const MeritList = ({ admin = false }) => {
   };
 
   const getCategoryIcon = (category) => {
-    switch (category) {
-      case 'merit':
-        return <Crown className="h-4 w-4 text-yellow-500" />;
-      case 'quota':
-        return <Star className="h-4 w-4 text-blue-500" />;
-      case 'self_finance':
-        return <Users className="h-4 w-4 text-green-500" />;
-      default:
-        return null;
-    }
+    return <Crown className="h-4 w-4 text-yellow-500" />;
   };
 
   const selectedProgramData = programs.find(p => (p._id || p.id || p.name) === selectedProgram);
@@ -613,21 +602,6 @@ const MeritList = ({ admin = false }) => {
               )}
             </select>
           </div>
-          {admin && (
-            <div>
-              <label className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1 block">Category Filter</label>
-              <select
-                className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white"
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-              >
-                <option value="all">All Categories</option>
-                <option value="merit">Merit</option>
-                <option value="quota">Quota</option>
-                <option value="self_finance">Self Finance</option>
-              </select>
-            </div>
-          )}
           {admin && programDetails?.current_merit_list > 0 && (
             <div>
               <label className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1 block">Merit List</label>
@@ -743,7 +717,6 @@ const MeritList = ({ admin = false }) => {
                 <tr>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Rank</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Student</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Category</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Score</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Admission Status</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fee Payment</th>
@@ -771,15 +744,6 @@ const MeritList = ({ admin = false }) => {
                           <p className="text-sm text-gray-500 dark:text-gray-400">{entry.student?.cnic}</p>
                         </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${entry.category === 'merit' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
-                          entry.category === 'quota' ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300' :
-                            'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
-                        }`}>
-                        {getCategoryIcon(entry.category)}
-                        <span className="ml-2 capitalize">{entry.category.replace('_', ' ')}</span>
-                      </span>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center">

@@ -44,9 +44,6 @@ const ManagePrograms = () => {
     department: '',
     description: '',
     total_seats: '',
-    merit_seats: '',
-    quota_seats: '',
-    self_finance_seats: '',
     min_percentage: '',
     requiredIntermediateQualifications: [],
     duration_years: '',
@@ -205,9 +202,6 @@ const ManagePrograms = () => {
       const payload = {
         ...formData,
         total_seats: parseInt(formData.total_seats),
-        merit_seats: parseInt(formData.merit_seats),
-        quota_seats: parseInt(formData.quota_seats),
-        self_finance_seats: parseInt(formData.self_finance_seats),
         min_percentage: parseFloat(formData.min_percentage),
         duration_years: parseInt(formData.duration_years),
         requiredIntermediateQualifications: formData.requiredIntermediateQualifications
@@ -246,9 +240,6 @@ const ManagePrograms = () => {
       department: program.department,
       description: program.description || '',
       total_seats: program.total_seats,
-      merit_seats: program.merit_seats,
-      quota_seats: program.quota_seats,
-      self_finance_seats: program.self_finance_seats,
       min_percentage: program.min_percentage,
       requiredIntermediateQualifications: program.requiredIntermediateQualifications || [],
       duration_years: program.duration_years || '',
@@ -282,9 +273,6 @@ const ManagePrograms = () => {
       department: selectedDepartment ? selectedDepartment.name : '',
       description: '',
       total_seats: '',
-      merit_seats: '',
-      quota_seats: '',
-      self_finance_seats: '',
       min_percentage: '',
       requiredIntermediateQualifications: [],
       duration_years: '',
@@ -637,28 +625,8 @@ const ManagePrograms = () => {
                     type="number"
                     min="0"
                     className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white"
-                    value={formData.merit_seats}
-                    onChange={(e) => setFormData({ ...formData, merit_seats: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Quota Seats</label>
-                  <input
-                    type="number"
-                    min="0"
-                    className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white"
-                    value={formData.quota_seats}
-                    onChange={(e) => setFormData({ ...formData, quota_seats: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Self Finance Seats</label>
-                  <input
-                    type="number"
-                    min="0"
-                    className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white"
-                    value={formData.self_finance_seats}
-                    onChange={(e) => setFormData({ ...formData, self_finance_seats: e.target.value })}
+                    value={formData.total_seats}
+                    onChange={(e) => setFormData({ ...formData, total_seats: e.target.value })}
                   />
                 </div>
                 <div>

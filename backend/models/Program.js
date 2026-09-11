@@ -71,7 +71,7 @@ const programSchema = new mongoose.Schema({
   },
   shift: {
     type: String,
-    enum: ['Morning', 'Evening', 'Self Finance'],
+    enum: ['Morning', 'Evening'],
     default: 'Morning'
   },
   historical_cutoff: {
