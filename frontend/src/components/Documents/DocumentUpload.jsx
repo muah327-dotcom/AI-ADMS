@@ -1380,6 +1380,24 @@ const extractAcademicData = (text) => {
     }
   }
 
+  // Extract Intermediate Qualification (always attempt — autoFillFromOCR gates on user-selected docType)
+  let interQualification = null;
+  const qt = cleanText.toLowerCase();
+  if (/\b(?:computer\s*sciences?|ics)\b/i.test(qt)) {
+    interQualification = 'ICS';
+  } else if (/\b(?:pre\s*[-_]?\s*engineering|engineering\s*group)\b/i.test(qt)) {
+    interQualification = 'FSc Pre-Engineering';
+  } else if (/\b(?:pre\s*[-_]?\s*medical|medical\s*group)\b/i.test(qt)) {
+    interQualification = 'FSc Pre-Medical';
+  } else if (/\b(?:commerce|i\s*\.?\s*com|intermediate\s+commerce)\b/i.test(qt)) {
+    interQualification = 'I.Com';
+  } else if (/\b(?:dae|diploma\s+of\s+associate\s+engineering)\b/i.test(qt)) {
+    interQualification = 'DAE';
+  } else if (/\b(?:arts|humanities|faculty\s+of\s+arts|f\s*\.?\s*a\s*\.?)\b/i.test(qt)) {
+    interQualification = 'FA';
+  }
+  console.log('[OCR] Extracted inter_qualification:', interQualification);
+
   return {
     document_level: documentLevel,
     percentage: percentage,
@@ -1392,6 +1410,7 @@ const extractAcademicData = (text) => {
     subjects: subjects,
     name: name,
     father_name: fatherName,
+    inter_qualification: interQualification,
     raw_text: text
   };
 };
@@ -2093,6 +2112,10 @@ const DocumentUpload = () => {
           updated.inter_total_marks = extractedData.total_marks.toString();
           newFilledFields.add('inter_total_marks');
         }
+        if (extractedData.inter_qualification) {
+          updated.inter_qualification = extractedData.inter_qualification;
+          newFilledFields.add('inter_qualification');
+        }
       }
 
       return updated;
@@ -2162,11 +2185,12 @@ const DocumentUpload = () => {
     }
     if (docType === 'intermediate' || docType === 'transcript') {
       return {
-        formFields: ['inter_passing_year', 'inter_obtained_marks', 'inter_total_marks'],
+        formFields: ['inter_passing_year', 'inter_obtained_marks', 'inter_total_marks', 'inter_qualification'],
         dbFields: {
           inter_passing_year: null,
           inter_obtained_marks: null,
-          inter_total_marks: null
+          inter_total_marks: null,
+          inter_qualification: null
         }
       };
     }
@@ -3230,24 +3254,7 @@ const DocumentUpload = () => {
                   Intermediate / HSSC Details
                 </h4>
                 <div className="grid sm:grid-cols-2 gap-4 pl-6 border-l-2 border-blue-500/20">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Intermediate Qualification</label>
-                    <select
-                      value={formData.inter_qualification || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, inter_qualification: e.target.value }))}
-                      disabled={true}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                    >
-                      <option value="">Select Qualification</option>
-                      <option value="FA">FA</option>
-                      <option value="FSc Pre-Medical">FSc Pre-Medical</option>
-                      <option value="FSc Pre-Engineering">FSc Pre-Engineering</option>
-                      <option value="ICS">ICS</option>
-                      <option value="I.Com">I.Com</option>
-                      <option value="DAE">DAE</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  </div>
+                  {renderField('Intermediate Qualification', 'inter_qualification', 'text', { placeholder: 'e.g., FSc Pre-Medical', disabled: true })}
                   {renderField('Passing Year', 'inter_passing_year', 'number', { placeholder: 'e.g., 2024', disabled: true })}
                   {renderField('Marks Obtained', 'inter_obtained_marks', 'number', { placeholder: 'e.g., 450', disabled: true })}
                   {renderField('Total Marks', 'inter_total_marks', 'number', { placeholder: 'e.g., 550', disabled: true })}
