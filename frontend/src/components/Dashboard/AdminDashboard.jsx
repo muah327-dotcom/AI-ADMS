@@ -97,11 +97,11 @@ const AdminDashboard = () => {
   const programCounts = programList.map(p => p.count);
 
   const monthlyData = {
-    labels: programLabels.length > 0 ? programLabels : ['CS', 'SE', 'EE', 'BBA', 'BBIT', 'DS'],
+    labels: programLabels.length > 0 ? programLabels : [],
     datasets: [
       {
         label: 'Applications per Program',
-        data: programCounts.length > 0 ? programCounts : [12, 10, 9, 12, 9, 9],
+        data: programCounts.length > 0 ? programCounts : [],
         backgroundColor: '#06b6d4',
         borderRadius: 4,
       },
@@ -109,10 +109,10 @@ const AdminDashboard = () => {
   };
 
   const programData = {
-    labels: programLabels.length > 0 ? programLabels : ['BS CS', 'BS SE', 'BE EE', 'BBA', 'BBIT', 'BS DS'],
+    labels: programLabels.length > 0 ? programLabels : [],
     datasets: [
       {
-        data: programCounts.length > 0 ? programCounts : [12, 10, 9, 12, 9, 9],
+        data: programCounts.length > 0 ? programCounts : [],
         backgroundColor: ['#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#3b82f6'],
         borderWidth: 0,
       },
@@ -173,27 +173,33 @@ const AdminDashboard = () => {
         <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
           <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Application Trend</h2>
           <div className="relative w-full" style={{ height: '200px' }}>
-            <Bar
-              data={monthlyData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: { display: false },
-                },
-                scales: {
-                  y: { 
-                    beginAtZero: true, 
-                    grid: { color: isDark ? '#374151' : '#e5e7eb' },
-                    ticks: { color: isDark ? '#9ca3af' : '#6b7280', font: { size: 11 } }
+            {programLabels.length > 0 ? (
+              <Bar
+                data={monthlyData}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: { display: false },
                   },
-                  x: {
-                    grid: { display: false },
-                    ticks: { color: isDark ? '#9ca3af' : '#6b7280', font: { size: 11 } }
+                  scales: {
+                    y: { 
+                      beginAtZero: true, 
+                      grid: { color: isDark ? '#374151' : '#e5e7eb' },
+                      ticks: { color: isDark ? '#9ca3af' : '#6b7280', font: { size: 11 } }
+                    },
+                    x: {
+                      grid: { display: false },
+                      ticks: { color: isDark ? '#9ca3af' : '#6b7280', font: { size: 11 } }
+                    },
                   },
-                },
-              }}
-            />
+                }}
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-400 dark:text-gray-500 text-sm">
+                No program data available
+              </div>
+            )}
           </div>
         </div>
 
@@ -201,24 +207,30 @@ const AdminDashboard = () => {
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
           <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Admissions by Category</h2>
           <div className="relative w-full" style={{ height: '200px' }}>
-            <Doughnut
-              data={admissionData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: { 
-                    position: 'bottom', 
-                    labels: { 
-                      color: isDark ? '#9ca3af' : '#6b7280',
-                      boxWidth: 12,
-                      font: { size: 11 },
-                      padding: 15
-                    } 
+            {(stats?.categoryDistribution?.merit || 0) + (stats?.categoryDistribution?.quota || 0) + (stats?.categoryDistribution?.self_finance || 0) > 0 ? (
+              <Doughnut
+                data={admissionData}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: { 
+                      position: 'bottom', 
+                      labels: { 
+                        color: isDark ? '#9ca3af' : '#6b7280',
+                        boxWidth: 12,
+                        font: { size: 11 },
+                        padding: 15
+                      } 
+                    },
                   },
-                },
-              }}
-            />
+                }}
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-400 dark:text-gray-500 text-sm">
+                No admission data available
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -229,24 +241,30 @@ const AdminDashboard = () => {
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
           <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">By Program</h2>
           <div className="relative w-full" style={{ height: '280px' }}>
-            <Pie
-              data={programData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: { 
-                    position: 'bottom', 
-                    labels: { 
-                      color: isDark ? '#9ca3af' : '#6b7280',
-                      boxWidth: 12,
-                      font: { size: 11 },
-                      padding: 10
-                    } 
+            {programLabels.length > 0 ? (
+              <Pie
+                data={programData}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: { 
+                      position: 'bottom', 
+                      labels: { 
+                        color: isDark ? '#9ca3af' : '#6b7280',
+                        boxWidth: 12,
+                        font: { size: 11 },
+                        padding: 10
+                      } 
+                    },
                   },
-                },
-              }}
-            />
+                }}
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-400 dark:text-gray-500 text-sm">
+                No program data available
+              </div>
+            )}
           </div>
         </div>
 

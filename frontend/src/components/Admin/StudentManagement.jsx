@@ -209,7 +209,7 @@ const StudentManagement = () => {
 
   const cardConfig = [
     { key: 'total', label: 'Total Students', icon: Users, color: 'primary', count: stats.total },
-    { key: 'merit', label: 'Merit Students', icon: Crown, color: 'yellow', count: stats.merit },
+    { key: 'merit', label: 'Merit List Students', icon: Crown, color: 'yellow', count: stats.merit },
     { key: 'registered', label: 'Registered Students', icon: CheckCircle, color: 'green', count: stats.registered }
   ];
 
@@ -368,9 +368,9 @@ const StudentManagement = () => {
                           {student.applications?.slice(0, 2).map((app, idx) => (
                             <div key={idx} className="flex items-center gap-2">
                               <span className={`w-2 h-2 rounded-full ${app.status === 'confirmed' || app.status === 'approved' ? 'bg-green-500' :
-                                  app.status === 'rejected' ? 'bg-red-500' :
-                                    app.status === 'waitlisted' ? 'bg-yellow-500' :
-                                      'bg-gray-400'
+                                app.status === 'rejected' ? 'bg-red-500' :
+                                  app.status === 'waitlisted' ? 'bg-yellow-500' :
+                                    'bg-gray-400'
                                 }`} />
                               <span className="text-sm text-gray-500 dark:text-gray-400">{app.program_id?.name || 'Program'}</span>
                             </div>
@@ -592,8 +592,8 @@ const StudentManagement = () => {
                           <p className="text-xs text-gray-500 dark:text-gray-400">{app.program_id?.department || ''}</p>
                         </div>
                         <span className={`px-2 py-1 rounded text-xs font-medium capitalize ${app.status === 'approved' || app.status === 'confirmed' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
-                            app.status === 'rejected' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' :
-                              'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
+                          app.status === 'rejected' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' :
+                            'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
                           }`}>
                           {app.status}
                         </span>
