@@ -7,6 +7,68 @@ const router = express.Router();
 
 router.use(authenticateToken);
 
+const verifyAcademicDocumentPayload = (type, extractedData, confidence) => {
+  if (type !== 'matric' && type !== 'intermediate') {
+    return { isValid: true, error: null };
+  }
+
+  const data = extractedData && typeof extractedData === 'object' ? extractedData : {};
+  const rawText = String(data.raw_text || '');
+  const expectedMarkers = type === 'matric'
+    ? /secondary\s+school\s+certificate|\bmatric(?:ulation)?\b|\bssc\b|10th\s+class|grade\s*x\b/i
+    : /\bintermediate\b|higher\s+secondary\s+certificate|\bhssc\b|12th\s+class|f\.?\s*sc|f\.?\s*a\b|i\.?\s*cs|i\.?\s*com/i;
+  const oppositeMarkers = type === 'matric'
+    ? /\bintermediate\b|higher\s+secondary\s+certificate|\bhssc\b|12th\s+class|f\.?\s*sc|f\.?\s*a\b|i\.?\s*cs|i\.?\s*com/i
+    : /secondary\s+school\s+certificate|\bmatric(?:ulation)?\b|\bssc\b|10th\s+class|grade\s*x\b/i;
+  const detectedLevel = data.document_level;
+  const hasExpectedLevel = detectedLevel === type;
+  const hasOppositeLevel = detectedLevel !== type;
+  const hasAcademicStructure = Boolean(
+    data.board || data.passing_year ||
+    data.obtained_marks !== null && data.obtained_marks !== undefined ||
+    data.total_marks !== null && data.total_marks !== undefined ||
+    data.subjects?.length
+  );
+  const obtainedMarks = Number(data.obtained_marks);
+  const totalMarks = Number(data.total_marks);
+  const hasConsistentMarks = (
+    data.obtained_marks === null || data.obtained_marks === undefined ||
+    data.total_marks === null || data.total_marks === undefined ||
+    (Number.isFinite(obtainedMarks) && Number.isFinite(totalMarks) &&
+      obtainedMarks >= 0 && totalMarks > 0 && obtainedMarks <= totalMarks)
+  );
+  const passingYear = Number(data.passing_year);
+  const hasValidPassingYear = !data.passing_year ||
+    (Number.isInteger(passingYear) && passingYear >= 1900 && passingYear <= new Date().getFullYear() + 1);
+  const subjectMarks = Array.isArray(data.subjects)
+    ? data.subjects.map(subject => Number(subject.obtainedMarks)).filter(Number.isFinite)
+    : [];
+  const hasConsistentSubjectTotals = subjectMarks.length === 0 ||
+    !Number.isFinite(totalMarks) || subjectMarks.reduce((sum, marks) => sum + marks, 0) <= totalMarks;
+  const hasSufficientConfidence = confidence === undefined || confidence === null || confidence === 0 || confidence >= 35;
+
+  if (hasOppositeLevel || (oppositeMarkers.test(rawText) && !expectedMarkers.test(rawText))) {
+    return {
+      isValid: false,
+      error: type === 'matric'
+        ? 'Invalid document. Please upload your Matric/SSC certificate.'
+        : 'Invalid document. Please upload your Intermediate/HSSC certificate.'
+    };
+  }
+
+  if (!hasExpectedLevel || !hasAcademicStructure ||
+    !hasConsistentMarks || !hasValidPassingYear || !hasConsistentSubjectTotals || !hasSufficientConfidence) {
+    return {
+      isValid: false,
+      error: type === 'matric'
+        ? 'Document verification failed. Please upload the original, unedited Matric/SSC document.'
+        : 'Document verification failed. Please upload the original, unedited Intermediate/HSSC document.'
+    };
+  }
+
+  return { isValid: true, error: null };
+};
+
 // 1. Upload & Persist Document in Database
 router.post('/upload-document', async (req, res) => {
   try {
@@ -23,6 +85,11 @@ router.post('/upload-document', async (req, res) => {
 
     if (!type || !name) {
       return res.status(400).json({ error: 'Document type and name are required' });
+    }
+
+    const verification = verifyAcademicDocumentPayload(type, extracted_data, confidence);
+    if (!verification.isValid) {
+      return res.status(400).json({ error: verification.error });
     }
 
     const userId = req.user.id;

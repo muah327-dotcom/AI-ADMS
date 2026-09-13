@@ -962,11 +962,21 @@ const extractAcademicData = (text) => {
   let documentLevel = null;
   const textForBoard = text;
 
-  // Detect Level
-  if (/(?:SECONDARY\s+SCHOOL\s+CERTIFICATE|MATRIC|SSC\b)/i.test(textForBoard)) {
-    documentLevel = 'matric';
-  } else if (/(?:INTERMEDIATE|HIGHER\s+SECONDARY|HSSC\b)/i.test(textForBoard)) {
+  // Detect both qualification titles before deciding. The word "Intermediate"
+  // in a board name is institution wording, not an HSSC qualification title.
+  const qualificationText = textForBoard.replace(
+    /\bBOARD\s+OF\s+INTERMEDIATE\s*(?:&|AND)\s*SECONDARY\s+EDUCATION\b/gi,
+    ' '
+  );
+  const hasMatricEvidence = /SECONDARY\s+SCHOOL\s+CERTIFICATE|\bSSC\b|\bMATRIC(?:ULATION)?\b|10TH\s+CLASS/i.test(qualificationText);
+  const hasIntermediateEvidence = /HIGHER\s+SECONDARY\s+SCHOOL\s+CERTIFICATE|\bHSSC\b|\bINTERMEDIATE\s+(?:EXAMINATION|CERTIFICATE)\b|12TH\s+CLASS|\bF\.?\s*SC\b|\bF\.?\s*A\b|\bI\.?\s*CS\b|\bI\.?\s*COM\b/i.test(qualificationText);
+  const hasSecondYearEvidence = /(?:PART\s*[- ]?II|SECOND\s+YEAR)/i.test(qualificationText) &&
+    /(?:MARKSHEET|MARK\s*SHEET|RESULT|EXAMINATION|CERTIFICATE|INTERMEDIATE|HSSC)/i.test(qualificationText);
+
+  if (hasIntermediateEvidence || hasSecondYearEvidence) {
     documentLevel = 'intermediate';
+  } else if (hasMatricEvidence) {
+    documentLevel = 'matric';
   }
 
   // a) Look for "Board of Intermediate/Secondary Education <City>"
@@ -1769,6 +1779,67 @@ const validateDocumentClarity = (docType, extractedData, confidence, rawText) =>
 
   return { isValid: true, reason: null };
 };
+
+const verifyAcademicDocument = (docType, extractedData, confidence, rawText) => {
+  if (docType !== 'matric' && docType !== 'intermediate') {
+    return { isValid: true, reason: null };
+  }
+
+  const text = String(rawText || '').toLowerCase();
+  const expectedMarkers = docType === 'matric'
+    ? /secondary\s+school\s+certificate|\bmatric(?:ulation)?\b|\bssc\b|10th\s+class|grade\s*x\b/i
+    : /\bintermediate\b|higher\s+secondary\s+certificate|\bhssc\b|12th\s+class|f\.?\s*sc|f\.?\s*a\b|i\.?\s*cs|i\.?\s*com/i;
+  const oppositeMarkers = docType === 'matric'
+    ? /\bintermediate\b|higher\s+secondary\s+certificate|\bhssc\b|12th\s+class|f\.?\s*sc|f\.?\s*a\b|i\.?\s*cs|i\.?\s*com/i
+    : /secondary\s+school\s+certificate|\bmatric(?:ulation)?\b|\bssc\b|10th\s+class|grade\s*x\b/i;
+  const detectedLevel = extractedData?.document_level;
+  const hasExpectedLevel = detectedLevel === docType;
+  const hasOppositeLevel = detectedLevel !== docType;
+  const hasAcademicStructure = Boolean(
+    extractedData?.board ||
+    extractedData?.passing_year ||
+    extractedData?.obtained_marks !== null && extractedData?.obtained_marks !== undefined ||
+    extractedData?.total_marks !== null && extractedData?.total_marks !== undefined ||
+    extractedData?.subjects?.length
+  );
+  const hasConsistentMarks = (
+    extractedData?.obtained_marks === null || extractedData?.obtained_marks === undefined ||
+    extractedData?.total_marks === null || extractedData?.total_marks === undefined ||
+    (Number(extractedData.obtained_marks) >= 0 && Number(extractedData.total_marks) > 0 &&
+      Number(extractedData.obtained_marks) <= Number(extractedData.total_marks))
+  );
+  const passingYear = Number(extractedData?.passing_year);
+  const hasValidPassingYear = !extractedData?.passing_year ||
+    (Number.isInteger(passingYear) && passingYear >= 1900 && passingYear <= new Date().getFullYear() + 1);
+  const subjectMarks = Array.isArray(extractedData?.subjects)
+    ? extractedData.subjects.map(subject => Number(subject.obtainedMarks)).filter(Number.isFinite)
+    : [];
+  const hasConsistentSubjectTotals = subjectMarks.length === 0 ||
+    !Number.isFinite(Number(extractedData?.total_marks)) ||
+    subjectMarks.reduce((sum, marks) => sum + marks, 0) <= Number(extractedData.total_marks);
+  const hasSufficientConfidence = confidence === 0 || confidence >= 35;
+
+  if (hasOppositeLevel || (oppositeMarkers.test(text) && !expectedMarkers.test(text))) {
+    return {
+      isValid: false,
+      reason: docType === 'matric'
+        ? 'Invalid document. Please upload your Matric/SSC certificate.'
+        : 'Invalid document. Please upload your Intermediate/HSSC certificate.'
+    };
+  }
+
+  if (!hasExpectedLevel || !hasAcademicStructure || !hasConsistentMarks ||
+    !hasValidPassingYear || !hasConsistentSubjectTotals || !hasSufficientConfidence) {
+    return {
+      isValid: false,
+      reason: docType === 'matric'
+        ? 'Document verification failed. Please upload the original, unedited Matric/SSC document.'
+        : 'Document verification failed. Please upload the original, unedited Intermediate/HSSC document.'
+    };
+  }
+
+  return { isValid: true, reason: null };
+};
 // ===== End OCR Helpers =====
 
 // Dictionary of common Urdu names to standard English spelling
@@ -2432,6 +2503,17 @@ const DocumentUpload = () => {
             extractedData.father_name = cleanedTargetedFatherName;
             console.log(`[OCR] Fallback: Used targeted OCR for father name: "${cleanedTargetedFatherName}"`);
           }
+        }
+      }
+
+      // Verify document type/integrity before any document or profile database mutation.
+      if (documentType === 'matric' || documentType === 'intermediate') {
+        const verification = verifyAcademicDocument(documentType, extractedData, confidence, extractedText);
+        if (!verification.isValid) {
+          toast.error(verification.reason, { duration: 7000 });
+          setUploading(false);
+          setProcessingFile(null);
+          return;
         }
       }
 
