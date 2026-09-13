@@ -87,7 +87,7 @@ const userSchema = new mongoose.Schema({
   },
   inter_qualification: {
     type: String,
-    enum: ['FA', 'FSc Pre-Medical', 'FSc Pre-Engineering', 'ICS', 'I.Com', 'DAE', 'Other', null],
+    enum: ['FA', 'FSc Pre-Medical', 'FSc Pre-Engineering', 'ICS', 'I.Com', 'DAE', 'General Science', 'Other', null],
     default: null
   },
   education: {

@@ -37,7 +37,7 @@ const ManagePrograms = () => {
   
   const [saving, setSaving] = useState(false);
 
-  const QUALIFICATION_OPTIONS = ['FA', 'FSc Pre-Medical', 'FSc Pre-Engineering', 'ICS', 'I.Com', 'DAE', 'Other'];
+  const QUALIFICATION_OPTIONS = ['FA', 'FSc Pre-Medical', 'FSc Pre-Engineering', 'ICS', 'I.Com', 'DAE', 'General Science', 'Other'];
 
   const [formData, setFormData] = useState({
     name: '',

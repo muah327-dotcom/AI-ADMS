@@ -1403,6 +1403,8 @@ const extractAcademicData = (text) => {
     interQualification = 'I.Com';
   } else if (/\b(?:dae|diploma\s+of\s+associate\s+engineering)\b/i.test(qt)) {
     interQualification = 'DAE';
+  } else if (/\b(?:general\s*science)\b/i.test(qt)) {
+    interQualification = 'General Science';
   } else if (/\b(?:arts|humanities|faculty\s+of\s+arts|f\s*\.?\s*a\s*\.?)\b/i.test(qt)) {
     interQualification = 'FA';
   }

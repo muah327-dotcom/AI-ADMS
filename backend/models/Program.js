@@ -30,7 +30,7 @@ const programSchema = new mongoose.Schema({
   }],
   requiredIntermediateQualifications: [{
     type: String,
-    enum: ['FA', 'FSc Pre-Medical', 'FSc Pre-Engineering', 'ICS', 'I.Com', 'DAE', 'Other']
+    enum: ['FA', 'FSc Pre-Medical', 'FSc Pre-Engineering', 'ICS', 'I.Com', 'DAE', 'General Science', 'Other']
   }],
   admission_fee: {
     type: Number,
