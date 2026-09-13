@@ -1496,20 +1496,12 @@ const crossDocumentVerification = (currentDocType, currentExtractedData, uploade
     if (currentName && existingData.name) {
       if (!namesMatch(currentName, existingData.name)) {
         warnings.push(`Candidate name extracted from ${currentLabel} ("${currentName}") differs from ${existingLabel} ("${existingData.name}"). Ensure images are clear and readable.`);
-        if (currentDocType === 'cnic') {
-          warnings.push(`${existingLabel} has been removed because candidate name does not match your CNIC.`);
-          removeIndices.push(index);
-        }
       }
     }
 
     if (currentFatherName && existingData.father_name) {
       if (!namesMatch(currentFatherName, existingData.father_name)) {
         warnings.push(`Father's name extracted from ${currentLabel} ("${currentFatherName}") differs from ${existingLabel} ("${existingData.father_name}"). Please verify image clarity.`);
-        if (currentDocType === 'cnic') {
-          warnings.push(`${existingLabel} has been removed because father's name does not match your CNIC.`);
-          removeIndices.push(index);
-        }
       }
     }
   });
@@ -2551,79 +2543,10 @@ const DocumentUpload = () => {
         return;
       }
 
-      // If CNIC was uploaded and existing documents don't match, remove conflicting docs and clear their form and database data
-      if (removeIndices.length > 0) {
-        let combinedDbFields = {};
-        let combinedFormFields = [];
-
-        removeIndices.forEach(idx => {
-          const removedFile = uploadedFiles[idx];
-          if (removedFile) {
-            const { formFields, dbFields } = getDocTypeFieldsToClear(removedFile.type);
-            combinedFormFields = [...combinedFormFields, ...formFields];
-            combinedDbFields = { ...combinedDbFields, ...dbFields };
-          }
-        });
-
-        const remainingFiles = uploadedFiles.filter((_, i) => !removeIndices.includes(i));
-        const remainingDocTypes = remainingFiles.map(f => f.type);
-
-        // Clear in local form state
-        setFormData(prev => {
-          const updated = { ...prev };
-          combinedFormFields.forEach(f => {
-            updated[f] = '';
-          });
-          return updated;
-        });
-
-        // Remove from OCR filled fields
-        setOcrFilledFields(prev => {
-          const next = new Set(prev);
-          combinedFormFields.forEach(f => next.delete(f));
-          return next;
-        });
-
-        const dbPayload = {
-          ...combinedDbFields,
-          is_verified: false,
-          uploaded_documents: remainingDocTypes
-        };
-
-        // Invalidate verification & update context state
-        setUser(prev => prev ? ({ ...prev, ...dbPayload }) : prev);
-
-        try {
-          const token = localStorage.getItem('token');
-          if (token) {
-            removeIndices.forEach(idx => {
-              const rf = uploadedFiles[idx];
-              if (rf?.type) {
-                fetch(`/api/ocr/my-documents/type/${rf.type}`, {
-                  method: 'DELETE',
-                  headers: { 'Authorization': `Bearer ${token}` }
-                }).catch(console.error);
-              }
-            });
-
-            fetch('/api/auth/profile', {
-              method: 'PUT',
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify(dbPayload)
-            }).catch(console.error);
-          }
-        } catch (err) {
-          console.error(err);
-        }
-
-        setUploadedFiles(remainingFiles);
-        nameWarnings.forEach(warning => {
-          toast.error(warning, { duration: 8000, icon: '⚠️' });
-        });
-      }
+      // Show any name mismatch warnings (informational only)
+      nameWarnings.forEach(warning => {
+        toast.error(warning, { duration: 8000, icon: '⚠️' });
+      });
 
       // Persist document to MongoDB Database
       const token = localStorage.getItem('token');
