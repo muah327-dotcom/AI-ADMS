@@ -1478,13 +1478,13 @@ const crossDocumentVerification = (currentDocType, currentExtractedData, uploade
   if (userProfile?.full_name && currentName) {
     if (!namesMatch(currentName, userProfile.full_name)) {
       warnings.push(`Candidate name detected as "${currentName}" on ${currentLabel}, which differs from your account profile ("${userProfile.full_name}"). Image blur, camera glare, or dark lighting usually causes OCR to misread printed text.`);
-      if (currentDocType !== 'cnic') rejectCurrentDoc = true;
+      if (currentDocType !== 'cnic' && currentDocType !== 'matric' && currentDocType !== 'intermediate') rejectCurrentDoc = true;
     }
   }
   if (userProfile?.father_name && currentFatherName) {
     if (!namesMatch(currentFatherName, userProfile.father_name)) {
       warnings.push(`Father's name detected as "${currentFatherName}" on ${currentLabel}, which differs from your registered father's name ("${userProfile.father_name}"). If the document picture is blurry, printed text may be misread.`);
-      if (currentDocType !== 'cnic') rejectCurrentDoc = true;
+      if (currentDocType !== 'cnic' && currentDocType !== 'matric' && currentDocType !== 'intermediate') rejectCurrentDoc = true;
     }
   }
 
@@ -1499,8 +1499,6 @@ const crossDocumentVerification = (currentDocType, currentExtractedData, uploade
         if (currentDocType === 'cnic') {
           warnings.push(`${existingLabel} has been removed because candidate name does not match your CNIC.`);
           removeIndices.push(index);
-        } else {
-          rejectCurrentDoc = true;
         }
       }
     }
@@ -1511,8 +1509,6 @@ const crossDocumentVerification = (currentDocType, currentExtractedData, uploade
         if (currentDocType === 'cnic') {
           warnings.push(`${existingLabel} has been removed because father's name does not match your CNIC.`);
           removeIndices.push(index);
-        } else {
-          rejectCurrentDoc = true;
         }
       }
     }
@@ -2364,7 +2360,7 @@ const DocumentUpload = () => {
           return current.includes(documentType) ? prev : { ...prev, uploaded_documents: [...current, documentType] };
         });
 
-        toast.success('Photograph uploaded & saved to database successfully!');
+        toast.success(`${documentTypes.find(d => d.id === documentType)?.name || 'Document'} uploaded`);
         setUploading(false);
         setProcessingFile(null);
         return;
@@ -2681,7 +2677,7 @@ const DocumentUpload = () => {
       // Auto-fill form fields from OCR data
       autoFillFromOCR(extractedData, documentType);
 
-      toast.success('Document processed & stored in database successfully!');
+      toast.success(`${documentTypes.find(d => d.id === documentType)?.name || 'Document'} uploaded`);
     } catch (error) {
       console.error('Upload error:', error);
       toast.error(error.message || 'Error processing document');
@@ -2801,8 +2797,6 @@ const DocumentUpload = () => {
       console.error('Error clearing document data from database:', err);
     }
 
-    const docLabel = documentTypes.find(d => d.id === docTypeToRemove)?.name || 'Document';
-    toast.success(`${docLabel} and its data removed from database.`);
     if (!stillHasAllMandatory) {
       toast.error('Profile is no longer verified. Please upload all required documents to verify your profile.', { duration: 5000 });
     }
@@ -3183,10 +3177,6 @@ const DocumentUpload = () => {
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Uploaded Documents ({uploadedFiles.length})</h3>
-            <span className="text-xs text-emerald-400 flex items-center gap-1 font-medium">
-              <CheckCircle className="h-3.5 w-3.5" />
-              Persisted in Database
-            </span>
           </div>
           <div className="space-y-3">
             {uploadedFiles.map((file, index) => (
@@ -3198,9 +3188,6 @@ const DocumentUpload = () => {
                   <div>
                     <div className="flex items-center gap-2">
                       <p className="font-medium text-gray-900 dark:text-white text-sm">{file.name}</p>
-                      <span className="px-2 py-0.5 text-[10px] bg-emerald-500/20 text-emerald-300 rounded-full font-medium border border-emerald-500/30">
-                        Saved in DB
-                      </span>
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 capitalize mt-0.5">
                       {documentTypes.find(t => t.id === file.type)?.name}
