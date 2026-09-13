@@ -2543,11 +2543,6 @@ const DocumentUpload = () => {
         return;
       }
 
-      // Show any name mismatch warnings (informational only)
-      nameWarnings.forEach(warning => {
-        toast.error(warning, { duration: 8000, icon: '⚠️' });
-      });
-
       // Persist document to MongoDB Database
       const token = localStorage.getItem('token');
       let savedDoc = null;

@@ -816,7 +816,7 @@ const AllApplications = () => {
                                   {doc.extracted_data.cnic && (
                                     <p><strong className="text-gray-700 dark:text-gray-300">CNIC:</strong> <span className="font-mono text-primary-600 dark:text-primary-400">{doc.extracted_data.cnic}</span></p>
                                   )}
-                                  {doc.extracted_data.name && (
+                                  {doc.extracted_data.name && doc.type !== 'matric' && doc.type !== 'intermediate' && (
                                     <p><strong className="text-gray-700 dark:text-gray-300">Name:</strong> {doc.extracted_data.name}</p>
                                   )}
                                   {doc.extracted_data.obtained_marks && (
@@ -1040,13 +1040,13 @@ const AllApplications = () => {
 
                   {/* Sidebar Content */}
                   <div className="flex-1 overflow-y-auto p-5 space-y-2.5">
-                    {previewDoc.extracted_data.name && (
+                    {previewDoc.extracted_data.name && previewDoc.type !== 'matric' && previewDoc.type !== 'intermediate' && (
                       <div className="group p-3.5 rounded-xl bg-white dark:bg-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all">
                         <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">Applicant Name</span>
                         <span className="font-semibold text-gray-900 dark:text-white text-sm">{previewDoc.extracted_data.name}</span>
                       </div>
                     )}
-                    {previewDoc.extracted_data.father_name && (
+                    {previewDoc.extracted_data.father_name && previewDoc.type !== 'matric' && previewDoc.type !== 'intermediate' && (
                       <div className="group p-3.5 rounded-xl bg-white dark:bg-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all">
                         <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">Father's Name</span>
                         <span className="font-semibold text-gray-900 dark:text-white text-sm">{previewDoc.extracted_data.father_name}</span>
