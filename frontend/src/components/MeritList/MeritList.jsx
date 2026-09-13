@@ -59,7 +59,7 @@ const MeritList = ({ admin = false }) => {
 
   useEffect(() => {
     if (selectedProgram) {
-      fetchMeritList(selectedProgram);
+      fetchMeritList(selectedProgram, selectedListFilter, categoryFilter, programDetails?.current_merit_list);
     }
   }, [selectedProgram, categoryFilter, selectedListFilter]);
 
@@ -124,7 +124,7 @@ const MeritList = ({ admin = false }) => {
     }
   };
 
-  const fetchMeritList = async (programId) => {
+  const fetchMeritList = async (programId, listFilter, catFilter, currentMeritListNum) => {
     if (!programId) {
       setMeritList([]);
       setProgramDetails(null);
@@ -134,16 +134,16 @@ const MeritList = ({ admin = false }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      // Determine which list to fetch
+      const activeListFilter = listFilter || 'current';
+      const activeCategory = catFilter || 'all';
       let listParam = 'all';
-      if (selectedListFilter === 'current') {
-        // Use current_merit_list if we know it, otherwise 'all' (will post-filter)
-        listParam = programDetails?.current_merit_list ? String(programDetails.current_merit_list) : 'all';
-      } else if (selectedListFilter !== 'all') {
-        listParam = selectedListFilter;
+      if (activeListFilter === 'current') {
+        listParam = currentMeritListNum ? String(currentMeritListNum) : 'all';
+      } else if (activeListFilter !== 'all') {
+        listParam = activeListFilter;
       }
       const url = admin
-        ? `/api/merit/program/${programId}?category=${categoryFilter}&list=${listParam}`
+        ? `/api/merit/program/${programId}?category=${activeCategory}&list=${listParam}`
         : `/api/merit/program/${programId}`;
 
       const response = await fetch(url, {
@@ -155,7 +155,7 @@ const MeritList = ({ admin = false }) => {
         let list = data.meritList || [];
 
         // If 'current' filter, post-filter to only show current list's students
-        if (selectedListFilter === 'current' && data.program?.current_merit_list) {
+        if (activeListFilter === 'current' && data.program?.current_merit_list) {
           const currentNum = data.program.current_merit_list;
           list = list.filter(e => e.merit_list_number === currentNum);
         }
@@ -191,7 +191,7 @@ const MeritList = ({ admin = false }) => {
     }
   };
 
-  const generateMeritList = async () => {
+  const handleGenerateMeritList = async (listNumber) => {
     if (!selectedProgram) return;
 
     const parsedMerit = parseFloat(minimumMerit);
@@ -200,10 +200,19 @@ const MeritList = ({ admin = false }) => {
       return;
     }
 
-    setGenerating(true);
+    if (listNumber === 1) {
+      setGenerating(true);
+    } else {
+      setGeneratingNext(true);
+    }
+
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/merit/generate/${selectedProgram}`, {
+      const endpoint = listNumber === 1
+        ? `/api/merit/generate/${selectedProgram}`
+        : `/api/merit/generate-next/${selectedProgram}`;
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -211,14 +220,16 @@ const MeritList = ({ admin = false }) => {
         },
         body: JSON.stringify({
           fee_deadline: feeForm.fee_deadline,
-          minimum_merit: parsedMerit
+          minimum_merit: parsedMerit,
+          listNumber
         })
       });
 
       if (response.ok) {
         const data = await response.json();
-        fetchMeritList(selectedProgram);
-        toast.success(`1st Merit list generated!\nSelected: ${data.selected}, Waitlisted: ${data.waitlisted}`);
+        fetchMeritList(selectedProgram, selectedListFilter, categoryFilter, data.meritListNumber || listNumber);
+        const ordinal = getOrdinal(data.meritListNumber || listNumber);
+        toast.success(`${ordinal} Merit list generated!\nSelected: ${data.selected}, Remaining Seats: ${data.seatsLeftAfter ?? data.selected}`);
       } else {
         const error = await response.json();
         toast.error(error.error || 'Failed to generate merit list');
@@ -228,45 +239,6 @@ const MeritList = ({ admin = false }) => {
       toast.error('Error generating merit list');
     } finally {
       setGenerating(false);
-    }
-  };
-
-  const generateNextMeritList = async () => {
-    if (!selectedProgram) return;
-
-    const parsedMerit = parseFloat(minimumMerit);
-    if (minimumMerit === '' || isNaN(parsedMerit) || parsedMerit < 0 || parsedMerit > 100) {
-      toast.error('Please enter a valid minimum merit percentage (0-100) before generating.');
-      return;
-    }
-
-    setGeneratingNext(true);
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/merit/generate-next/${selectedProgram}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          fee_deadline: feeForm.fee_deadline,
-          minimum_merit: parsedMerit
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        fetchMeritList(selectedProgram);
-        toast.success(`${getOrdinal(data.meritListNumber)} Merit List Generated!\nSelected: ${data.selected}, Remaining Seats: ${data.seatsLeftAfter}`);
-      } else {
-        const error = await response.json();
-        toast.error(error.error || 'Failed to generate merit list');
-      }
-    } catch (error) {
-      console.error('Generate next merit list error:', error);
-      toast.error('Error generating next merit list');
-    } finally {
       setGeneratingNext(false);
     }
   };
@@ -292,7 +264,8 @@ const MeritList = ({ admin = false }) => {
       if (response.ok) {
         const data = await response.json();
         toast.success(data.message || 'Merit lists reset successfully');
-        fetchMeritList(selectedProgram);
+        setSelectedListFilter('current');
+        fetchMeritList(selectedProgram, 'current', categoryFilter, 0);
       } else {
         const error = await response.json();
         toast.error(error.error || 'Failed to reset merit lists');
@@ -358,7 +331,7 @@ const MeritList = ({ admin = false }) => {
       if (res.ok) {
         toast.success('Fee configuration saved');
         setShowFeeConfig(false);
-        fetchMeritList(selectedProgram);
+        fetchMeritList(selectedProgram, selectedListFilter, categoryFilter, programDetails?.current_merit_list);
       } else {
         toast.error('Failed to save fee configuration');
       }
@@ -381,7 +354,7 @@ const MeritList = ({ admin = false }) => {
       });
       if (res.ok) {
         toast.success(action === 'verify' ? 'Fee verified & admission confirmed!' : 'Fee receipt rejected');
-        fetchMeritList(selectedProgram);
+        fetchMeritList(selectedProgram, selectedListFilter, categoryFilter, programDetails?.current_merit_list);
       } else {
         toast.error('Failed to update fee verification status');
       }
@@ -435,8 +408,9 @@ const MeritList = ({ admin = false }) => {
             {/* Single Dynamic Action Button: 1st Merit List -> 2nd -> 3rd -> Reset */}
             {(() => {
               const currentListNum = programDetails?.current_merit_list || 0;
-              const isFirstGen = currentListNum === 0 || meritList.length === 0;
+              const nextListNum = currentListNum + 1;
               const isMaxReached = currentListNum >= 3;
+              const isGenerating = generating || generatingNext;
 
               if (isMaxReached) {
                 return (
@@ -458,43 +432,22 @@ const MeritList = ({ admin = false }) => {
                     )}
                   </button>
                 );
-              } else if (isFirstGen) {
-                return (
-                  <button
-                    onClick={generateMeritList}
-                    disabled={generating || !selectedProgram}
-                    className="inline-flex items-center px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
-                  >
-                    {generating ? (
-                      <>
-                        <Loader2 className="animate-spin -ml-1 mr-2 h-5 w-5" />
-                        Generating 1st Merit List...
-                      </>
-                    ) : (
-                      <>
-                        <Award className="h-5 w-5 mr-2" />
-                        Generate 1st Merit List
-                      </>
-                    )}
-                  </button>
-                );
               } else {
-                const nextListNum = currentListNum + 1;
                 const nextListOrdinal = getOrdinal(nextListNum);
                 return (
                   <button
-                    onClick={generateNextMeritList}
-                    disabled={generatingNext || !selectedProgram}
-                    className="inline-flex items-center px-4 py-2 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                    onClick={() => handleGenerateMeritList(nextListNum)}
+                    disabled={isGenerating || !selectedProgram}
+                    className="inline-flex items-center px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
                   >
-                    {generatingNext ? (
+                    {isGenerating ? (
                       <>
                         <Loader2 className="animate-spin -ml-1 mr-2 h-5 w-5" />
                         Generating {nextListOrdinal} Merit List...
                       </>
                     ) : (
                       <>
-                        <RefreshCw className="h-5 w-5 mr-2" />
+                        <Award className="h-5 w-5 mr-2" />
                         Generate {nextListOrdinal} Merit List
                       </>
                     )}

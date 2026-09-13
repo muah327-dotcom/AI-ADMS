@@ -8,6 +8,12 @@ const router = express.Router();
 
 router.use(authenticateToken);
 
+const getOrdinal = (n) => {
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+};
+
 // Helper function to resolve Program by ObjectId OR by Name
 const findProgram = async (identifier) => {
   if (!identifier) return null;
@@ -63,7 +69,7 @@ router.post('/program-fee/:programId', requireRole(['admin', 'department_admin']
 router.post('/generate/:programId', requireRole(['admin', 'department_admin']), async (req, res) => {
   try {
     const { programId } = req.params;
-    const { fee_deadline, minimum_merit } = req.body;
+    const { fee_deadline, minimum_merit, listNumber } = req.body;
 
     // Validate minimum_merit is provided and valid
     const parsedMerit = parseFloat(minimum_merit);
@@ -83,24 +89,17 @@ router.post('/generate/:programId', requireRole(['admin', 'department_admin']), 
       return res.status(403).json({ error: 'Access denied: program not in your department' });
     }
 
-    // Prevent regeneration if a merit list already exists — require reset first
-    if (program.current_merit_list >= 1) {
-      // Check if there are actually any merit-listed applications (stale counter detection)
-      const existingMeritApps = await Application.countDocuments({
-        program_id: program._id,
-        merit_list_number: { $ne: null }
-      });
-      if (existingMeritApps > 0) {
-        return res.status(400).json({ error: 'A merit list already exists for this program. Please reset merit lists before generating a new 1st list.' });
-      }
-      // Stale counter — reset and proceed with generation
-      program.current_merit_list = 0;
+    // This endpoint only creates the 1st merit list
+    const currentList = program.current_merit_list || 0;
+    if (currentList >= 1) {
+      return res.status(400).json({ error: 'A merit list already exists for this program. Please generate the next merit list instead.' });
     }
+    const meritListNumber = 1;
 
     if (fee_deadline) {
       program.fee_deadline = new Date(fee_deadline);
     }
-    program.current_merit_list = 1;
+    program.current_merit_list = meritListNumber;
     await program.save();
 
     // Fetch only pending applications (not yet evaluated)
@@ -140,7 +139,7 @@ router.post('/generate/:programId', requireRole(['admin', 'department_admin']), 
 
       await Application.findByIdAndUpdate(app._id, {
         status: 'approved',
-        merit_list_number: 1,
+        merit_list_number: meritListNumber,
         fee_deadline: defaultDeadline,
         fee_challan: {
           challan_number: challanNum,
@@ -167,9 +166,9 @@ router.post('/generate/:programId', requireRole(['admin', 'department_admin']), 
     }
 
     res.json({
-      message: '1st Merit list generated successfully',
+      message: `${getOrdinal(meritListNumber)} Merit list generated successfully`,
       program: program.name,
-      meritListNumber: 1,
+      meritListNumber,
       totalApplications: applications.length,
       qualifiedApplications: filteredApplications.length,
       selected: meritList.length,
@@ -284,12 +283,6 @@ router.post('/generate-next/:programId', requireRole(['admin', 'department_admin
       await app.save();
       promotedCount++;
     }
-
-    const getOrdinal = (n) => {
-      const s = ['th', 'st', 'nd', 'rd'];
-      const v = n % 100;
-      return n + (s[(v - 20) % 10] || s[v] || s[0]);
-    };
 
     res.json({
       message: `${getOrdinal(nextListNum)} Merit List generated successfully`,
@@ -562,7 +555,7 @@ router.get('/program/:programId', async (req, res) => {
         name: program.name,
         department: program.department,
         total_seats: program.total_seats,
-        current_merit_list: program.current_merit_list || 1,
+        current_merit_list: program.current_merit_list ?? 0,
         fee_deadline: defaultDeadline,
         admission_fee: program.admission_fee || 15000,
         tuition_fee: program.tuition_fee || 65000,
