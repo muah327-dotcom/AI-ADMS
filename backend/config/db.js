@@ -11,47 +11,30 @@ const connectDB = async () => {
     return mongoose.connection;
   }
 
-  const DEFAULT_MONGODB_URI = 'mongodb+srv://muah327_db_user:abc%40gmail@cluster0.rzzuhei.mongodb.net/admission_system?retryWrites=true&w=majority';
-  let uri = process.env.MONGODB_URI || DEFAULT_MONGODB_URI;
-  
+  // There is no default connection string. A hardcoded fallback URI used to live here,
+  // which meant any checkout — and anyone reading the public repo — shared one database.
+  // The app now refuses to start without an explicit MONGODB_URI.
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    throw new Error(
+      'MONGODB_URI is not set. Create backend/.env with your own MongoDB connection string ' +
+      '(see backend/.env.example). The application will not start without it.'
+    );
+  }
+
   let conn;
   try {
-    console.log('Attempting to connect to Cloud MongoDB...');
+    console.log('Connecting to MongoDB...');
     conn = await mongoose.connect(uri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
       serverSelectionTimeoutMS: 10000
     });
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
+    console.log(`MongoDB connected: ${conn.connection.host}`);
   } catch (error) {
-    console.warn(`Cloud MongoDB connection failed (${error.message}).`);
-    
-    if (process.env.VERCEL) {
-      console.error('Cannot run in-memory MongoDB on Vercel serverless environment. Throwing connection error.');
-      throw error;
-    }
-    
-    console.log('Starting in-memory MongoDB server as fallback...');
-    
-    try {
-      const { MongoMemoryServer } = await import('mongodb-memory-server');
-      const mongoMS = await MongoMemoryServer.create({
-        binary: {
-          version: '6.0.16'
-        }
-      });
-      const inMemoryUri = mongoMS.getUri();
-      console.log(`In-memory MongoDB started at: ${inMemoryUri}`);
-      
-      conn = await mongoose.connect(inMemoryUri, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-      });
-      console.log(`Connected to in-memory MongoDB: ${conn.connection.host}`);
-    } catch (fallbackError) {
-      console.error(`Failed to start in-memory MongoDB: ${fallbackError.message}`);
-      process.exit(1);
-    }
+    // The previous fallback here tried to start mongodb-memory-server, which is not in
+    // backend/package.json, so it could only ever throw a confusing module-not-found
+    // error on top of the real connection failure. Fail on the actual cause instead.
+    console.error(`MongoDB connection failed: ${error.message}`);
+    throw error;
   }
 
   // Auto-seed admin user and default programs if they don't exist
@@ -63,9 +46,16 @@ const connectDB = async () => {
     if (adminCount === 0) {
       console.log('Seeding default Admin user...');
       const bcrypt = (await import('bcryptjs')).default;
-      const hashedPassword = await bcrypt.hash('admin123', 10);
+      // A published deployment seeded with a known password is an open admin account.
+      // Set ADMIN_PASSWORD in the environment for anything that is not local dev.
+      const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+      if (!process.env.ADMIN_PASSWORD) {
+        console.warn('WARNING: seeding admin with the default password "admin123". ' +
+          'Set ADMIN_PASSWORD before deploying anywhere reachable.');
+      }
+      const hashedPassword = await bcrypt.hash(adminPassword, 10);
       await User.create({
-        email: 'admin@university.edu',
+        email: process.env.ADMIN_EMAIL || 'admin@university.edu',
         password: hashedPassword,
         full_name: 'System Administrator',
         role: 'admin',
@@ -74,7 +64,7 @@ const connectDB = async () => {
         address: 'University Campus',
         is_active: true
       });
-      console.log('✅ Admin user created: admin@university.edu / admin123');
+      console.log(`Admin user created: ${process.env.ADMIN_EMAIL || 'admin@university.edu'}`);
     }
   } catch (seedError) {
     console.error(`Seeding warning: ${seedError.message}`);

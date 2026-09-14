@@ -1,6 +1,11 @@
 import express from 'express';
 import dns from 'dns';
-dns.setServers(['8.8.8.8', '1.1.1.1']);
+// Overriding the resolver breaks the mongodb+srv SRV lookup on platforms that run their
+// own DNS (Vercel among them), so this is now opt-in for local networks that need it:
+// set DNS_SERVERS=8.8.8.8,1.1.1.1 only if your machine's resolver cannot reach Atlas.
+if (process.env.DNS_SERVERS) {
+  dns.setServers(process.env.DNS_SERVERS.split(',').map(s => s.trim()).filter(Boolean));
+}
 import cors from 'cors';
 import compression from 'compression';
 import dotenv from 'dotenv';
@@ -38,24 +43,31 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // CORS configuration — allow Vercel frontend and local dev
+// Set FRONTEND_ORIGIN to your deployed frontend URL. Additional origins can be added as
+// a comma-separated EXTRA_ORIGINS list.
 const allowedOrigins = [
-  'https://projectabc-frontend.vercel.app',
+  process.env.FRONTEND_ORIGIN,
+  ...(process.env.EXTRA_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean),
   'http://localhost:5173',
   'http://localhost:3000'
-];
+].filter(Boolean);
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, curl, etc.)
+    // Requests with no Origin header (curl, server-to-server, native apps) are not
+    // browser cross-origin requests, so CORS does not apply to them.
     if (!origin) return callback(null, true);
-    if (allowedOrigins.some(allowed => origin.startsWith(allowed) || origin === allowed)) {
+    if (allowedOrigins.some(allowed => origin === allowed || origin.startsWith(allowed))) {
       return callback(null, true);
     }
-    // Also allow any *.vercel.app subdomain for preview deployments
-    if (/\.vercel\.app$/.test(origin)) {
+    // Vercel preview deployments get a new subdomain per build.
+    if (/^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin)) {
       return callback(null, true);
     }
-    return callback(null, true); // fallback: allow all for now
+    // Previously this fell through to allowing every origin, which made the
+    // allowlist above decorative. Unknown origins are now refused.
+    console.warn(`CORS: blocked origin ${origin}`);
+    return callback(new Error('Origin not allowed by CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

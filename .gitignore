@@ -1,4 +1,4 @@
 node_modules
 .env
-.env.example
-uploads/ocr-harness/
+uploads/
+ocr-harness/
