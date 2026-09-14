@@ -69,6 +69,56 @@ const verifyAcademicDocumentPayload = (type, extractedData, confidence) => {
   return { isValid: true, error: null };
 };
 
+// Numeric plausibility gate.
+// The client computes the percentage that decides merit rank, so it has to be
+// re-checked here: verifyAcademicDocumentPayload above only confirms that fields are
+// present and that marks are internally ordered, not that the percentage agrees with
+// them. Without this, a crafted request can set its own merit score.
+const ACADEMIC_TOTAL_MIN = 100;
+const ACADEMIC_TOTAL_MAX = 2000;
+
+const validateAcademicPlausibility = (type, extractedData) => {
+  if (type !== 'matric' && type !== 'intermediate') {
+    return { isValid: true, error: null };
+  }
+  const d = extractedData && typeof extractedData === 'object' ? extractedData : {};
+  const missing = v => v === null || v === undefined || v === '';
+  const obtained = Number(d.obtained_marks);
+  const total = Number(d.total_marks);
+  const pct = Number(d.percentage);
+
+  if (missing(d.obtained_marks) || missing(d.total_marks) ||
+    !Number.isFinite(obtained) || !Number.isFinite(total)) {
+    return { isValid: false, error: 'Obtained and total marks are required for academic documents.' };
+  }
+  if (total < ACADEMIC_TOTAL_MIN || total > ACADEMIC_TOTAL_MAX) {
+    return { isValid: false, error: 'Total marks are outside the accepted range.' };
+  }
+  if (obtained < 0 || obtained > total) {
+    return { isValid: false, error: 'Obtained marks cannot exceed total marks.' };
+  }
+  if (!Number.isFinite(pct) || pct <= 0 || pct > 100) {
+    return { isValid: false, error: 'Percentage is missing or outside the valid range.' };
+  }
+  if (Math.abs(pct - (obtained / total) * 100) > 0.5) {
+    return { isValid: false, error: 'Percentage does not match the submitted marks.' };
+  }
+
+  const year = Number(d.passing_year);
+  if (d.passing_year && (!Number.isInteger(year) || year < 1950 || year > new Date().getFullYear() + 1)) {
+    return { isValid: false, error: 'Passing year is not a valid year.' };
+  }
+
+  const subjectSum = Array.isArray(d.subjects)
+    ? d.subjects.map(s => Number(s.obtainedMarks)).filter(Number.isFinite).reduce((a, b) => a + b, 0)
+    : 0;
+  if (subjectSum > total) {
+    return { isValid: false, error: 'Subject marks exceed the total marks.' };
+  }
+
+  return { isValid: true, error: null };
+};
+
 // 1. Upload & Persist Document in Database
 router.post('/upload-document', async (req, res) => {
   try {
@@ -90,6 +140,11 @@ router.post('/upload-document', async (req, res) => {
     const verification = verifyAcademicDocumentPayload(type, extracted_data, confidence);
     if (!verification.isValid) {
       return res.status(400).json({ error: verification.error });
+    }
+
+    const plausibility = validateAcademicPlausibility(type, extracted_data);
+    if (!plausibility.isValid) {
+      return res.status(400).json({ error: plausibility.error });
     }
 
     const userId = req.user.id;
