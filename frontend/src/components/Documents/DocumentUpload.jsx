@@ -187,12 +187,18 @@ const PAKISTANI_NAME_PARTS = new Set([
 const scoreNameCandidate = (candidateStr) => {
   if (!candidateStr) return 0;
   const words = candidateStr.toLowerCase().split(/\s+/);
-  let score = 0;
+  let dictionaryHits = 0;
   for (const word of words) {
-    if (PAKISTANI_NAME_PARTS.has(word)) {
-      score += 10; // Strong match
-    }
+    if (PAKISTANI_NAME_PARTS.has(word)) dictionaryHits++;
   }
+  if (dictionaryHits === 0) {
+    // The word-count bonus used to be awarded on its own, so any two-to-four word run
+    // of OCR noise scored 2 and cleared every `score > 0` acceptance test in this file.
+    // That is how "Risa Gos" and "Anne Inert" were accepted as real names. A candidate
+    // with no recognisable name part in it is not evidence of anything.
+    return 0;
+  }
+  let score = dictionaryHits * 10;
   // Bonus for multi-word names (real names tend to be 2-4 words)
   if (words.length >= 2 && words.length <= 4) score += 2;
   return score;
@@ -209,6 +215,11 @@ const cleanNameCandidate = (rawStr) => {
     .replace(/\([^\)]*\)/g, ' ')
     .replace(/\[[^\]]*\]/g, ' ')
     .replace(/\{[^\}]*\}/g, ' ');
+
+  // 1b. Tesseract often loses the space between two capitalised words, yielding
+  // "YawarHayat". Left joined, neither half matches the name dictionary and the whole
+  // candidate scores zero. Split on the lower-to-upper boundary.
+  text = text.replace(/([a-z])([A-Z])/g, '$1 $2');
 
   // 2. Remove known label prefixes with flexible spacing and punctuation
   text = text
@@ -237,6 +248,23 @@ const cleanNameCandidate = (rawStr) => {
   // (Removed aggressive dictionary-based trimming to avoid truncating real names like 'Nadeem' that aren't in the list)
 
   if (validWords.length < 1) return null;
+
+  // Drop short trailing fragments that are not recognisable name parts. Watermark and
+  // border text bleeds into the end of the candidate as 3-4 letter runs -- "Muhammad
+  // Zahid Vre", "Muhammad Ahmad Jes". Only trailing tokens are considered, only when
+  // they are 4 characters or shorter (so real short-but-unlisted names survive), and
+  // only while at least one dictionary-matched word remains.
+  const hasDictionaryWord = arr => arr.some(w => PAKISTANI_NAME_PARTS.has(w.toLowerCase()));
+  if (hasDictionaryWord(validWords)) {
+    while (validWords.length > 1) {
+      const last = validWords[validWords.length - 1].toLowerCase();
+      if (PAKISTANI_NAME_PARTS.has(last) || last.length > 4) break;
+      const candidate = validWords.slice(0, -1);
+      if (!hasDictionaryWord(candidate)) break;
+      validWords = candidate;
+    }
+  }
+
   const trimmed = validWords.slice(0, 4);
 
   return trimmed
@@ -381,28 +409,12 @@ const extractCNICData = (rawText) => {
       }
       if (name) break;
 
-      // If label found but candidate was garbage, still accept it as last resort
-      // (the label "Name" is a strong structural signal even when value is garbled)
-      if (!name) {
-        const fallbackCand = cleanNameCandidate(line);
-        if (fallbackCand && fallbackCand.length >= 3) {
-          name = fallbackCand;
-          nameLineIndex = i;
-          break;
-        }
-        for (let j = 1; j <= 3; j++) {
-          const nextLine = lines[i + j];
-          if (!nextLine) break;
-          if (/\b(?:Father|Husband|Mother|Date|Birth|CNIC|Identity|Gender|Sex|Country|Expiry|Issue|National|Republic|Database|Stay)\b/i.test(nextLine)) break;
-          const cand = cleanNameCandidate(nextLine);
-          if (cand && cand.length >= 3) {
-            name = cand;
-            nameLineIndex = i + j;
-            break;
-          }
-        }
-      }
-      if (name) break;
+      // The label used to be treated as strong enough on its own: if nothing scored,
+      // whatever followed it was accepted anyway, "as last resort". On a card where the
+      // name row is destroyed by the hologram that turns noise into a confident answer
+      // and writes it to the student's profile. A missing name is recoverable; a wrong
+      // one silently replaces the applicant's identity. Leave it null.
+      if (!name) break;
     }
   }
 
@@ -528,8 +540,14 @@ const extractCNICData = (rawText) => {
     console.log('--- Father Name Candidates ---');
     unique.forEach(c => console.log(`  [${c.strategy}] "${c.name}" (score: ${c.score})`));
 
-    // Pick the highest scoring candidate
-    fatherName = unique[0].name;
+    // Pick the highest scoring candidate — but only if it scored at all. Previously the
+    // top candidate was taken unconditionally, so when every candidate was noise the
+    // highest-ranked piece of noise became the father's name.
+    if (unique[0].score > 0) {
+      fatherName = unique[0].name;
+    } else {
+      console.warn('[OCR] No father-name candidate matched a recognisable name part; leaving it blank.');
+    }
   }
 
   // Strategy E: Fallback scan (only if no candidates found above)
@@ -542,10 +560,12 @@ const extractCNICData = (rawText) => {
         fatherCandidates.push({ name: cand, score: scoreNameCandidate(cand), strategy: 'E' });
       }
     }
-    // Pick best from fallback
+    // Pick best from fallback, again only when it scored.
     if (fatherCandidates.length > 0) {
       fatherCandidates.sort((a, b) => b.score - a.score);
-      fatherName = fatherCandidates[0].name;
+      if (fatherCandidates[0].score > 0) {
+        fatherName = fatherCandidates[0].name;
+      }
     }
   }
 
