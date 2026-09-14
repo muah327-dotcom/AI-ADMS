@@ -63,7 +63,7 @@ const Layout = () => {
     { name: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
     { name: 'Analytics', icon: BarChart3, path: '/admin/analytics' },
     { name: 'All Applications', icon: FileText, path: '/admin/applications' },
-    { name: 'Manage Programs', icon: GraduationCap, path: '/admin/programs' },
+    { name: 'Manage Departments', icon: GraduationCap, path: '/admin/programs' },
     { name: 'Students', icon: Users, path: '/admin/students' },
     { name: 'Merit Lists', icon: Award, path: '/admin/merit-list' },
     // Main Admin only: Admin Management
