@@ -1130,10 +1130,13 @@ const extractAcademicData = (text) => {
   // l/I/1 confusion is tolerated. Requiring a literal "Roll" loses the field even when
   // the digits beside it are perfectly legible.
   let rollNumber = null;
-  const rollMatch = text.match(/R[o0][l1I|]{1,2}\s*(?:N[o0]|Number|#)?[\s:.]+([A-Za-z0-9-]+)/i);
+  // The "No" is often mangled -- Lahore's "Roll No. 559892" came through as "Rolle.
+  // 559892" -- so one or two stray letters are allowed in that slot. The value is then
+  // required to be digits, which is what stops the looser anchor picking up words.
+  const rollMatch = text.match(/R[o0][l1I|]{1,2}\s*(?:N[o0]|Number|#|[A-Za-z]{1,2})?[\s:.]+([A-Za-z0-9-]+)/i);
   if (rollMatch) {
     const rawRoll = rollMatch[1].trim();
-    if (rawRoll.length >= 4 && rawRoll.length <= 15) {
+    if (/^\d{4,10}$/.test(rawRoll)) {
       rollNumber = rawRoll;
     }
   }
@@ -1316,7 +1319,11 @@ const extractAcademicData = (text) => {
   // it, the total was then discarded as uncorroborated, and a perfectly good
   // certificate was rejected. Read the characters after the label and repair them.
   const totalAfterLabel = (() => {
-    const m = cleanedNumText.match(/TOTAL\s*MARKS\s*[:\-]?/i);
+    // Lahore prints "TOTAL MARKS (In Figures) 1100 904", so the label is not always
+    // followed directly by the number. A parenthetical immediately after the label is
+    // skipped; without this the window held only "(In Figures)" and the total was lost,
+    // which rejected the whole certificate.
+    const m = cleanedNumText.match(/TOTAL\s*MARKS\s*(?:\([^)]{0,20}\)\s*)?[:\-]?\s*/i);
     if (!m) return null;
     const tail = cleanedNumText.slice(m.index + m[0].length, m.index + m[0].length + 14);
     const candidates = [];
@@ -1427,9 +1434,14 @@ const extractAcademicData = (text) => {
     // A bare "NAME" is what the Punjab boards actually print on intermediate result
     // intimations; requiring "Name of Candidate" missed it entirely. The exclusion
     // below still keeps this off the FATHER'S NAME row and the institution rows.
-    if (/(?:Name\s*(?:of\s+)?(?:Candidate|Student|Examinee)|Student\s*Name|Candidate\s*Name|\bNAME\b)\s*[:\-]?/i.test(line)
+    // One source for the anchor, used by both the test and the capture below. They were
+    // written out twice and had already drifted apart once.
+    // "Certified that <NAME>" is how Lahore introduces the candidate: there is no NAME
+    // label anywhere on the certificate.
+    const NAME_ANCHOR = '(?:Name\\s*(?:of\\s+)?(?:Candidate|Student|Examinee)|Student\\s*Name|Candidate\\s*Name|Certified\\s+that|\\bNAME\\b)';
+    if (new RegExp(NAME_ANCHOR + '\\s*[:\\-]?', 'i').test(line)
       && !/(?:Father|Husband|Mother|Guardian|Board|Institution|School|College)/i.test(line)) {
-      const sameLineMatch = line.match(/(?:Name\s*(?:of\s+)?(?:Candidate|Student|Examinee)|Student\s*Name|Candidate\s*Name|\bNAME\b)\s*[:\-]?\s*(.+)$/i);
+      const sameLineMatch = line.match(new RegExp(NAME_ANCHOR + '\\s*[:\\-]?\\s*(.+)$', 'i'));
       // As on the CNIC, a dictionary match is preferred but is not required: the name
       // list cannot cover real Pakistani names, and "RIDA NADEEM" printed against its
       // own NAME label is identified by the layout regardless. A candidate accepted on
@@ -1595,8 +1607,22 @@ const extractAcademicData = (text) => {
   // The group is printed against its own label. Scanning the whole page instead matched
   // the words "COMPUTER SCIENCE" in the subject table and reported ICS for a candidate
   // whose group is GENERAL SCIENCE -- and the qualification decides eligibility.
+  // Not every board prints a GROUP label -- Lahore sets the group on its own line under
+  // the exam title. Where there is no label, the page is searched with the subject table
+  // removed first, because a General Science candidate sits COMPUTER SCIENCE as a subject
+  // and matching it reported them as ICS. A subject row carries its marks; the group line
+  // never does, so the marks are what tell them apart.
   const groupLabel = cleanText.match(/\bGROUP\b\s*[:\-]?\s*([A-Za-z][A-Za-z \-\.]{3,32})/i);
-  const qt = (groupLabel ? groupLabel[1] : cleanText).toLowerCase();
+  const withoutSubjectRows = cleanText
+    .split('\n')
+    .filter(line => {
+      if (/\d{2,3}\s+\d{2,3}\b/.test(line)) return false;   // "200 178" -- maximum and obtained
+      if (/^\W*\d{1,2}\s*[.)]\s/.test(line)) return false;  // "7. COMPUTER SCIENCE"
+      if (/\bTOTAL\b/i.test(line)) return false;            // the totals row
+      return true;
+    })
+    .join('\n');
+  const qt = (groupLabel ? groupLabel[1] : withoutSubjectRows).toLowerCase();
   if (/\b(?:computer\s*sciences?|ics)\b/i.test(qt)) {
     interQualification = 'ICS';
   } else if (/\b(?:pre\s*[-_]?\s*engineering|engineering\s*group)\b/i.test(qt)) {
