@@ -254,6 +254,21 @@ const cleanNameCandidate = (rawStr) => {
 
   if (validWords.length < 1) return null;
 
+  // With two or more recognisable name parts, the name is the span between the first
+  // and the last of them: anything outside that span is border or label noise. This is
+  // what turns "Entry Muhammad Zahid" into "Muhammad Zahid". It is deliberately not
+  // applied when only one part matches, because then a leading or trailing token is
+  // just as likely to be a real name that is missing from the dictionary -- "Yawar
+  // Hayat" and "Muhammad Yawar" must both survive intact.
+  const isAnchor = w => {
+    const lw = w.toLowerCase();
+    return PAKISTANI_NAME_PARTS.has(lw) && !NAME_PARTICLES.has(lw);
+  };
+  const anchors = validWords.map((w, i) => (isAnchor(w) ? i : -1)).filter(i => i >= 0);
+  if (anchors.length >= 2) {
+    validWords = validWords.slice(anchors[0], anchors[anchors.length - 1] + 1);
+  }
+
   // Drop short trailing fragments that are not recognisable name parts. Watermark and
   // border text bleeds into the end of the candidate as 3-4 letter runs -- "Muhammad
   // Zahid Vre", "Muhammad Ahmad Jes". Only trailing tokens are considered, only when
