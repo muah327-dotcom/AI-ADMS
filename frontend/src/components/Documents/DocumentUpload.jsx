@@ -269,6 +269,18 @@ const cleanNameCandidate = (rawStr) => {
     validWords = validWords.slice(anchors[0], anchors[anchors.length - 1] + 1);
   }
 
+  // A single short fragment ahead of the name is a common OCR bleed from the garbled
+  // Urdu label that sits to the left of the value ("ene Ayaz Ahmad"). At most one
+  // leading token is dropped, only when it is 3 characters or fewer, is not itself a
+  // name part, and leaves a recognisable two-word name behind -- so "Yawar Hayat"
+  // (5-character first name) and "Mir Hassan" (a listed part) are untouched.
+  if (validWords.length >= 3 && anchors.length >= 1) {
+    const first = validWords[0].toLowerCase();
+    if (!isAnchor(validWords[0]) && first.length <= 3 && isAnchor(validWords[validWords.length - 1])) {
+      validWords = validWords.slice(1);
+    }
+  }
+
   // Drop short trailing fragments that are not recognisable name parts. Watermark and
   // border text bleeds into the end of the candidate as 3-4 letter runs -- "Muhammad
   // Zahid Vre", "Muhammad Ahmad Jes". Only trailing tokens are considered, only when
@@ -408,9 +420,14 @@ const extractCNICData = (rawText) => {
     const line = lines[i];
     if (/\b(?:Name|Narne|Namo|Nene|Holder|Neme|Nama)\b/i.test(line) &&
       !/\b(?:Father|Husband|Mother|Date|Birth|CNIC|Identity|Gender|Sex|Country|Expiry|Issue|National|Database|Stay)\b/i.test(line)) {
-      name = cleanNameCandidate(line);
-      if (name && scoreNameCandidate(name) > 0) {
+      // Held in a local until it has earned the field. Assigning straight to `name`
+      // left an unscored candidate behind when the lookahead below found nothing, and
+      // the `if (name) break` after it then accepted that leftover -- which is how the
+      // label line "heh Name" produced the candidate name "Heh".
+      const sameLineCandidate = cleanNameCandidate(line);
+      if (sameLineCandidate && scoreNameCandidate(sameLineCandidate) > 0) {
         // High-quality match on same line — accept immediately
+        name = sameLineCandidate;
         nameLineIndex = i;
         break;
       }
@@ -438,24 +455,13 @@ const extractCNICData = (rawText) => {
     }
   }
 
-  // Fallback for Name: scan top 8 lines for a high-quality name candidate
-  if (!name) {
-    for (let i = 0; i < Math.min(lines.length, 8); i++) {
-      const line = lines[i];
-      if (/(?:Republic|Pakistan|National|Identity|Card|Islamic|Address|Expiry|Issue|Birth|Gender|Father|Husband|NADRA|Database|Country|Stay)/i.test(line)) continue;
-      const cand = cleanNameCandidate(line);
-      if (cand && cand.split(' ').length >= 2) {
-        // Requires at least one recognisable name part. A word count is not evidence:
-        // this branch used to accept any 3-word candidate "even without dictionary
-        // match", which is how "Alert Yep Rad Fhe" became a candidate's name.
-        if (scoreNameCandidate(cand) > 0) {
-          name = cand;
-          nameLineIndex = i;
-          break;
-        }
-      }
-    }
-  }
+  // There is deliberately no unanchored fallback scan here. One used to walk the first
+  // eight lines and take any candidate that scored, with no way to tell the holder's
+  // row from the father's: on a card whose holder name ("Iman Ayaz") contained no
+  // listed name part, it skipped past it and returned the FATHER's name as the
+  // candidate -- then the father field was dropped as a duplicate. Reading one person's
+  // name into another person's field is the worst outcome this extractor can produce,
+  // and it is worse than reading nothing. Without a label anchor, the field stays null.
 
   // ===== 3. Father / Husband Name (Multi-Strategy with Dictionary Scoring) =====
   // Pakistani CNICs show names in both English and Urdu. Tesseract (English mode) misreads
