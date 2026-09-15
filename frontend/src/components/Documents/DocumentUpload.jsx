@@ -762,52 +762,52 @@ const normalizeBoardName = (rawText) => {
   const str = rawText.toLowerCase();
 
   // Federal
-  if (/federal|fbise|islamabad|isb\b/i.test(str)) return "FBISE Islamabad";
+  if (/federal|fbise|islamabad|\bisb\b/i.test(str)) return "FBISE Islamabad";
 
   // Punjab Boards
-  if (/lahore|latiore|lafore|lahor|lahere|lahr|latior|lhr\b/i.test(str)) return "BISE Lahore";
-  if (/gujranwala|gujranwla|gujrat|grw\b|sialkot/i.test(str)) return "BISE Gujranwala";
-  if (/rawalpindi|rawalpind|rwp\b|pindi|attock|chakwal|jhelum/i.test(str)) return "BISE Rawalpindi";
-  if (/multan|mooltan|mlt\b|khanewal|vehari/i.test(str)) return "BISE Multan";
-  if (/faisalabad|faislabad|lyallpur|fsd\b|jhang/i.test(str)) return "BISE Faisalabad";
-  if (/sargodha|sargoda|sgd\b|mianwali|bhakkar/i.test(str)) return "BISE Sargodha";
-  if (/sahiwal|sahiwa|swl\b|okara|pakpattan/i.test(str)) return "BISE Sahiwal";
-  if (/bahawalpur|bahawlpur|bwl\b|bwp\b|rahim\s*yar\s*khan/i.test(str)) return "BISE Bahawalpur";
-  if (/dg\s*khan|d\.g\s*khan|dera\s*ghazi\s*khan|dgk\b|muzaffargarh/i.test(str)) return "BISE DG Khan";
+  if (/lahore|latiore|lafore|lahor|lahere|lahr|latior|\blhr\b/i.test(str)) return "BISE Lahore";
+  if (/gujranwala|gujranwla|gujrat|\bgrw\b|sialkot/i.test(str)) return "BISE Gujranwala";
+  if (/rawalpindi|rawalpind|\brwp\b|pindi|attock|chakwal|jhelum/i.test(str)) return "BISE Rawalpindi";
+  if (/multan|mooltan|\bmlt\b|khanewal|vehari/i.test(str)) return "BISE Multan";
+  if (/faisalabad|faislabad|lyallpur|\bfsd\b|jhang/i.test(str)) return "BISE Faisalabad";
+  if (/sargodha|sargoda|\bsgd\b|mianwali|bhakkar/i.test(str)) return "BISE Sargodha";
+  if (/sahiwal|sahiwa|\bswl\b|okara|pakpattan/i.test(str)) return "BISE Sahiwal";
+  if (/bahawalpur|bahawlpur|\bbwl\b|\bbwp\b|rahim\s*yar\s*khan/i.test(str)) return "BISE Bahawalpur";
+  if (/dg\s*khan|d\.g\s*khan|dera\s*ghazi\s*khan|\bdgk\b|muzaffargarh/i.test(str)) return "BISE DG Khan";
   if (/pbte|punjab\s*board\s*of\s*technical|technical\s*education\s*punjab/i.test(str)) return "PBTE Lahore";
 
   // Sindh Boards
   if (/bsek|karachi\s*secondary|secondary\s*karachi/i.test(str)) return "BISE Karachi (BSEK)";
-  if (/biek|karachi\s*inter|karachi|khi\b/i.test(str)) return "BISE Karachi";
-  if (/hyderabad|hyd\b|jamshoro|thatta/i.test(str)) return "BISE Hyderabad";
-  if (/sukkur|skr\b|khairpur/i.test(str)) return "BISE Sukkur";
-  if (/larkana|lrk\b|shikarpur|jacobabad/i.test(str)) return "BISE Larkana";
-  if (/mirpurkhas|mirpur\s*khas|mpk\b|sanghar/i.test(str)) return "BISE Mirpurkhas";
-  if (/shaheed\s*benazirabad|benazirabad|nawabshah|sba\b/i.test(str)) return "BISE Shaheed Benazirabad";
+  if (/biek|karachi\s*inter|karachi|\bkhi\b/i.test(str)) return "BISE Karachi";
+  if (/hyderabad|\bhyd\b|jamshoro|thatta/i.test(str)) return "BISE Hyderabad";
+  if (/sukkur|\bskr\b|khairpur/i.test(str)) return "BISE Sukkur";
+  if (/larkana|\blrk\b|shikarpur|jacobabad/i.test(str)) return "BISE Larkana";
+  if (/mirpurkhas|mirpur\s*khas|\bmpk\b|sanghar/i.test(str)) return "BISE Mirpurkhas";
+  if (/shaheed\s*benazirabad|benazirabad|nawabshah|\bsba\b/i.test(str)) return "BISE Shaheed Benazirabad";
   if (/sbte|sindh\s*board\s*of\s*technical/i.test(str)) return "SBTE Karachi";
 
   // Khyber Pakhtunkhwa (KPK) Boards
-  if (/peshawar|psh\b|charsadda/i.test(str)) return "BISE Peshawar";
-  if (/abbottabad|abottabad|atd\b|hazara|haripur|mansehra/i.test(str)) return "BISE Abbottabad";
+  if (/peshawar|\bpsh\b|charsadda/i.test(str)) return "BISE Peshawar";
+  if (/abbottabad|abottabad|\batd\b|hazara|haripur|mansehra/i.test(str)) return "BISE Abbottabad";
   if (/swat|saidu\s*sharif|shangla/i.test(str)) return "BISE Swat";
-  if (/malakand|dir\b|bajaur/i.test(str)) return "BISE Malakand";
+  if (/malakand|\bdir\b|bajaur/i.test(str)) return "BISE Malakand";
   if (/mardan|swabi/i.test(str)) return "BISE Mardan";
   if (/kohat|hangu|karak/i.test(str)) return "BISE Kohat";
   if (/bannu|lakki\s*marwat/i.test(str)) return "BISE Bannu";
   if (/di\s*khan|d\.i\s*khan|dera\s*ismail\s*khan/i.test(str)) return "BISE DI Khan";
 
   // Balochistan Boards
-  if (/quetta|qta\b|balochistan\s*board/i.test(str)) return "BISE Quetta";
+  if (/quetta|\bqta\b|balochistan\s*board/i.test(str)) return "BISE Quetta";
   if (/turbat|kech|gwadar/i.test(str)) return "BISE Turbat";
   if (/khuzdar|kalat/i.test(str)) return "BISE Khuzdar";
   if (/loralai|zhob/i.test(str)) return "BISE Loralai";
 
   // Azad Jammu & Kashmir (AJK)
-  if (/mirpur|ajk\b|azad\s*kashmir|azad\s*jammu/i.test(str)) return "BISE Mirpur (AJK)";
+  if (/mirpur|\bajk\b|azad\s*kashmir|azad\s*jammu/i.test(str)) return "BISE Mirpur (AJK)";
 
   // International / Specialized Boards
   if (/aga\s*khan|aku|aku-eb|akueb/i.test(str)) return "Aga Khan Board";
-  if (/cambridge|cie|edexcel|igcse|gce|o\s*level|o-level|a\s*level|a-level|pearson/i.test(str)) return "Cambridge Board";
+  if (/cambridge|\bcie\b|edexcel|igcse|\bgce\b|\bo\s*-?\s*level\b|\ba\s*-?\s*level\b|pearson/i.test(str)) return "Cambridge Board";
   if (/wafaq|madaris|tanzeem/i.test(str)) return "Wafaq-ul-Madaris";
 
   // Fuzzy fallback: match OCR-garbled city names against known board cities
@@ -879,7 +879,13 @@ const wordsToNumber = (text) => {
     sixty: 60, seventy: 70, eighty: 80, ninety: 90, hundred: 100, thousand: 1000
   };
 
-  const matches = text.match(/(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|\band\b|\s+)+/gi);
+  // Alternation order matters: a regex takes the first branch that matches, so listing
+  // "seven" before "seventy" made "Seventy" match as "seven". "Nine Hundred Seventy-Two"
+  // then parsed as 907 instead of 972, and every total in words containing seventy,
+  // sixty, forty, fifty, thirty, twenty, ninety or eighty was wrong the same way.
+  // Longest first fixes it. Hyphens join the phrase so "Seventy-Two" stays one run.
+  const NUMBER_WORD = '(?:thousand|hundred|seventeen|eighteen|nineteen|thirteen|fourteen|fifteen|sixteen|seventy|eleven|twelve|twenty|thirty|eighty|ninety|forty|fifty|sixty|three|seven|eight|four|five|nine|zero|ten|one|two|six)';
+  const matches = text.match(new RegExp(`(?:${NUMBER_WORD}|\\band\\b|[\\s\\-]+)+`, 'gi'));
   if (!matches) return null;
 
   for (const matchStr of matches) {
@@ -895,7 +901,13 @@ const wordsToNumber = (text) => {
       if (val !== undefined) {
         valid = true;
         if (val === 100) {
-          current = (current || 1) * 100;
+          // "Hundred Seventy-Two" with nothing in front of it means OCR lost the leading
+          // word -- "Nine Hundred Seventy-Two Only" came through as "ne Hundred ...".
+          // Supplying the missing 1 invents a number that looks entirely plausible and
+          // is silently wrong, which is how 972 became 107. An incomplete phrase must
+          // produce nothing.
+          if (!current) { valid = false; break; }
+          current = current * 100;
         } else if (val === 1000) {
           current = (current || 1) * 1000;
           total += current;
@@ -1170,6 +1182,10 @@ const extractAcademicData = (text) => {
   // 4. Obtained Marks & Total Marks Extraction (Multi-Strategy)
   let obtainedMarks = null;
   let totalMarks = null;
+  // True when the obtained marks came from a summary line (a ratio, an explicit
+  // "MARKS OBTAINED" label, or the figure written out in words) rather than from a
+  // number recovered out of the subject table.
+  let obtainedFromSummary = false;
 
   // Pre-clean: collapse spaced digits so "9 8 0" -> "980" and "1 1 0 0" -> "1100"
   const cleanSpacedDigits = collapseSpacedDigits(text);
@@ -1198,6 +1214,7 @@ const extractAcademicData = (text) => {
       obtCandidate < totCandidate) {
       obtainedMarks = obtCandidate;
       totalMarks = totCandidate;
+      obtainedFromSummary = true;
       break;
     }
     // Fallback: total is in range but not an exact standard value
@@ -1206,6 +1223,7 @@ const extractAcademicData = (text) => {
       obtCandidate < totCandidate) {
       obtainedMarks = obtCandidate;
       totalMarks = totCandidate;
+      obtainedFromSummary = true;
       break;
     }
   }
@@ -1220,6 +1238,7 @@ const extractAcademicData = (text) => {
       if (totCandidate >= 300 && totCandidate <= 1200 && obtCandidate >= 100 && obtCandidate <= totCandidate) {
         totalMarks = totCandidate;
         obtainedMarks = obtCandidate;
+        obtainedFromSummary = true;
         break;
       }
     }
@@ -1228,7 +1247,11 @@ const extractAcademicData = (text) => {
   // b.2) Explicit field labels
   if (!obtainedMarks) {
     const obtPatterns = [
-      /(?:Marks\s*Obtained|Obtained\s*Marks|Marks\s*Secured|Secured\s*Marks|Marks\s*Obt|Obt\s*Marks|Marks\s*in\s*Figures)[\s:\-\=]{1,5}([0-9OolISBZ]{3,4})\b/gi,
+      // "MARKS OBTAINED: 972" is the summary line that states the real figure, and OCR
+      // garbles the word itself ("MARKS oBTANED:972"). Matching "Obt" plus whatever
+      // letters follow reads it without needing the spelling to be right; the digits
+      // after the separator are what matters and they are read exactly.
+      /(?:Marks\s*Obt[A-Za-z]*|Obt[A-Za-z]*\s*Marks|Marks\s*Secured|Secured\s*Marks|Marks\s*in\s*Figures)[\s:\-\=]{1,5}([0-9OolISBZ]{3,4})\b/gi,
       /(?:Total\s*Marks\s*Obtained)[\s:\-\=]{1,5}([0-9OolISBZ]{3,4})\b/gi,
       /(?:secured|obtained|passed\s*with|got|scored)[\s:\-]+([0-9OolISBZ]{3,4})\s*(?:marks)?\b/gi,
       /(?:GRAND\s+TOTAL|G\.\s*TOTAL|AGGREGATE|GRAND)[\s:\-\=]{1,5}([0-9OolISBZ]{3,4})\b/gi
@@ -1241,6 +1264,7 @@ const extractAcademicData = (text) => {
           const val = parseInt(fixOcrDigits(m[1]), 10);
           if (looksLikeObtained(val, totalMarks)) {
             obtainedMarks = val;
+            obtainedFromSummary = true;
             break;
           }
         }
@@ -1272,6 +1296,7 @@ const extractAcademicData = (text) => {
     const wordNum = wordsToNumber(text);
     if (wordNum && wordNum >= 100 && wordNum <= 1200) {
       obtainedMarks = wordNum;
+      obtainedFromSummary = true;
     }
   }
 
@@ -1317,8 +1342,14 @@ const extractAcademicData = (text) => {
   // there is nothing to read -- the total has to be deduced from the course. This is a
   // different kind of value from one scraped out of the subject table, and the
   // corroboration gate below treats it differently for that reason.
+  // The deduced total is only as good as the obtained marks it is derived from, and the
+  // two then agree with each other by construction -- the percentage is internally
+  // consistent whether or not either number is right, so no later check can catch it.
+  // A misread 972 as 107 deduced a total of 550 and recorded 19.45% for an 88% candidate,
+  // accepted without complaint. Deduction is therefore limited to obtained marks that
+  // came from a summary line, never ones recovered from the subject table.
   let totalMarksDeduced = false;
-  if (obtainedMarks && !totalMarks) {
+  if (obtainedMarks && !totalMarks && obtainedFromSummary) {
     totalMarks = obtainedMarks > 550 ? 1100 : 550;
     totalMarksDeduced = true;
   }
@@ -1539,20 +1570,14 @@ const extractAcademicData = (text) => {
     }
   }
 
-  // Academic name fallback: scan first 10 lines for a high-quality standalone name
-  if (!name) {
-    for (let i = 0; i < Math.min(lines.length, 10); i++) {
-      const line = lines[i];
-      if (/(?:Board|Roll|Marks|Total|Obtained|Grade|Result|College|School|Institution|Examination|Session|Annual|Supplementary)/i.test(line)) continue;
-      if (/(?:Father|Husband|Mother|Guardian|S\/O|D\/O|W\/O)/i.test(line)) continue;
-      const cand = cleanNameCandidate(line);
-      if (cand && cand.split(' ').length >= 2 && scoreNameCandidate(cand) > 0) {
-        name = cand;
-        nameLineIndex = i;
-        break;
-      }
-    }
-  }
+  // A third fallback used to scan the first ten lines for anything name-shaped. Sitting
+  // near the top of the page is not evidence of being the candidate's name: on a badly
+  // scanned intimation it read "RUNS SI5027 = Faiz Registration No. 30110-2209-2022" as
+  // "Runs Faiz" and stored it, because "Faiz" is in the name list and that was enough to
+  // pass. Every name that extracts correctly across the samples comes from a labelled
+  // line -- the label, or "Certified that", or the S/O row above. Nothing depended on the
+  // positional scan except the wrong answer, so it is gone: a page with no name label
+  // anywhere leaves the field blank for the applicant to fill.
 
   // Extract father name from academic certificate (Multi-candidate with Dictionary Scoring)
   let fatherName = null;
