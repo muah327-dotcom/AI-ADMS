@@ -45,7 +45,10 @@ const verifyAcademicDocumentPayload = (type, extractedData, confidence) => {
     : [];
   const hasConsistentSubjectTotals = subjectMarks.length === 0 ||
     !Number.isFinite(totalMarks) || subjectMarks.reduce((sum, marks) => sum + marks, 0) <= totalMarks;
-  const hasSufficientConfidence = confidence === undefined || confidence === null || confidence === 0 || confidence >= 35;
+  // See the note in DocumentUpload.jsx: mean OCR confidence is dominated by watermark
+  // noise on these documents, so it is not a reliable rejection criterion. The numeric
+  // plausibility gate below is what protects the merit-critical values.
+  const hasSufficientConfidence = confidence === undefined || confidence === null || confidence === 0 || confidence >= 15;
 
   if (hasOppositeLevel || (oppositeMarkers.test(rawText) && !expectedMarkers.test(rawText))) {
     return {

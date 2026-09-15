@@ -1923,23 +1923,28 @@ const validateDocumentClarity = (docType, extractedData, confidence, rawText) =>
     };
   }
 
-  // 2. OCR confidence check: if confidence is below 35%, document is unclear
-  if (confidence > 0 && confidence < 35) {
-    return {
-      isValid: false,
-      reason: `Image clarity is too low (OCR Confidence: ${Math.round(confidence)}%). Please upload a clear, well-lit document image.`
-    };
-  }
+  // 2. Document-specific required key fields.
+  //
+  // Mean OCR confidence is deliberately NOT a rejection criterion. On an identity card
+  // the average is dominated by the guilloche and hologram background, which Tesseract
+  // reads as dozens of junk words: measured on a real card, the actual field words
+  // averaged 94 while the background averaged 34, with 62% of all words below 40. A
+  // clean, correctly-read CNIC therefore scores in the 30s and a fixed cutoff rejects
+  // good uploads. Whether the required fields came out is the criterion; the confidence
+  // figure is reported alongside a failure to help explain it, never to cause one.
+  const clarityHint = confidence > 0 && confidence < 35
+    ? ` (OCR confidence was low, ${Math.round(confidence)}%.)`
+    : '';
 
-  // 3. Document-specific required key fields check:
   if (docType === 'cnic') {
     const hasCnic = !!extractedData?.cnic;
     const hasName = !!extractedData?.name;
+    const hasDob = !!extractedData?.date_of_birth;
 
-    if (!hasCnic && !hasName) {
+    if (!hasCnic && !(hasName && hasDob)) {
       return {
         isValid: false,
-        reason: 'Could not read key CNIC details (CNIC Number or Name) from this picture. The image may be blurry or poorly lit. Please upload a clearer photo of your CNIC/B-Form.'
+        reason: `Could not read the CNIC number, or a name and date of birth, from this picture.${clarityHint} Please upload a clearer, straight-on photo of your CNIC/B-Form.`
       };
     }
   } else if (docType === 'matric') {
@@ -2008,7 +2013,12 @@ const verifyAcademicDocument = (docType, extractedData, confidence, rawText) => 
   const hasConsistentSubjectTotals = subjectMarks.length === 0 ||
     !Number.isFinite(Number(extractedData?.total_marks)) ||
     subjectMarks.reduce((sum, marks) => sum + marks, 0) <= Number(extractedData.total_marks);
-  const hasSufficientConfidence = confidence === 0 || confidence >= 35;
+  // Mean OCR confidence is a poor proxy for correctness on these documents: the
+  // watermarks and borders generate many low-confidence junk words that drag the
+  // average down even when every field read cleanly. The plausibility gate checks the
+  // numbers against each other instead, which is the check that actually matters, so
+  // only a genuinely unreadable scan is excluded here.
+  const hasSufficientConfidence = confidence === 0 || confidence >= 15;
 
   if (hasOppositeLevel || (oppositeMarkers.test(text) && !expectedMarkers.test(text))) {
     return {
