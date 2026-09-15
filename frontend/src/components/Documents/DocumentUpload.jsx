@@ -1304,8 +1304,14 @@ const extractAcademicData = (text) => {
   }
 
   // h) Auto-deduce standard total marks if obtained is found and total still missing
+  // Provisional result intimations print each subject's maximum but no grand total, so
+  // there is nothing to read -- the total has to be deduced from the course. This is a
+  // different kind of value from one scraped out of the subject table, and the
+  // corroboration gate below treats it differently for that reason.
+  let totalMarksDeduced = false;
   if (obtainedMarks && !totalMarks) {
     totalMarks = obtainedMarks > 550 ? 1100 : 550;
+    totalMarksDeduced = true;
   }
 
   // Only swap if obtained > total AND obtained is a standard total AND total is a plausible obtained score
@@ -1386,9 +1392,17 @@ const extractAcademicData = (text) => {
     }
   }
 
-  if (!totalMarksCorroborated && totalMarks) {
-    console.warn(`[OCR] Total marks (${totalMarks}) could not be corroborated by a summary line; discarding.`);
+  // The danger this gate was built for is a subject maximum from the table being taken
+  // as the grand total -- 835/850 reads as 98.24%, which is internally consistent and so
+  // invisible to every later check. A deduced total cannot fail that way: it is not read
+  // off the page at all, it comes from the obtained marks and the standard course totals.
+  // Discarding it rejected documents that never print a grand total, losing a percentage
+  // that was correct. It is kept, and marked so its provenance stays visible.
+  if (!totalMarksCorroborated && totalMarks && !totalMarksDeduced) {
+    console.warn(`[OCR] Total marks (${totalMarks}) came from the subject table and could not be corroborated by a summary line; discarding.`);
     totalMarks = null;
+  } else if (!totalMarksCorroborated && totalMarksDeduced) {
+    console.warn(`[OCR] Total marks (${totalMarks}) deduced from the obtained marks; this document states no grand total.`);
   }
 
   // ===== Percentage =====
@@ -1667,6 +1681,9 @@ const extractAcademicData = (text) => {
     roll_number: rollNumber,
     obtained_marks: obtainedMarks,
     total_marks: totalMarks,
+    // True when the document printed no grand total and it was deduced from the
+    // obtained marks, so the confirmation step can ask the applicant to check it.
+    total_marks_assumed: (totalMarksDeduced && !totalMarksCorroborated) || undefined,
     subjects: subjects,
     name: name,
     name_verification_needed: academicNameNeedsVerification || undefined,
