@@ -1579,6 +1579,30 @@ const extractAcademicData = (text) => {
     }
   }
 
+  // Last resort: the person rows. When the label column has been clipped off the scan --
+  // "FATHER'S NAME MUHAMMAD AJMAL" arriving as "E MUHAMMAD AJMAL" -- there is no label
+  // left to anchor to, but each person's CNIC is printed beside their name and a CNIC is
+  // unmistakable: thirteen digits in 5-7-1 groups. The name is whatever precedes it.
+  //
+  // Which row is the candidate and which the father is decided by order, and order is
+  // the weakest kind of evidence -- getting it backwards writes the father's name into
+  // the student's record. So both rows must be present before either is used: one row
+  // alone cannot say which person it belongs to, and yields nothing. Both are flagged.
+  const personRows = [];
+  {
+    const PERSON_ROW = /^(.*?[A-Za-z]{3,}[A-Za-z\s.'-]*?)\s+[sS5][sS5]?[0-9OoSsIl]{2,4}[-–—.:\s][0-9OoSsIl]{6,8}[-–—.:\s][0-9OoSsIl]\s*$/;
+    for (const line of lines) {
+      const rowMatch = line.match(PERSON_ROW);
+      if (!rowMatch) continue;
+      const candidate = cleanNameCandidate(rowMatch[1]);
+      if (candidate && looksLikeName(candidate)) personRows.push(candidate);
+    }
+  }
+  if (!name && personRows.length >= 2) {
+    name = personRows[0];
+    academicNameNeedsVerification = true;
+  }
+
   // A third fallback used to scan the first ten lines for anything name-shaped. Sitting
   // near the top of the page is not evidence of being the candidate's name: on a badly
   // scanned intimation it read "RUNS SI5027 = Faiz Registration No. 30110-2209-2022" as
@@ -1664,6 +1688,15 @@ const extractAcademicData = (text) => {
     fatherName = unique[0].name;
   }
 
+  // Same last resort as the candidate name above: with the label column clipped away,
+  // the second person row on the card is the father. Both rows are required, so this
+  // never has to guess which of a single pair it is looking at.
+  let academicFatherNeedsVerification = false;
+  if (!fatherName && personRows.length >= 2 && personRows[1] !== name) {
+    fatherName = personRows[1];
+    academicFatherNeedsVerification = true;
+  }
+
   // Extract subject marks
   const subjects = extractSubjectMarks(text);
 
@@ -1730,6 +1763,7 @@ const extractAcademicData = (text) => {
     subjects: subjects,
     name: name,
     name_verification_needed: academicNameNeedsVerification || undefined,
+    father_name_verification_needed: academicFatherNeedsVerification || undefined,
     father_name: fatherName,
     inter_qualification: interQualification,
     raw_text: text
