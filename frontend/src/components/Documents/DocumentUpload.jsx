@@ -189,6 +189,23 @@ const PAKISTANI_NAME_PARTS = new Set([
 // constantly, which is enough to make a garbage candidate look validated.
 const NAME_PARTICLES = new Set(['ul', 'ur', 'al', 'un', 'ud', 'us', 'bin', 'ibn', 'bint', 'din']);
 
+// Shape test for a value sitting directly under its label. The name dictionary cannot
+// cover real Pakistani names -- "Rida Nadeem", "Nameera" and "Iman Ayaz" all read
+// perfectly off the card and all scored zero -- so where the layout itself identifies
+// the field, a candidate is accepted on its form instead: one to four purely
+// alphabetic words, nothing shorter than three letters unless it is a known particle,
+// and at least four letters overall. Noise fails this because it arrives studded with
+// one- and two-character fragments and stray punctuation.
+const looksLikeName = (candidateStr) => {
+  if (!candidateStr) return false;
+  const words = candidateStr.trim().split(/\s+/);
+  if (words.length < 1 || words.length > 4) return false;
+  if (candidateStr.replace(/\s/g, '').length < 4) return false;
+  return words.every(w =>
+    /^[A-Za-z]+$/.test(w) && (w.length >= 3 || NAME_PARTICLES.has(w.toLowerCase()))
+  );
+};
+
 const scoreNameCandidate = (candidateStr) => {
   if (!candidateStr) return 0;
   const words = candidateStr.toLowerCase().split(/\s+/);
@@ -415,6 +432,8 @@ const extractCNICData = (rawText) => {
   // ===== 2. Holder Name =====
   let name = null;
   let nameLineIndex = -1;
+  // Set when the name was accepted on layout alone, with no dictionary corroboration.
+  let nameNeedsVerification = false;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -433,6 +452,8 @@ const extractCNICData = (rawText) => {
       }
 
       // Try lookahead up to 3 lines (the name may be on the next line in Urdu/English dual CNICs)
+      let shapedFallback = null;
+      let shapedIndex = -1;
       for (let j = 1; j <= 3; j++) {
         const nextLine = lines[i + j];
         if (!nextLine) break;
@@ -443,6 +464,17 @@ const extractCNICData = (rawText) => {
           nameLineIndex = i + j;
           break;
         }
+        // Remember the first well-formed candidate under the label in case no line
+        // matches the dictionary at all.
+        if (!shapedFallback && cand && looksLikeName(cand)) {
+          shapedFallback = cand;
+          shapedIndex = i + j;
+        }
+      }
+      if (!name && shapedFallback) {
+        name = shapedFallback;
+        nameLineIndex = shapedIndex;
+        nameNeedsVerification = true;
       }
       if (name) break;
 
@@ -677,6 +709,9 @@ const extractCNICData = (rawText) => {
   return {
     cnic,
     name,
+    // True when the name was taken from the line under its label without any
+    // dictionary corroboration, so the UI can ask the applicant to confirm it.
+    name_verification_needed: nameNeedsVerification || undefined,
     father_name: fatherName,
     date_of_birth: dateOfBirth,
     gender,
