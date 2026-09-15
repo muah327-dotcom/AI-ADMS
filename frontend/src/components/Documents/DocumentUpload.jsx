@@ -1093,8 +1093,17 @@ const extractAcademicData = (text) => {
     /\bBOARD\s+OF\s+INTERMEDIATE\s*(?:&|AND)\s*SECONDARY\s+EDUCATION\b/gi,
     ' '
   );
-  const hasMatricEvidence = /SECONDARY\s+SCHOOL\s+CERTIFICATE|\bSSC\b|\bMATRIC(?:ULATION)?\b|10TH\s+CLASS/i.test(qualificationText);
-  const hasIntermediateEvidence = /HIGHER\s+SECONDARY\s+SCHOOL\s+CERTIFICATE|\bHSSC\b|\bINTERMEDIATE\s+(?:EXAMINATION|CERTIFICATE)\b|12TH\s+CLASS|\bF\.?\s*SC\b|\bF\.?\s*A\b|\bI\.?\s*CS\b|\bI\.?\s*COM\b/i.test(qualificationText);
+  // "SCHOOL CERTIFICATE" on its own is enough, because the intermediate test runs first
+  // and claims every "HIGHER SECONDARY SCHOOL CERTIFICATE". Requiring the word SECONDARY
+  // here meant a card whose first letter OCR had eaten -- "ECONDARY SCHOOL CERTIFICATE"
+  // -- was classified as neither, and the document level came back null.
+  const hasMatricEvidence = /SCHOOL\s+CERTIFICATE|\bSSC\b|\bMATRIC(?:ULATION)?\b|10TH\s+CLASS/i.test(qualificationText);
+  // "INTERMEDIATE PART I & II" is how the Punjab result intimations title themselves, and
+  // requiring EXAMINATION or CERTIFICATE straight after INTERMEDIATE missed all of them.
+  // Matching INTERMEDIATE followed by PART is safe against the board's own name, which
+  // reads "BOARD OF INTERMEDIATE & SECONDARY EDUCATION" and is never followed by PART --
+  // that matters because the strip above fails whenever OCR mangles the word BOARD.
+  const hasIntermediateEvidence = /HIGHER\s+SECONDARY\s+SCHOOL\s+CERTIFICATE|\bHSSC\b|\bINTERMEDIATE\s+(?:EXAMINATION|CERTIFICATE|PART)\b|12TH\s+CLASS|\bF\.?\s*SC\b|\bF\.?\s*A\b|\bI\.?\s*CS\b|\bI\.?\s*COM\b/i.test(qualificationText);
   const hasSecondYearEvidence = /(?:PART\s*[- ]?II|SECOND\s+YEAR)/i.test(qualificationText) &&
     /(?:MARKSHEET|MARK\s*SHEET|RESULT|EXAMINATION|CERTIFICATE|INTERMEDIATE|HSSC)/i.test(qualificationText);
 
