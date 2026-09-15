@@ -184,12 +184,17 @@ const PAKISTANI_NAME_PARTS = new Set([
  * Score a name candidate based on how many words match known Pakistani name parts.
  * Higher score = more likely a real English name vs OCR-misread Urdu gibberish.
  */
+// Connectors that appear inside Pakistani names ("Zia ul Haq", "Muhammad bin Qasim")
+// but carry no identifying weight on their own. Two-letter noise matches these
+// constantly, which is enough to make a garbage candidate look validated.
+const NAME_PARTICLES = new Set(['ul', 'ur', 'al', 'un', 'ud', 'us', 'bin', 'ibn', 'bint', 'din']);
+
 const scoreNameCandidate = (candidateStr) => {
   if (!candidateStr) return 0;
   const words = candidateStr.toLowerCase().split(/\s+/);
   let dictionaryHits = 0;
   for (const word of words) {
-    if (PAKISTANI_NAME_PARTS.has(word)) dictionaryHits++;
+    if (PAKISTANI_NAME_PARTS.has(word) && !NAME_PARTICLES.has(word)) dictionaryHits++;
   }
   if (dictionaryHits === 0) {
     // The word-count bonus used to be awarded on its own, so any two-to-four word run
