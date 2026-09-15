@@ -508,8 +508,10 @@ const extractCNICData = (rawText) => {
   // ===== 3. Father / Husband Name (Multi-Strategy with Dictionary Scoring) =====
   // Pakistani CNICs show names in both English and Urdu. Tesseract (English mode) misreads
   // Urdu script as gibberish Latin characters (e.g., "Rerpa En Eh" from حسن طارق).
-  // We collect ALL candidates and pick the one with the highest Pakistani name dictionary score.
+  // We collect ALL candidates, prefer the one sitting against the "Father Name" label,
+  // and use the Pakistani name list only to order candidates -- never to reject one.
   let fatherName = null;
+  let fatherNameNeedsVerification = false;
 
   const isDifferentFromHolder = (cand) => {
     if (!cand) return false;
@@ -534,7 +536,7 @@ const extractCNICData = (rawText) => {
     if (isFatherLine(line)) {
       const sameLineCandidate = cleanNameCandidate(line);
       if (sameLineCandidate) {
-        fatherCandidates.push({ name: sameLineCandidate, score: scoreNameCandidate(sameLineCandidate), strategy: 'A' });
+        fatherCandidates.push({ name: sameLineCandidate, score: scoreNameCandidate(sameLineCandidate), strategy: 'A', anchored: true, distance: 0 });
       }
     }
   }
@@ -551,7 +553,7 @@ const extractCNICData = (rawText) => {
 
         const cand = cleanNameCandidate(nextLine);
         if (cand) {
-          fatherCandidates.push({ name: cand, score: scoreNameCandidate(cand), strategy: 'B' });
+          fatherCandidates.push({ name: cand, score: scoreNameCandidate(cand), strategy: 'B', anchored: true, distance: j });
         }
       }
       break; // Only process the first father label block
@@ -602,15 +604,29 @@ const extractCNICData = (rawText) => {
     unique.sort((a, b) => b.score - a.score);
 
     console.log('--- Father Name Candidates ---');
-    unique.forEach(c => console.log(`  [${c.strategy}] "${c.name}" (score: ${c.score})`));
+    unique.forEach(c => console.log(`  [${c.strategy}] "${c.name}" (score: ${c.score}${c.anchored ? `, anchored +${c.distance}` : ''})`));
 
-    // Pick the highest scoring candidate — but only if it scored at all. Previously the
-    // top candidate was taken unconditionally, so when every candidate was noise the
-    // highest-ranked piece of noise became the father's name.
-    if (unique[0].score > 0) {
+    // The card prints "Father Name" directly above the value, so position is the real
+    // evidence and the name list is only a tie-breaker. Requiring a dictionary hit here
+    // meant anyone whose father's name is not among the 482 built-in name parts got a
+    // blank field -- and no list of Pakistani names can ever be complete.
+    //
+    // A candidate still has to look like a name. That is what rejects the junk OCR reads
+    // off the label line itself ("Fil", "Cid"), which are too short to be names.
+    const anchored = unique
+      .filter(c => c.anchored && looksLikeName(c.name))
+      .sort((a, b) => (b.score - a.score) || (a.distance - b.distance));
+
+    if (anchored.length > 0) {
+      fatherName = anchored[0].name;
+      // Accepted on layout alone -- worth the applicant confirming.
+      if (anchored[0].score === 0) fatherNameNeedsVerification = true;
+    } else if (unique[0].score > 0) {
+      // Nothing sat against the label, so there is no positional evidence. A loose
+      // match from elsewhere on the card is only trusted when the dictionary backs it.
       fatherName = unique[0].name;
     } else {
-      console.warn('[OCR] No father-name candidate matched a recognisable name part; leaving it blank.');
+      console.warn('[OCR] No father-name candidate was anchored to a label or matched a recognisable name part; leaving it blank.');
     }
   }
 
@@ -723,6 +739,7 @@ const extractCNICData = (rawText) => {
     // dictionary corroboration, so the UI can ask the applicant to confirm it.
     name_verification_needed: nameNeedsVerification || undefined,
     father_name: fatherName,
+    father_name_verification_needed: fatherNameNeedsVerification || undefined,
     date_of_birth: dateOfBirth,
     gender,
     address,
