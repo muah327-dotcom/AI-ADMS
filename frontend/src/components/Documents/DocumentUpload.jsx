@@ -430,14 +430,10 @@ const extractCNICData = (rawText) => {
       if (/(?:Republic|Pakistan|National|Identity|Card|Islamic|Address|Expiry|Issue|Birth|Gender|Father|Husband|NADRA|Database|Country|Stay)/i.test(line)) continue;
       const cand = cleanNameCandidate(line);
       if (cand && cand.split(' ').length >= 2) {
-        // Reject if no word matches any known Pakistani name part (prevents "Hy Ee" garbage)
+        // Requires at least one recognisable name part. A word count is not evidence:
+        // this branch used to accept any 3-word candidate "even without dictionary
+        // match", which is how "Alert Yep Rad Fhe" became a candidate's name.
         if (scoreNameCandidate(cand) > 0) {
-          name = cand;
-          nameLineIndex = i;
-          break;
-        }
-        // Accept anyway if it's at least 3 words (strong structural signal even without dictionary match)
-        if (cand.split(' ').length >= 3) {
           name = cand;
           nameLineIndex = i;
           break;
