@@ -243,6 +243,15 @@ const cleanNameCandidate = (rawStr) => {
   // candidate scores zero. Split on the lower-to-upper boundary.
   text = text.replace(/([a-z])([A-Z])/g, '$1 $2');
 
+  // 1c. A long run of digits inside a value is an identifier, not part of a name --
+  // "NAME NAMEERA 1920331475224 ile" carries the registration number printed beside the
+  // name, and the "ile" after it is the next column bleeding in. Nothing past the
+  // identifier belongs to the name, so the value is cut there. Six digits is the
+  // threshold so this never fires on a year or a short piece of noise, and the
+  // non-letter strip below still handles digits that appear before it.
+  const identifierRun = text.match(/\d{6,}/);
+  if (identifierRun) text = text.slice(0, identifierRun.index);
+
   // 2. Remove known label prefixes with flexible spacing and punctuation
   text = text
     .replace(/(?:^|\b)(?:Name\s*of\s*(?:Father|Guardian|Parent|Candidate|Student|Examinee)|Father(?:[''`]?s)?(?:\s*[\/\&]\s*(?:Husband|Guardian|Mother)(?:[''`]?s)?)?|Husband(?:[''`]?s)?|Guardian(?:[''`]?s)?|Parent(?:[''`]?s)?|Candidate\s*Name|Student\s*Name|Candidate|Student|FatherName|FathersName|F\/Name|F\.Name|FName|F\s*Name|P\/Name|P\.Name|Walad|Waldiat|Card\s*Holder|Holder[''`]?s?|Neme|Nama|Fathor|Fathar|Falher|Fathsr|Fatner|Fathe|Fther|Feather|Fether|Husb|Son\s+of|Daughter\s+of|Wife\s+of|S\/O|D\/O|W\/O|S\.O|D\.O|W\.O|Name|Narne|Namo)\b[\s:.\-\/_=]*/gi, ' ')
