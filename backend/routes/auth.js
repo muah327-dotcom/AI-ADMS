@@ -12,7 +12,16 @@ dotenv.config();
 
 const router = express.Router();
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-here';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  // This used to fall back to the literal string 'your-secret-key-here', which is
+  // published in the repository. Anyone who read it could sign a token for any user,
+  // including an admin. There is no safe default for a signing key.
+  throw new Error(
+    'JWT_SECRET is not set. Add it to backend/.env (see backend/.env.example) and to ' +
+    'the environment of any deployment. The application will not start without it.'
+  );
+}
 
 const URDU_TO_ENGLISH_NAMES = {
   'محمد': 'Muhammad',
