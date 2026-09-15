@@ -253,6 +253,16 @@ const cleanNameCandidate = (rawStr) => {
   if (!text) return null;
 
   let words = text.split(' ').filter(w => w.length > 0);
+
+  // Board certificates print field values in capitals, so a lowercase word inside an
+  // otherwise capitalised value is bleed from the watermark or a neighbouring column --
+  // "MUHAMMAD NADEEM drone]" and "MUHAMMAD AHMAD . ~~ sas boil". When the candidate
+  // clearly carries capitalised words, the lowercase ones are dropped. CNIC values are
+  // printed in title case, so this never fires there.
+  const capitalised = words.filter(w => w.length >= 3 && w === w.toUpperCase());
+  if (capitalised.length >= 2) {
+    words = words.filter(w => w === w.toUpperCase());
+  }
   let validWords = words.filter(word => {
     const lower = word.toLowerCase();
     if (CNIC_HEADER_NOISE.has(lower)) return false;
@@ -1308,12 +1318,31 @@ const extractAcademicData = (text) => {
   const totalAfterLabel = (() => {
     const m = cleanedNumText.match(/TOTAL\s*MARKS\s*[:\-]?/i);
     if (!m) return null;
-    const tail = cleanedNumText.slice(m.index + m[0].length, m.index + m[0].length + 10);
-    const digits = tail.replace(/[|!Il]/g, '1').replace(/[Oo]/g, '0').replace(/[^0-9\s]/g, ' ').trim();
-    // Rejoin a single digit that OCR split away from the rest ("1 100" -> "1100").
-    const collapsed = digits.replace(/^(\d)\s+(\d{2,3})\b/, '$1$2');
-    const found = collapsed.match(/^(\d{3,4})\b/);
-    return found ? found[1] : null;
+    const tail = cleanedNumText.slice(m.index + m[0].length, m.index + m[0].length + 14);
+    const candidates = [];
+
+    // A pipe here is ambiguous. In "TOTAL MARKS : | 1100 |" it is a table border; in
+    // "TOTAL MARKS : | 100" it is the leading 1 of 1100, misread and spaced away from
+    // the rest. Both readings are collected and the marks decide between them: a total
+    // below the obtained marks is impossible, which rules the wrong one out.
+    const asBorder = tail.replace(/[|!]/g, ' ');
+    (asBorder.match(/\d{3,4}/g) || []).forEach(t => candidates.push(parseInt(t, 10)));
+
+    const asOne = tail
+      .replace(/[|!Il]/g, '1')
+      .replace(/[Oo]/g, '0')
+      .replace(/[^0-9\s]/g, ' ')
+      .trim()
+      .replace(/^(\d)\s+(\d{2,3})\b/, '$1$2');
+    (asOne.match(/\d{3,4}/g) || []).forEach(t => candidates.push(parseInt(t, 10)));
+
+    const plausible = candidates.filter(n =>
+      n >= 100 && n <= 2000 &&
+      (obtainedMarks === null || obtainedMarks === undefined || n >= obtainedMarks)
+    );
+    if (!plausible.length) return null;
+    const standard = plausible.find(n => STD_TOTALS.includes(n));
+    return String(standard !== undefined ? standard : plausible[0]);
   })();
 
   const explicitTotal =
@@ -1390,6 +1419,7 @@ const extractAcademicData = (text) => {
 
   // Extract candidate name from academic certificate
   let name = null;
+  let academicNameNeedsVerification = false;
   let nameLineIndex = -1;
   const lines = cleanText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
   for (let i = 0; i < lines.length; i++) {
@@ -1400,9 +1430,15 @@ const extractAcademicData = (text) => {
     if (/(?:Name\s*(?:of\s+)?(?:Candidate|Student|Examinee)|Student\s*Name|Candidate\s*Name|\bNAME\b)\s*[:\-]?/i.test(line)
       && !/(?:Father|Husband|Mother|Guardian|Board|Institution|School|College)/i.test(line)) {
       const sameLineMatch = line.match(/(?:Name\s*(?:of\s+)?(?:Candidate|Student|Examinee)|Student\s*Name|Candidate\s*Name|\bNAME\b)\s*[:\-]?\s*(.+)$/i);
+      // As on the CNIC, a dictionary match is preferred but is not required: the name
+      // list cannot cover real Pakistani names, and "RIDA NADEEM" printed against its
+      // own NAME label is identified by the layout regardless. A candidate accepted on
+      // form alone is flagged for the applicant to confirm.
+      let shapedFallback = null;
       if (sameLineMatch && sameLineMatch[1]) {
         const val = cleanNameCandidate(sameLineMatch[1]);
         if (val && val.length >= 3 && scoreNameCandidate(val) > 0) name = val;
+        else if (val && looksLikeName(val)) shapedFallback = val;
       }
       if (!name) {
         for (let j = 1; j <= 3; j++) {
@@ -1411,7 +1447,12 @@ const extractAcademicData = (text) => {
           if (/(?:Father|Husband|Mother|Guardian|Board|Institution|School|College|Roll|Marks)/i.test(nextLine)) break;
           const val = cleanNameCandidate(nextLine);
           if (val && val.length >= 3 && scoreNameCandidate(val) > 0) { name = val; break; }
+          if (!shapedFallback && val && looksLikeName(val)) shapedFallback = val;
         }
+      }
+      if (!name && shapedFallback) {
+        name = shapedFallback;
+        academicNameNeedsVerification = true;
       }
       if (name) break;
     }
@@ -1551,7 +1592,11 @@ const extractAcademicData = (text) => {
 
   // Extract Intermediate Qualification (always attempt — autoFillFromOCR gates on user-selected docType)
   let interQualification = null;
-  const qt = cleanText.toLowerCase();
+  // The group is printed against its own label. Scanning the whole page instead matched
+  // the words "COMPUTER SCIENCE" in the subject table and reported ICS for a candidate
+  // whose group is GENERAL SCIENCE -- and the qualification decides eligibility.
+  const groupLabel = cleanText.match(/\bGROUP\b\s*[:\-]?\s*([A-Za-z][A-Za-z \-\.]{3,32})/i);
+  const qt = (groupLabel ? groupLabel[1] : cleanText).toLowerCase();
   if (/\b(?:computer\s*sciences?|ics)\b/i.test(qt)) {
     interQualification = 'ICS';
   } else if (/\b(?:pre\s*[-_]?\s*engineering|engineering\s*group)\b/i.test(qt)) {
@@ -1581,6 +1626,7 @@ const extractAcademicData = (text) => {
     total_marks: totalMarks,
     subjects: subjects,
     name: name,
+    name_verification_needed: academicNameNeedsVerification || undefined,
     father_name: fatherName,
     inter_qualification: interQualification,
     raw_text: text
