@@ -1300,7 +1300,24 @@ const extractAcademicData = (text) => {
   // If the total cannot be corroborated, it is discarded so the document is flagged
   // for a clearer upload rather than silently recorded with an inflated percentage.
   let totalMarksCorroborated = false;
+
+  // "TOTAL MARKS : 1100" is frequently read as "TOTAL MARKS : | 100" -- the leading 1
+  // becomes a pipe and gains a space. Requiring digits straight after the label missed
+  // it, the total was then discarded as uncorroborated, and a perfectly good
+  // certificate was rejected. Read the characters after the label and repair them.
+  const totalAfterLabel = (() => {
+    const m = cleanedNumText.match(/TOTAL\s*MARKS\s*[:\-]?/i);
+    if (!m) return null;
+    const tail = cleanedNumText.slice(m.index + m[0].length, m.index + m[0].length + 10);
+    const digits = tail.replace(/[|!Il]/g, '1').replace(/[Oo]/g, '0').replace(/[^0-9\s]/g, ' ').trim();
+    // Rejoin a single digit that OCR split away from the rest ("1 100" -> "1100").
+    const collapsed = digits.replace(/^(\d)\s+(\d{2,3})\b/, '$1$2');
+    const found = collapsed.match(/^(\d{3,4})\b/);
+    return found ? found[1] : null;
+  })();
+
   const explicitTotal =
+    (totalAfterLabel ? [null, totalAfterLabel] : null) ||
     cleanedNumText.match(/TOTAL\s*MARKS\s*[:\-]?\s*([0-9]{3,4})\b/i) ||
     cleanedNumText.match(/(?:secured|obtained)\s+[0-9]{2,4}\s*\/\s*([0-9]{3,4})\b/i) ||
     cleanedNumText.match(/\b[0-9]{2,4}\s*\/\s*([0-9]{3,4})\s*marks\b/i) ||
@@ -1377,9 +1394,12 @@ const extractAcademicData = (text) => {
   const lines = cleanText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (/(?:Name\s*(?:of\s+)?(?:Candidate|Student|Examinee)|Student\s*Name|Candidate\s*Name)\s*[:\-]?/i.test(line)
+    // A bare "NAME" is what the Punjab boards actually print on intermediate result
+    // intimations; requiring "Name of Candidate" missed it entirely. The exclusion
+    // below still keeps this off the FATHER'S NAME row and the institution rows.
+    if (/(?:Name\s*(?:of\s+)?(?:Candidate|Student|Examinee)|Student\s*Name|Candidate\s*Name|\bNAME\b)\s*[:\-]?/i.test(line)
       && !/(?:Father|Husband|Mother|Guardian|Board|Institution|School|College)/i.test(line)) {
-      const sameLineMatch = line.match(/(?:Name\s*(?:of\s+)?(?:Candidate|Student|Examinee)|Student\s*Name|Candidate\s*Name)\s*[:\-]?\s*(.+)$/i);
+      const sameLineMatch = line.match(/(?:Name\s*(?:of\s+)?(?:Candidate|Student|Examinee)|Student\s*Name|Candidate\s*Name|\bNAME\b)\s*[:\-]?\s*(.+)$/i);
       if (sameLineMatch && sameLineMatch[1]) {
         const val = cleanNameCandidate(sameLineMatch[1]);
         if (val && val.length >= 3 && scoreNameCandidate(val) > 0) name = val;
@@ -1926,10 +1946,23 @@ const mergeExtractionPasses = (primary, secondary) => {
   const merged = { ...primary };
   const keys = new Set([...Object.keys(primary || {}), ...Object.keys(secondary || {})]);
 
+  const NAME_FIELDS = new Set(['name', 'father_name']);
+
   keys.forEach(key => {
     if (key === 'raw_text') return;
     const a = primary ? primary[key] : undefined;
     const b = secondary[key];
+
+    // Names are both valid-looking far more often than they are equal: one pass reads
+    // "Muhammad Zahid" and the other "Muhammad Zawid", and a shape check cannot tell
+    // them apart. Where both passes produced a usable name and they disagree, prefer
+    // the one with more recognised name parts -- that is real corroboration rather
+    // than a coin toss on which pass ran first.
+    if (NAME_FIELDS.has(key) && isFieldValid(key, a) && isFieldValid(key, b) && a !== b) {
+      if (scoreNameCandidate(b) > scoreNameCandidate(a)) merged[key] = b;
+      return;
+    }
+
     if (isFieldValid(key, a)) return;              // primary already good, keep it
     if (isFieldValid(key, b)) { merged[key] = b; return; }
     if ((a === null || a === undefined || a === '') && b !== undefined) merged[key] = b;
