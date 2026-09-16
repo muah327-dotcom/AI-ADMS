@@ -47,3 +47,8 @@ uploads/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Coursework paperwork — kept with the project locally, not in the repository
+*.pdf
+proposal_text.txt
+status.txt
