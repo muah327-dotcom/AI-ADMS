@@ -5,7 +5,7 @@ A full-stack university admission management system with AI-powered OCR document
 ## Features
 
 ### Student
-- **OCR Document Upload**: Extract data from CNIC, Matric, and Intermediate certificates using Tesseract.js (client-side, 2-pass with canvas preprocessing)
+- **OCR Document Upload**: Extract data from CNIC, Matric and Intermediate certificates using Tesseract.js (client-side, two-pass, results merged field by field). Values are corroborated before they are accepted: a field that cannot be verified is left blank rather than filled with a guess, and the percentage is always computed from the marks rather than read off the page
 - **Eligibility Checking**: Real-time verification of minimum percentage and intermediate qualification requirements
 - **Online Application**: Submit applications with program priority selection (max 4)
 - **Application Tracking**: Real-time status updates
@@ -63,24 +63,40 @@ A full-stack university admission management system with AI-powered OCR document
 
 1. **Clone the repository**
 ```bash
-cd projectabc
+git clone <repository-url>
+cd AI-ADMS
 ```
 
 2. **Install dependencies**
 ```bash
 npm install
-cd frontend && npm install && cd ..
-cd backend && npm install && cd ..
 ```
+This installs the root, frontend and backend workspaces together.
 
 3. **Set up environment variables**
 
-Create `backend/.env`:
-```env
-MONGODB_URI=your_mongodb_atlas_connection_string
-JWT_SECRET=your_jwt_secret_key_here
-PORT=3001
+Copy the template and fill it in:
+```bash
+cp backend/.env.example backend/.env
 ```
+
+The application has no fallback credentials. It will refuse to start until
+`MONGODB_URI` and `JWT_SECRET` are set, which is deliberate — a missing variable
+should fail loudly rather than silently connect somewhere unintended.
+
+| Variable | Required | Purpose |
+|---|---|---|
+| `MONGODB_URI` | yes | Connection string, ending in `/admission_system` |
+| `JWT_SECRET` | yes | Long random string used to sign auth tokens |
+| `PORT` | no | Defaults to 3001 |
+| `FRONTEND_ORIGIN` | deployment | Deployed frontend URL, for CORS. Localhost is always allowed |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | deployment | Seeded admin account. Set before deploying anywhere reachable |
+| `DNS_SERVERS` | rarely | Only if the local resolver cannot reach Atlas. Leave unset on Vercel |
+
+The frontend reads `VITE_API_URL` (for example `https://your-backend.vercel.app/api`).
+Vite inlines it at build time, so changing it needs a rebuild, not a restart.
+
+`backend/.env` is gitignored and must never be committed.
 
 4. **Start the development servers**
 
@@ -104,7 +120,7 @@ cd frontend && npm run dev
 ## Project Structure
 
 ```
-projectabc/
+AI-ADMS/
 ├── backend/
 │   ├── config/
 │   │   └── db.js
