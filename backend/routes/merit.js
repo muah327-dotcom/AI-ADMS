@@ -239,10 +239,19 @@ router.post('/generate-next/:programId', requireRole(['admin', 'department_admin
     const nextListNum = currentList + 1;
     const newDeadline = fee_deadline ? new Date(fee_deadline) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-    // 1. Find ALL user_ids already selected in ANY previous merit list for this program
+    // 1. Find user_ids that are still actually occupying a seat from a previous merit
+    //    list for this program — i.e. currently registered (approved awaiting payment,
+    //    or confirmed) with a fee that hasn't been rejected. A student whose fee receipt
+    //    was rejected by the admin (see PATCH /verify-fee) keeps their merit_list_number
+    //    and status: 'approved' so they can still fix and resubmit their receipt, but
+    //    they must NOT count as holding a seat here — otherwise a rejected submission
+    //    would permanently occupy a "phantom" seat and eventually make the system
+    //    falsely report that every seat is filled when several are actually open.
     const previouslySelectedUserIds = await Application.distinct('user_id', {
       program_id: program._id,
-      merit_list_number: { $ne: null, $lte: currentList }
+      merit_list_number: { $ne: null, $lte: currentList },
+      status: { $in: ['approved', 'confirmed'] },
+      fee_status: { $ne: 'rejected' }
     });
     const previouslySelectedSet = new Set(previouslySelectedUserIds.map(id => id.toString()));
 
