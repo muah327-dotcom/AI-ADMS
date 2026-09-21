@@ -62,7 +62,11 @@ const programSchema = new mongoose.Schema({
   },
   current_merit_list: {
     type: Number,
-    default: 1
+    // 0 = no merit list generated yet. This must NOT default to 1 — a program
+    // with no merit list generated should not look like it already has one.
+    // (Applications.merit_list_number had the same bug previously; see the
+    // data-migration note in routes/admin.js.)
+    default: 0
   },
   field_category: {
     type: String,

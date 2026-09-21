@@ -14,6 +14,25 @@ const getOrdinal = (n) => {
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
 };
 
+// Determine which merit list number a program has actually reached, based on
+// real generated data rather than the program's stored current_merit_list counter.
+// fee_challan.challan_number is ONLY ever set inside the generate/generate-next
+// handlers below, so an application only counts here if a merit list was truly
+// generated for it. This mirrors the merit_list_number data-migration in
+// routes/admin.js, which exists because program/application documents created
+// before that fix (or reset without clearing stale fields) can carry a
+// current_merit_list value that doesn't reflect any list that was really
+// generated — which previously made the UI think a 1st merit list already
+// existed for a program that never had one generated.
+const getEffectiveMeritListNumber = async (programId) => {
+  const generatedListNumbers = await Application.distinct('merit_list_number', {
+    program_id: programId,
+    merit_list_number: { $ne: null },
+    'fee_challan.challan_number': { $ne: null }
+  });
+  return generatedListNumbers.length > 0 ? Math.max(...generatedListNumbers) : 0;
+};
+
 // Helper function to resolve Program by ObjectId OR by Name
 const findProgram = async (identifier) => {
   if (!identifier) return null;
@@ -90,7 +109,7 @@ router.post('/generate/:programId', requireRole(['admin', 'department_admin']), 
     }
 
     // This endpoint only creates the 1st merit list
-    const currentList = program.current_merit_list || 0;
+    const currentList = await getEffectiveMeritListNumber(program._id);
     if (currentList >= 1) {
       return res.status(400).json({ error: 'A merit list already exists for this program. Please generate the next merit list instead.' });
     }
@@ -209,7 +228,7 @@ router.post('/generate-next/:programId', requireRole(['admin', 'department_admin
     }
 
     // Enforce maximum of 3 merit lists per program
-    const currentList = program.current_merit_list || 0;
+    const currentList = await getEffectiveMeritListNumber(program._id);
     if (currentList >= 3) {
       return res.status(400).json({ error: 'Maximum of 3 merit lists have already been generated for this program. Please reset merit lists to start over.' });
     }
@@ -512,6 +531,7 @@ router.get('/program/:programId', async (req, res) => {
     }
 
     const applications = await Application.find(query).populate('user_id', 'full_name email cnic phone');
+    const effectiveCurrentList = await getEffectiveMeritListNumber(program._id);
 
     const scoredApps = applications.map(app => {
       const fsc = app.fsc_percentage || 0;
@@ -543,7 +563,7 @@ router.get('/program/:programId', async (req, res) => {
       status: item.app.status === 'confirmed' ? 'confirmed' : (item.app.status === 'approved' ? 'selected' : item.app.status),
       fee_status: item.app.fee_status || 'unpaid',
       fee_receipt_url: item.app.fee_challan?.paid_receipt_url || null,
-      merit_list_number: item.app.merit_list_number || program.current_merit_list || 1,
+      merit_list_number: item.app.merit_list_number || effectiveCurrentList || 1,
       score: item.score,
       category: item.category,
       remarks: item.app.remarks
@@ -555,7 +575,7 @@ router.get('/program/:programId', async (req, res) => {
         name: program.name,
         department: program.department,
         total_seats: program.total_seats,
-        current_merit_list: program.current_merit_list ?? 0,
+        current_merit_list: effectiveCurrentList,
         fee_deadline: defaultDeadline,
         admission_fee: program.admission_fee || 15000,
         tuition_fee: program.tuition_fee || 65000,
