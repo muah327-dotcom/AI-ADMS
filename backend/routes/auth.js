@@ -23,6 +23,56 @@ if (!JWT_SECRET) {
   );
 }
 
+// --- Brute-force protection for /login and /register ------------------------------
+// A small in-memory limiter instead of a new dependency (e.g. express-rate-limit),
+// so this doesn't require an `npm install` before the server can start again.
+// It resets on server restart and is per-process only — fine for this app's single
+// Node process today; if this is ever run behind multiple server instances/replicas,
+// swap the Map below for a shared store (e.g. Redis) so limits apply globally.
+// Keyed by route + client IP (server.js sets `trust proxy` so req.ip is accurate
+// behind a reverse proxy like Vercel).
+const rateLimitBuckets = new Map();
+
+const rateLimit = ({ windowMs, max, message }) => (req, res, next) => {
+  const key = `${req.path}:${req.ip}`;
+  const now = Date.now();
+  const bucket = rateLimitBuckets.get(key);
+
+  if (!bucket || now > bucket.resetAt) {
+    rateLimitBuckets.set(key, { count: 1, resetAt: now + windowMs });
+    return next();
+  }
+
+  if (bucket.count >= max) {
+    res.set('Retry-After', String(Math.ceil((bucket.resetAt - now) / 1000)));
+    return res.status(429).json({ error: message });
+  }
+
+  bucket.count += 1;
+  return next();
+};
+
+// Periodically drop expired buckets so the map doesn't grow forever on a
+// long-running server. unref() so this timer never keeps the process alive by itself.
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, bucket] of rateLimitBuckets) {
+    if (now > bucket.resetAt) rateLimitBuckets.delete(key);
+  }
+}, 10 * 60 * 1000).unref();
+
+const loginRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 8,
+  message: 'Too many login attempts. Please wait a few minutes and try again.'
+});
+
+const registerRateLimit = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  message: 'Too many registration attempts from this network. Please try again later.'
+});
+
 const URDU_TO_ENGLISH_NAMES = {
   'محمد': 'Muhammad',
   'احمد': 'Ahmed',
@@ -152,7 +202,7 @@ const generateToken = (user) => {
   );
 };
 
-router.post('/register', [
+router.post('/register', registerRateLimit, [
   body('email').isEmail().normalizeEmail(),
   body('password').isLength({ min: 6 }),
   body('full_name').trim().notEmpty(),
@@ -212,7 +262,7 @@ router.post('/register', [
   }
 });
 
-router.post('/login', [
+router.post('/login', loginRateLimit, [
   body('email').isEmail().normalizeEmail(),
   body('password').notEmpty()
 ], async (req, res) => {
@@ -224,33 +274,26 @@ router.post('/login', [
 
     const { email, password } = req.body;
     const cleanEmail = email ? email.trim().toLowerCase() : '';
-    console.log('Login attempt:', email, 'clean:', cleanEmail);
 
     const user = await User.findOne({ email: cleanEmail }) || await User.findOne({ email });
-    console.log('User found:', user ? 'YES' : 'NO');
 
     if (!user) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
     if (!user.is_active) {
-      console.log('Account deactivated');
       return res.status(401).json({ error: 'Account is deactivated' });
     }
 
-    console.log('Comparing password...');
     const isValidPassword = await bcrypt.compare(password, user.password);
-    console.log('Password valid:', isValidPassword);
 
     if (!isValidPassword) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    console.log('Updating last login...');
     try {
       user.last_login = new Date();
       await user.save();
-      console.log('Last login updated');
     } catch (updateError) {
       console.error('Failed to update last_login:', updateError);
     }
@@ -263,17 +306,14 @@ router.post('/login', [
       await user.save();
     }
 
-    console.log('Generating token...');
     let token;
     try {
       token = generateToken(user);
-      console.log('Token generated successfully');
     } catch (tokenError) {
       console.error('Token generation error:', tokenError);
       return res.status(500).json({ error: 'Failed to generate authentication token', details: tokenError.message });
     }
 
-    console.log('Sending response...');
     return res.json({
       message: 'Login successful',
       user: {

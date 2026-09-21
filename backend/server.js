@@ -42,6 +42,11 @@ mongoose.connection.once('open', () => {
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Trust the first proxy hop (e.g. Vercel's edge network) so req.ip reflects the
+// real client IP instead of the proxy's. Needed for the login/register rate
+// limiting in routes/auth.js to apply per-visitor rather than to everyone at once.
+app.set('trust proxy', 1);
+
 // CORS configuration — allow Vercel frontend and local dev
 // Set FRONTEND_ORIGIN to your deployed frontend URL. Additional origins can be added as
 // a comma-separated EXTRA_ORIGINS list.
