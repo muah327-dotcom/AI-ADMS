@@ -3115,7 +3115,7 @@ const DocumentUpload = () => {
 
   // Handle clicking a document type card: set the type and open file browser
   const handleCardClick = (typeId) => {
-    if (uploading) return;
+    if (uploading || isFullyVerified) return;
     setDocumentType(typeId);
     // Use a microtask to ensure documentType state is set before triggering file input
     setTimeout(() => {
@@ -3128,6 +3128,7 @@ const DocumentUpload = () => {
 
   // Handle file input change (convert to same flow as onDrop)
   const handleFileInputChange = (e) => {
+    if (isFullyVerified) return;
     const files = e.target.files;
     if (!files || files.length === 0) return;
     const file = files[0];
@@ -3141,6 +3142,7 @@ const DocumentUpload = () => {
   };
 
   const removeFile = async (index) => {
+    if (isFullyVerified) return;
     const removedFile = uploadedFiles[index];
     if (!removedFile) return;
 
@@ -3249,6 +3251,7 @@ const DocumentUpload = () => {
   };
 
   const handleSubmitProfile = async () => {
+    if (isFullyVerified) return;
     // Validate all form fields are filled
     const requiredFields = [
       { key: 'full_name', label: 'Full Name' },
@@ -3423,6 +3426,8 @@ const DocumentUpload = () => {
     const isOcrFilled = ocrFilledFields.has(field);
     const hasError = !!formErrors[field];
     const isRequired = !options.optional;
+    // Once the profile is verified, the whole form is locked — no exceptions.
+    const isDisabled = options.disabled || isFullyVerified;
     return (
       <div className={options.colSpan2 ? 'sm:col-span-2' : ''} ref={el => { formRefs.current[field] = el; }}>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -3439,11 +3444,11 @@ const DocumentUpload = () => {
           <select
             value={formData[field] || ''}
             onChange={(e) => handleFormChange(field, e.target.value)}
-            disabled={options.disabled}
+            disabled={isDisabled}
             className={`w-full px-4 py-2.5 bg-white dark:bg-gray-700 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white transition-all ${
               hasError ? 'border-red-500 dark:border-red-400 ring-1 ring-red-500/30' :
               isOcrFilled ? 'border-purple-500/50' : 'border-gray-300 dark:border-gray-600'
-            } ${options.disabled ? 'text-gray-500 dark:text-gray-400 cursor-not-allowed' : ''}`}
+            } ${isDisabled ? 'text-gray-500 dark:text-gray-400 cursor-not-allowed' : ''}`}
           >
             <option value="">{options.placeholder || 'Select...'}</option>
             {(options.selectOptions || []).map(opt => (
@@ -3458,11 +3463,11 @@ const DocumentUpload = () => {
             onChange={(e) => handleFormChange(field, e.target.value)}
             placeholder={options.placeholder || ''}
             maxLength={options.maxLength}
-            disabled={options.disabled}
+            disabled={isDisabled}
             className={`w-full px-4 py-2.5 bg-white dark:bg-gray-700 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-all ${
               hasError ? 'border-red-500 dark:border-red-400 ring-1 ring-red-500/30' :
               isOcrFilled ? 'border-purple-500/50' : 'border-gray-300 dark:border-gray-600'
-            } ${options.disabled ? 'text-gray-500 dark:text-gray-400 cursor-not-allowed' : ''}`}
+            } ${isDisabled ? 'text-gray-500 dark:text-gray-400 cursor-not-allowed' : ''}`}
           />
         )}
         {hasError && (
@@ -3540,23 +3545,28 @@ const DocumentUpload = () => {
       {/* Document Type Selection — click a card to upload */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Upload Documents</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Click on a document type to upload &bull; Supported: PDF, PNG, JPG (max 10MB)</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          {isFullyVerified
+            ? 'Your profile is verified. Documents are locked and can no longer be changed.'
+            : 'Click on a document type to upload • Supported: PDF, PNG, JPG (max 10MB)'}
+        </p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {documentTypes.map((type) => {
             const Icon = type.icon;
             const uploaded = isDocUploaded(type.id);
             const isProcessing = uploading && uploadingDocType === type.id;
+            const cardDisabled = uploading || isFullyVerified;
             return (
               <button
                 key={type.id}
                 onClick={() => handleCardClick(type.id)}
-                disabled={uploading}
+                disabled={cardDisabled}
                 className={`p-4 rounded-xl border-2 text-left transition-all relative group ${isProcessing
                   ? 'border-primary-500 bg-primary-50 animate-pulse'
                   : uploaded
                     ? 'border-green-500/30 bg-green-500/5 hover:border-green-500/50'
                     : 'border-gray-200 hover:border-primary-500/50 hover:bg-cyan-500/5'
-                  } ${uploading && !isProcessing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                  } ${cardDisabled && !isProcessing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
               >
                 {uploaded && !isProcessing && (
                   <div className="absolute top-2 right-2">
@@ -3575,7 +3585,7 @@ const DocumentUpload = () => {
                   {isProcessing && processingFile ? processingFile.name : type.desc}
                 </p>
                 {!type.required && !isProcessing && <span className="text-xs text-gray-600 dark:text-gray-400 mt-1 block">Optional</span>}
-                {!uploaded && !isProcessing && (
+                {!uploaded && !isProcessing && !isFullyVerified && (
                   <div className="mt-2 flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
                     <Upload className="h-3 w-3" />
                     <span>Click to upload</span>
@@ -3611,15 +3621,17 @@ const DocumentUpload = () => {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => removeFile(index)}
-                    title="Delete document from database"
-                    className="p-2 text-red-400 dark:text-red-400 hover:text-red-300 dark:hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
+                {!isFullyVerified && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => removeFile(index)}
+                      title="Delete document from database"
+                      className="p-2 text-red-400 dark:text-red-400 hover:text-red-300 dark:hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -3758,12 +3770,13 @@ const DocumentUpload = () => {
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Declaration</h3>
               </div>
               <div className="space-y-4 bg-gray-50 dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
-                <label className="flex items-start gap-3 cursor-pointer group">
+                <label className={`flex items-start gap-3 group ${isFullyVerified ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`}>
                   <div className="relative flex items-center justify-center mt-0.5">
                     <input
                       type="checkbox"
                       checked={declarations.confirmCorrect}
                       onChange={(e) => setDeclarations(prev => ({ ...prev, confirmCorrect: e.target.checked }))}
+                      disabled={isFullyVerified}
                       className="sr-only peer"
                     />
                     <div className="w-5 h-5 rounded border-2 border-gray-400 dark:border-gray-500 peer-checked:bg-cyan-500 peer-checked:border-primary-500 transition-all flex items-center justify-center">
@@ -3774,12 +3787,13 @@ const DocumentUpload = () => {
                     I confirm that the extracted information is correct and I have reviewed all the auto-filled fields for accuracy.
                   </span>
                 </label>
-                <label className="flex items-start gap-3 cursor-pointer group">
+                <label className={`flex items-start gap-3 group ${isFullyVerified ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`}>
                   <div className="relative flex items-center justify-center mt-0.5">
                     <input
                       type="checkbox"
                       checked={declarations.understandFalseInfo}
                       onChange={(e) => setDeclarations(prev => ({ ...prev, understandFalseInfo: e.target.checked }))}
+                      disabled={isFullyVerified}
                       className="sr-only peer"
                     />
                     <div className="w-5 h-5 rounded border-2 border-gray-400 dark:border-gray-500 peer-checked:bg-cyan-500 peer-checked:border-primary-500 transition-all flex items-center justify-center">
@@ -3797,10 +3811,19 @@ const DocumentUpload = () => {
             <div className="flex items-center justify-end gap-4 pt-2">
               <button
                 onClick={handleSubmitProfile}
-                disabled={saving || !declarations.confirmCorrect || !declarations.understandFalseInfo}
-                className="inline-flex items-center px-8 py-3 bg-gradient-to-r from-cyan-500 to-cyan-600 text-white rounded-xl hover:from-cyan-600 hover:to-cyan-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed font-semibold shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/30"
+                disabled={isFullyVerified || saving || !declarations.confirmCorrect || !declarations.understandFalseInfo}
+                className={`inline-flex items-center px-8 py-3 rounded-xl transition-all font-semibold shadow-lg ${
+                  isFullyVerified
+                    ? 'bg-emerald-600 text-white shadow-emerald-500/20 cursor-default'
+                    : 'bg-gradient-to-r from-cyan-500 to-cyan-600 text-white hover:from-cyan-600 hover:to-cyan-700 shadow-cyan-500/20 hover:shadow-cyan-500/30 disabled:opacity-40 disabled:cursor-not-allowed'
+                }`}
               >
-                {saving ? (
+                {isFullyVerified ? (
+                  <>
+                    <CheckCircle className="h-5 w-5 mr-2" />
+                    Verified
+                  </>
+                ) : saving ? (
                   <>
                     <Loader2 className="animate-spin -ml-1 mr-2 h-5 w-5" />
                     Saving...
