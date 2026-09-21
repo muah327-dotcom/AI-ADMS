@@ -3551,7 +3551,7 @@ const DocumentUpload = () => {
             : 'Click on a document type to upload • Supported: PDF, PNG, JPG (max 10MB)'}
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {documentTypes.map((type) => {
+          {documentTypes.filter((type) => type.required).map((type) => {
             const Icon = type.icon;
             const uploaded = isDocUploaded(type.id);
             const isProcessing = uploading && uploadingDocType === type.id;

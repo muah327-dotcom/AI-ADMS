@@ -207,6 +207,38 @@ const StudentManagement = () => {
     return student.applications.find(a => a.merit_list_number != null) || null;
   };
 
+  // Shared "Student" cell — identical for every row regardless of which
+  // application(s) that row represents.
+  const renderStudentCell = (student) => (
+    <td className="px-6 py-4">
+      <div className="flex items-center">
+        <div className="h-10 w-10 rounded-full bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center mr-3 border border-primary-500/20">
+          <span className="text-primary-600 dark:text-primary-400 font-semibold">
+            {student.full_name?.charAt(0)}
+          </span>
+        </div>
+        <div>
+          <p className="font-medium text-gray-900 dark:text-white">{student.full_name}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{student.email}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{student.cnic}</p>
+        </div>
+      </div>
+    </td>
+  );
+
+  // Shared "Status" cell, given an already-resolved status badge (or null).
+  const renderStatusCell = (statusBadge) => (
+    <td className="px-6 py-4">
+      {statusBadge ? (
+        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${statusBadge.color}`}>
+          {statusBadge.label}
+        </span>
+      ) : (
+        <span className="text-gray-500 dark:text-gray-400 text-sm">Applied</span>
+      )}
+    </td>
+  );
+
   const cardConfig = [
     { key: 'total', label: 'Total Students', icon: Users, color: 'primary', count: stats.total },
     { key: 'merit', label: 'Merit List Students', icon: Crown, color: 'yellow', count: stats.merit },
@@ -332,37 +364,70 @@ const StudentManagement = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {filteredStudents.map((student) => {
+                {filteredStudents.flatMap((student) => {
+                  // Merit List view: a student can be named in more than one program's
+                  // merit list. Show one row per merit-listed application — using that
+                  // application's own program, status, list number and percentage —
+                  // instead of one row per student that mixes in every program they
+                  // merely applied to (getMeritApp used to just grab the first match).
+                  if (activeCard === 'merit') {
+                    const meritApps = (student.applications || []).filter(a => a.merit_list_number != null);
+                    if (meritApps.length === 0) return [];
+
+                    return meritApps.map((app, idx) => {
+                      const statusBadge = getStatusBadge([app]);
+                      return (
+                        <tr
+                          key={`${student.id}-${app._id || idx}`}
+                          className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                          onClick={() => { setSelectedStudent(student); setShowModal(true); }}
+                        >
+                          {renderStudentCell(student)}
+                          {renderStatusCell(statusBadge)}
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              <span className={`w-2 h-2 rounded-full ${app.status === 'confirmed' || app.status === 'approved' ? 'bg-green-500' :
+                                app.status === 'rejected' ? 'bg-red-500' :
+                                  app.status === 'waitlisted' ? 'bg-yellow-500' :
+                                    'bg-gray-400'
+                                }`} />
+                              <span className="text-sm text-gray-500 dark:text-gray-400">{app.program_id?.name || 'Program'}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            {app.merit_list_number ? (
+                              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300">
+                                {getOrdinal(app.merit_list_number)} Merit List
+                              </span>
+                            ) : (
+                              <span className="text-gray-400 dark:text-gray-500 text-sm">—</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4">
+                            {app.fsc_percentage != null ? (
+                              <span className="text-sm font-semibold text-gray-900 dark:text-white">{app.fsc_percentage.toFixed(2)}%</span>
+                            ) : (
+                              <span className="text-gray-400 dark:text-gray-500 text-sm">—</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                            {new Date(student.created_at).toLocaleDateString()}
+                          </td>
+                        </tr>
+                      );
+                    });
+                  }
+
+                  // Total / Registered views: unchanged, one row per student.
                   const statusBadge = getStatusBadge(student.applications);
-                  return (
+                  return [(
                     <tr
                       key={student.id}
                       className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                       onClick={() => { setSelectedStudent(student); setShowModal(true); }}
                     >
-                      <td className="px-6 py-4">
-                        <div className="flex items-center">
-                          <div className="h-10 w-10 rounded-full bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center mr-3 border border-primary-500/20">
-                            <span className="text-primary-600 dark:text-primary-400 font-semibold">
-                              {student.full_name?.charAt(0)}
-                            </span>
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-900 dark:text-white">{student.full_name}</p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">{student.email}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">{student.cnic}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        {statusBadge ? (
-                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${statusBadge.color}`}>
-                            {statusBadge.label}
-                          </span>
-                        ) : (
-                          <span className="text-gray-500 dark:text-gray-400 text-sm">Applied</span>
-                        )}
-                      </td>
+                      {renderStudentCell(student)}
+                      {renderStatusCell(statusBadge)}
                       <td className="px-6 py-4">
                         <div className="space-y-1">
                           {(() => {
@@ -385,36 +450,11 @@ const StudentManagement = () => {
                           )}
                         </div>
                       </td>
-                      {activeCard === 'merit' && (() => {
-                        const meritApp = getMeritApp(student);
-                        const meritListNum = meritApp?.merit_list_number;
-                        const meritPct = meritApp?.fsc_percentage;
-                        return (
-                          <>
-                            <td className="px-6 py-4">
-                              {meritListNum ? (
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300">
-                                  {getOrdinal(meritListNum)} Merit List
-                                </span>
-                              ) : (
-                                <span className="text-gray-400 dark:text-gray-500 text-sm">—</span>
-                              )}
-                            </td>
-                            <td className="px-6 py-4">
-                              {meritPct != null ? (
-                                <span className="text-sm font-semibold text-gray-900 dark:text-white">{meritPct.toFixed(2)}%</span>
-                              ) : (
-                                <span className="text-gray-400 dark:text-gray-500 text-sm">—</span>
-                              )}
-                            </td>
-                          </>
-                        );
-                      })()}
                       <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
                         {new Date(student.created_at).toLocaleDateString()}
                       </td>
                     </tr>
-                  );
+                  )];
                 })}
               </tbody>
             </table>

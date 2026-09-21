@@ -229,7 +229,7 @@ const MeritList = ({ admin = false }) => {
         const data = await response.json();
         fetchMeritList(selectedProgram, selectedListFilter, categoryFilter, data.meritListNumber || listNumber);
         const ordinal = getOrdinal(data.meritListNumber || listNumber);
-        toast.success(`${ordinal} Merit list generated!\nSelected: ${data.selected}, Remaining Seats: ${data.seatsLeftAfter ?? data.selected}`);
+        toast.success(`${ordinal} Merit list generated!\nSelected: ${data.selected}`);
       } else {
         const error = await response.json();
         toast.error(error.error || 'Failed to generate merit list');
