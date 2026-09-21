@@ -1812,8 +1812,8 @@ const crossDocumentVerification = (currentDocType, currentExtractedData, uploade
 
   const docTypeLabels = {
     cnic: 'CNIC / B-Form',
-    matric: 'Matric Certificate',
-    intermediate: 'Intermediate Certificate',
+    matric: 'Matric Result Card',
+    intermediate: 'Intermediate Result Card',
     transcript: 'Transcript / Mark Sheet',
     photograph: 'Photograph',
     domicile: 'Domicile Certificate'
@@ -2549,8 +2549,8 @@ const DocumentUpload = () => {
   const documentTypes = [
     { id: 'cnic', name: 'CNIC / B-Form', icon: CreditCard, desc: 'Identity document', required: true },
     { id: 'photograph', name: 'Recent Photograph', icon: Camera, desc: 'Passport size photo', required: true },
-    { id: 'matric', name: 'Matric Certificate', icon: Award, desc: 'SSC / O-Level', required: true },
-    { id: 'intermediate', name: 'Intermediate Certificate', icon: GraduationCap, desc: 'HSSC / A-Level', required: true },
+    { id: 'matric', name: 'Matric Result Card', icon: Award, desc: 'SSC / O-Level', required: true },
+    { id: 'intermediate', name: 'Intermediate Result Card', icon: GraduationCap, desc: 'HSSC / A-Level', required: true },
     { id: 'transcript', name: 'Transcript', icon: ScrollText, desc: 'Detailed marks', required: false },
     { id: 'domicile', name: 'Domicile Certificate', icon: MapPin, desc: 'Optional', required: false }
   ];
