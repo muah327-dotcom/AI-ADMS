@@ -3103,7 +3103,10 @@ const DocumentUpload = () => {
     }
   }, [documentType, ocrFilledFields, uploadedFiles, user]);
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  // Note: this app doesn't render an actual drag-and-drop zone (uploads go through
+  // the hidden file input below), so the hook's getRootProps/getInputProps/isDragActive
+  // are never used — only its onDrop validation/callback behavior is needed.
+  useDropzone({
     onDrop,
     accept: {
       'application/pdf': ['.pdf'],
