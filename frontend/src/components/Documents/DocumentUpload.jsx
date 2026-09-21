@@ -3550,7 +3550,7 @@ const DocumentUpload = () => {
             ? 'Your profile is verified. Documents are locked and can no longer be changed.'
             : 'Click on a document type to upload • Supported: PDF, PNG, JPG (max 10MB)'}
         </p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           {documentTypes.filter((type) => type.required).map((type) => {
             const Icon = type.icon;
             const uploaded = isDocUploaded(type.id);
