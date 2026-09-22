@@ -389,8 +389,9 @@ This project is developed for educational purposes as a Final Year Project.
 
 ## Contributors
 
-- Rida Nadeem — Frontend Development, UI/UX, AI Integration
-- Hafiz Awais — Backend Development, Database Design, Deployment
-- Muhammad Ahmad — System Architecture, AI Logic, Testing
+- Rida Nadeem — Frontend Development, UI/UX, AI Integration, Testing
+- Muhammad Ahmad — System Architecture, AI Logic, Backend Development, Database Design, Deployment
+- Hafiz Awais — Testing, Bug fixes
+
 
 Punjab University College of Information Technology
