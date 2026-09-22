@@ -6,11 +6,13 @@ A full-stack university admission management system with AI-powered OCR document
 
 ### Student
 - **OCR Document Upload**: Extract data from CNIC, Matric and Intermediate certificates using Tesseract.js (client-side, two-pass, results merged field by field). Values are corroborated before they are accepted: a field that cannot be verified is left blank rather than filled with a guess, and the percentage is always computed from the marks rather than read off the page
+- **Manual Correction**: Matric and Intermediate fields extracted by OCR can be edited by hand before submission, so a misread value doesn't have to be fixed by re-uploading the document
 - **Eligibility Checking**: Real-time verification of minimum percentage and intermediate qualification requirements
 - **Online Application**: Submit applications with program priority selection (max 4)
 - **Application Tracking**: Real-time status updates
 - **Merit List Access**: View merit rankings and fee challans
 - **Fee Payment**: Upload paid fee challan receipts for verification
+- **Profile Lock**: Once a student's profile is verified, the Document Upload page permanently locks — no further uploads or edits are possible, and the submit button reads "Verified"
 
 ### Admin
 - **Dashboard**: Analytics with Chart.js (application trends, program distribution, performance insights)
@@ -122,6 +124,8 @@ cd frontend && npm run dev
 ```
 AI-ADMS/
 ├── backend/
+│   ├── api/
+│   │   └── index.js       # Vercel serverless entry point (wraps server.js)
 │   ├── config/
 │   │   └── db.js
 │   ├── middleware/
@@ -143,8 +147,12 @@ AI-ADMS/
 │   ├── utils/
 │   │   └── gridfs.js
 │   ├── server.js
+│   ├── vercel.json
+│   ├── .env.example
 │   └── package.json
 ├── frontend/
+│   ├── public/
+│   │   └── logo.png
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── Admin/
@@ -188,11 +196,14 @@ AI-ADMS/
 │   │   │   └── api.js
 │   │   ├── hooks/
 │   │   │   └── useAuth.js
+│   │   ├── tests/
+│   │   │   └── DocumentUpload.test.jsx   # see Testing section — not yet runnable
 │   │   ├── App.jsx
 │   │   ├── main.jsx
 │   │   └── index.css
 │   ├── index.html
 │   ├── package.json
+│   ├── vercel.json
 │   ├── vite.config.js
 │   ├── tailwind.config.js
 │   └── postcss.config.js
@@ -293,13 +304,16 @@ AI-ADMS/
 
 Client-side OCR using Tesseract.js with 2-pass processing and canvas preprocessing (upscaling, grayscale, contrast stretching, adaptive thresholding, sharpening).
 
-**Supported document types:**
+**Supported document types (Document Upload page):**
 - CNIC / B-Form — identity verification, auto-fills name, father name, DOB, gender, address
 - Recent Photograph — passport-size photo
 - Matric Certificate — extracts marks, board, passing year
 - Intermediate Certificate — extracts qualification, marks, board, passing year
-- Transcript — optional detailed marks
-- Domicile Certificate — optional
+
+All four are compulsory; a student cannot submit their profile until every one is uploaded.
+Transcript and Domicile Certificate are defined as optional document types in the data model
+and are still recognized by the OCR backend, but are not currently offered as upload options
+in the Document Upload UI.
 
 **Name matching:** OCR-extracted names on Matric and Intermediate certificates are not compared against the CNIC/profile for rejection. Mismatches generate informational warnings only. CNIC remains the primary identity document.
 
@@ -329,12 +343,42 @@ Two conditions must both be satisfied:
 - Desktop: > 1024px
 - Large screens: > 1280px
 
+## Testing
+
+`frontend/src/tests/DocumentUpload.test.jsx` documents a set of OCR-extraction regression
+scenarios, but is not runnable yet: it imports `@testing-library/react` and uses
+Jest/Vitest-style `describe`/`it`/`expect`, neither of which is currently installed as a
+dependency, and there is no `test` script in `frontend/package.json`. Its own comments
+describe it as documentation and structure for future integration testing rather than an
+active test suite. To make it runnable, add a test runner (e.g. Vitest, which pairs
+naturally with Vite) and `@testing-library/react` as dev dependencies, add a `test` script,
+and replace the placeholder assertions with real ones against mocked OCR output.
+
+## Deployment
+
+Both `backend/vercel.json` and `frontend/vercel.json` are set up for deployment to
+[Vercel](https://vercel.com), and `backend/server.js` detects the Vercel environment
+(`process.env.VERCEL`) to run as a serverless function via `backend/api/index.js` instead
+of a long-running server.
+
+1. Deploy `backend/` and `frontend/` as two separate Vercel projects (or configure them as
+   a monorepo with two apps).
+2. On the backend project, set the environment variables from the table above —
+   `MONGODB_URI` and `JWT_SECRET` are required, and `ADMIN_EMAIL`/`ADMIN_PASSWORD` and
+   `FRONTEND_ORIGIN` should be set before the deployment is reachable by anyone else.
+3. On the frontend project, set `VITE_API_URL` to the deployed backend's `/api` URL, then
+   trigger a build — this value is inlined at build time, so it can't be changed by
+   restarting alone.
+4. Confirm `GET /api/health` on the deployed backend reports a connected database before
+   relying on the deployment.
+
 ## Security
 
 - JWT-based authentication with bcrypt password hashing
 - Role-based access control (student, department_admin, admin)
 - Department-scoped authorization for department admins
 - Input validation with express-validator
+- Rate limiting on `/api/auth/login` and `/api/auth/register` to slow brute-force and account-enumeration attempts
 - File upload size limits
 - CORS protection
 - Response compression
