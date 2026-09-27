@@ -123,7 +123,7 @@ const Navigation = ({ onNavClick }) => {
     e.preventDefault();
     setIsMobileMenuOpen(false);
     setTimeout(() => {
-      onNavClick({ preventDefault: () => {} }, href);
+      onNavClick({ preventDefault: () => { } }, href);
     }, 300);
   };
 
@@ -322,7 +322,7 @@ const HeroSection = ({ stats }) => {
               {[
                 { value: stats?.totalApplications ?? 0, suffix: '', label: 'Applications' },
                 { value: stats?.totalApplicants ?? 0, suffix: '', label: 'Applicants' },
-                { value: 99, suffix: '.5%', label: 'OCR Accuracy' },
+                { value: 99, suffix: '.5%', label: 'Accuracy' },
               ].map((stat, index) => (
                 <div key={index} className="text-center lg:text-left">
                   <div className="text-2xl sm:text-3xl font-bold text-cyan-600">
@@ -359,17 +359,17 @@ const HeroSection = ({ stats }) => {
                   </div>
                   <div className="grid grid-cols-3 gap-4 mb-4">
                     <div className="bg-gray-700/50 rounded-lg p-4">
-                      <div className="text-xs text-gray-400 mb-1">Applications</div>
+                      <div className="text-xs text-white mb-1">Applications</div>
                       <div className="text-xl font-bold text-white">{stats?.totalApplications ?? 0}</div>
                       <div className="text-xs text-green-400 mt-1">Live</div>
                     </div>
                     <div className="bg-gray-700/50 rounded-lg p-4">
-                      <div className="text-xs text-gray-400 mb-1">Applicants</div>
+                      <div className="text-xs text-white mb-1">Applicants</div>
                       <div className="text-xl font-bold text-white">{stats?.totalApplicants ?? 0}</div>
                       <div className="text-xs text-green-400 mt-1">Live</div>
                     </div>
                     <div className="bg-gray-700/50 rounded-lg p-4">
-                      <div className="text-xs text-gray-400 mb-1">Accuracy</div>
+                      <div className="text-xs text-red-400 mb-1">Accuracy</div>
                       <div className="text-xl font-bold text-white">99.5%</div>
                       <div className="text-xs text-cyan-400 mt-1">AI Verified</div>
                     </div>
