@@ -7,6 +7,7 @@ import {
   AlertCircle,
   Loader2,
   Info,
+  Building2,
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
@@ -21,6 +22,7 @@ const NewApplication = () => {
   const [existingAppsCount, setExistingAppsCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [selectedDepartment, setSelectedDepartment] = useState('');
   const [selectedProgram, setSelectedProgram] = useState(null);
   const [eligibility, setEligibility] = useState(null);
   const [step, setStep] = useState(1);
@@ -133,6 +135,14 @@ const NewApplication = () => {
     checkEligibility(programId);
     setStep(2);
   };
+
+  const departments = Array.from(new Set(
+    programs.map(program => program.department).filter(Boolean)
+  )).sort((a, b) => a.localeCompare(b));
+
+  const departmentPrograms = selectedDepartment
+    ? programs.filter(program => program.department === selectedDepartment)
+    : [];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -271,15 +281,63 @@ const NewApplication = () => {
       {step === 1 ? (
         <div className="space-y-6">
 
-          {/* All Programs */}
+          {/* Department and Program Selection */}
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">All Available Programs</h3>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {programs.map((program) => {
+            {!selectedDepartment ? (
+              <>
+                <div className="mb-5">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Select a Department</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Choose your required department to view its available programs.</p>
+                </div>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {departments.map((department) => {
+                    const programCount = programs.filter(program => program.department === department).length;
+                    return (
+                      <button
+                        key={department}
+                        type="button"
+                        onClick={() => setSelectedDepartment(department)}
+                        className="text-left p-5 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-primary-500 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="p-2.5 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
+                            <Building2 className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+                          </div>
+                          <div>
+                            <h4 className="font-medium text-gray-900 dark:text-white">{department}</h4>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                              {programCount} {programCount === 1 ? 'program' : 'programs'} available
+                            </p>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{selectedDepartment} Programs</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Select the program you want to apply for.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDepartment('')}
+                    className="inline-flex items-center text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
+                  >
+                    <ArrowLeft className="h-4 w-4 mr-1.5" />
+                    Change Department
+                  </button>
+                </div>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {departmentPrograms.map((program) => {
                 const isSelected = (selectedProgram?._id || selectedProgram?.id) === (program._id || program.id);
                 return (
                   <button
                     key={program._id || program.id}
+                    type="button"
                     onClick={() => handleProgramSelect(program)}
                     className={`text-left p-4 border rounded-lg transition-all ${isSelected
                         ? 'border-primary-600 dark:border-primary-500 ring-2 ring-primary-500/20 bg-primary-50/50 dark:bg-primary-900/20'
@@ -302,7 +360,9 @@ const NewApplication = () => {
                   </button>
                 );
               })}
-            </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       ) : (
