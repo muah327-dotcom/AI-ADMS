@@ -448,6 +448,25 @@ const NewApplication = () => {
                   required
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Intermediate Qualification</label>
+                <input
+                  type="text"
+                  className={`w-full px-4 py-2 bg-white dark:bg-gray-700 border rounded-lg outline-none text-gray-900 dark:text-white ${eligibility?.qualification && !eligibility.qualification.meets
+                      ? 'border-red-500'
+                      : 'border-gray-300 dark:border-gray-600'
+                    }`}
+                  placeholder="Not specified"
+                  value={eligibility?.qualification?.obtained || user?.inter_qualification || ''}
+                  readOnly
+                />
+                {eligibility?.qualification && !eligibility.qualification.meets && (
+                  <p className="mt-1 text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    Required: {(eligibility.qualification.required || []).join(', ') || 'Program requirement not specified'}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
 
