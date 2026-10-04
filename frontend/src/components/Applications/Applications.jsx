@@ -6,8 +6,7 @@ import {
   Clock,
   CheckCircle,
   AlertCircle,
-  Search,
-  Filter
+  Search
 } from 'lucide-react';
 import SkeletonLoader from '../Common/SkeletonLoader';
 
@@ -15,7 +14,6 @@ const Applications = () => {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
     fetchApplications();
@@ -68,10 +66,8 @@ const Applications = () => {
   };
 
   const filteredApplications = applications.filter(app => {
-    const matchesSearch = app.programs?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         app.programs?.department?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || app.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    return app.programs?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           app.programs?.department?.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
   if (loading) {
@@ -108,21 +104,6 @@ const Applications = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-          </div>
-          <div className="flex items-center gap-2">
-            <Filter className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-            <select
-              className="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none text-gray-900 dark:text-white"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <option value="all">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="under_review">Under Review</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-              <option value="waitlisted">Waitlisted</option>
-            </select>
           </div>
         </div>
       </div>
