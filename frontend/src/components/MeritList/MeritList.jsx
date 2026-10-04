@@ -593,7 +593,7 @@ const MeritList = ({ admin = false }) => {
       </div>
 
       {/* Program Info */}
-      {selectedProgramData && (
+      {admin && selectedProgramData && (
         <div className="bg-primary-50 dark:bg-primary-900/20 rounded-xl p-6 border border-primary-500/20 dark:border-primary-800 shadow-sm">
           <div className="flex justify-between items-start">
             <div>
