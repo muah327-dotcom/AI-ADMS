@@ -2433,6 +2433,7 @@ const DocumentUpload = () => {
   const fileInputRef = useRef(null);
   const [formErrors, setFormErrors] = useState({});
   const formRefs = useRef({});
+  const initializedProfileUserRef = useRef(null);
 
   // Formal Document Rejection Modal state
   const [rejectionModal, setRejectionModal] = useState({
@@ -2519,31 +2520,38 @@ const DocumentUpload = () => {
 
   // Pre-populate form from existing user data (strictly sanitized to English letters)
   useEffect(() => {
-    if (user) {
-      const cleanFullName = sanitizeToEnglishName(user.full_name);
-      const cleanFatherName = sanitizeToEnglishName(user.father_name);
-      setFormData(prev => ({
-        ...prev,
-        full_name: cleanFullName || prev.full_name,
-        father_name: cleanFatherName || prev.father_name,
-        date_of_birth: user.date_of_birth || prev.date_of_birth,
-        gender: user.gender || prev.gender,
-        cnic: user.cnic || prev.cnic,
-        email: user.email || prev.email,
-        phone: user.phone || prev.phone,
-        alternate_phone: user.alternate_phone || prev.alternate_phone,
-        father_phone: user.father_phone || prev.father_phone,
-        address: user.address || prev.address,
-        permanent_address: user.permanent_address || prev.permanent_address,
-        matric_passing_year: user.matric_passing_year || prev.matric_passing_year,
-        matric_obtained_marks: user.matric_obtained_marks || prev.matric_obtained_marks,
-        matric_total_marks: user.matric_total_marks || prev.matric_total_marks,
-        inter_passing_year: user.inter_passing_year || prev.inter_passing_year,
-        inter_obtained_marks: user.inter_obtained_marks || prev.inter_obtained_marks,
-        inter_total_marks: user.inter_total_marks || prev.inter_total_marks,
-        inter_qualification: user.inter_qualification || prev.inter_qualification
-      }));
-    }
+    if (!user) return;
+
+    // Updating uploaded_documents replaces the AuthContext user object. Re-running
+    // this prefill for that same user would overwrite freshly extracted CNIC fields
+    // (especially full_name) with the older registration profile until a refresh.
+    const profileUserKey = user.id || user._id || user.email;
+    if (initializedProfileUserRef.current === profileUserKey) return;
+    initializedProfileUserRef.current = profileUserKey;
+
+    const cleanFullName = sanitizeToEnglishName(user.full_name);
+    const cleanFatherName = sanitizeToEnglishName(user.father_name);
+    setFormData(prev => ({
+      ...prev,
+      full_name: cleanFullName || prev.full_name,
+      father_name: cleanFatherName || prev.father_name,
+      date_of_birth: user.date_of_birth || prev.date_of_birth,
+      gender: user.gender || prev.gender,
+      cnic: user.cnic || prev.cnic,
+      email: user.email || prev.email,
+      phone: user.phone || prev.phone,
+      alternate_phone: user.alternate_phone || prev.alternate_phone,
+      father_phone: user.father_phone || prev.father_phone,
+      address: user.address || prev.address,
+      permanent_address: user.permanent_address || prev.permanent_address,
+      matric_passing_year: user.matric_passing_year || prev.matric_passing_year,
+      matric_obtained_marks: user.matric_obtained_marks || prev.matric_obtained_marks,
+      matric_total_marks: user.matric_total_marks || prev.matric_total_marks,
+      inter_passing_year: user.inter_passing_year || prev.inter_passing_year,
+      inter_obtained_marks: user.inter_obtained_marks || prev.inter_obtained_marks,
+      inter_total_marks: user.inter_total_marks || prev.inter_total_marks,
+      inter_qualification: user.inter_qualification || prev.inter_qualification
+    }));
   }, [user]);
 
   const documentTypes = [
