@@ -75,10 +75,10 @@ router.get('/performance-insights', async (req, res) => {
       const count = await Application.countDocuments({
         ...filter,
         $expr: {
-          $let: {
-            vars: { avg: { $avg: ['$matric_percentage', '$fsc_percentage'] } },
-            in: { $and: [{ $gte: ['$$avg', min] }, { $lt: ['$$avg', max] }] }
-          }
+          $and: [
+            { $gte: ['$fsc_percentage', min] },
+            { $lt: ['$fsc_percentage', max] }
+          ]
         }
       });
       return {

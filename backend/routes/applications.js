@@ -66,7 +66,20 @@ router.post('/', [
       return res.status(404).json({ error: 'Program not found' });
     }
 
-    const submittedPercentage = parseFloat(academic_records.percentage || academic_records.fsc_percentage || academic_records.matric_percentage || 0);
+    // Eligibility and merit are based on Intermediate percentage only. Prefer the
+    // verified profile values so the result cannot differ from the eligibility preview.
+    const interObtained = parseFloat(user.inter_obtained_marks);
+    const interTotal = parseFloat(user.inter_total_marks);
+    const profileIntermediatePercentage = (!isNaN(interObtained) && !isNaN(interTotal) && interTotal > 0)
+      ? parseFloat(((interObtained / interTotal) * 100).toFixed(2))
+      : null;
+    const submittedPercentage = profileIntermediatePercentage ?? parseFloat(academic_records.percentage || academic_records.fsc_percentage || 0);
+
+    const matricObtained = parseFloat(user.matric_obtained_marks);
+    const matricTotal = parseFloat(user.matric_total_marks);
+    const profileMatricPercentage = (!isNaN(matricObtained) && !isNaN(matricTotal) && matricTotal > 0)
+      ? parseFloat(((matricObtained / matricTotal) * 100).toFixed(2))
+      : null;
     const isEligible = submittedPercentage >= program.min_percentage;
 
     if (!isEligible) {
@@ -118,8 +131,8 @@ router.post('/', [
     const application = await Application.create({
       user_id: userId,
       program_id,
-      matric_percentage: parseFloat(academic_records.matric_percentage || academic_records.percentage || 0),
-      fsc_percentage: parseFloat(academic_records.fsc_percentage || academic_records.percentage || 0),
+      matric_percentage: profileMatricPercentage ?? parseFloat(academic_records.matric_percentage || 0),
+      fsc_percentage: submittedPercentage,
       entry_test_marks: parseFloat(academic_records.entry_test_marks || 0),
       cnic: user.cnic || null,
       phone: user.phone || null,
@@ -189,23 +202,14 @@ router.get('/programs/:id/eligibility', async (req, res) => {
       return res.status(404).json({ error: 'Program not found' });
     }
 
-    // Calculate actual student percentage from academic records (matric & inter)
+    // Eligibility is based exclusively on the verified Intermediate marks.
     let studentPercentage = 0;
     if (user) {
       const interObt = parseFloat(user.inter_obtained_marks);
       const interTot = parseFloat(user.inter_total_marks);
-      const matricObt = parseFloat(user.matric_obtained_marks);
-      const matricTot = parseFloat(user.matric_total_marks);
 
-      const interPct = (!isNaN(interObt) && !isNaN(interTot) && interTot > 0) ? (interObt / interTot) * 100 : null;
-      const matricPct = (!isNaN(matricObt) && !isNaN(matricTot) && matricTot > 0) ? (matricObt / matricTot) * 100 : null;
-
-      if (interPct !== null && matricPct !== null) {
-        studentPercentage = parseFloat(((interPct + matricPct) / 2).toFixed(2));
-      } else if (interPct !== null) {
-        studentPercentage = parseFloat(interPct.toFixed(2));
-      } else if (matricPct !== null) {
-        studentPercentage = parseFloat(matricPct.toFixed(2));
+      if (!isNaN(interObt) && !isNaN(interTot) && interTot > 0) {
+        studentPercentage = parseFloat(((interObt / interTot) * 100).toFixed(2));
       }
     }
 
