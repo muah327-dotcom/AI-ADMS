@@ -9,7 +9,6 @@ A full-stack university admission management system with AI-powered OCR document
 - **Manual Correction**: Matric and Intermediate fields extracted by OCR can be edited by hand before submission, so a misread value doesn't have to be fixed by re-uploading the document
 - **Eligibility Checking**: Real-time verification of minimum percentage and intermediate qualification requirements
 - **Online Application**: Submit applications with program priority selection (max 4)
-- **Application Tracking**: Real-time status updates
 - **Merit List Access**: View merit rankings and fee challans
 - **Fee Payment**: Upload paid fee challan receipts for verification
 - **Profile Lock**: Once a student's profile is verified, the Document Upload page permanently locks — no further uploads or edits are possible, and the submit button reads "Verified"
@@ -163,7 +162,6 @@ AI-ADMS/
 │   │   │   │   └── StudentManagement.jsx
 │   │   │   ├── Applications/
 │   │   │   │   ├── Applications.jsx
-│   │   │   │   ├── ApplicationTracking.jsx
 │   │   │   │   └── NewApplication.jsx
 │   │   │   ├── Auth/
 │   │   │   │   ├── Login.jsx
@@ -233,8 +231,6 @@ AI-ADMS/
 | GET | `/api/applications/programs/:id/eligibility` | Check eligibility (percentage + qualification) |
 | POST | `/api/applications` | Submit new application |
 | GET | `/api/applications/my-applications` | Get my applications |
-| GET | `/api/applications/tracking/:applicationId` | Get application tracking |
-| DELETE | `/api/applications/:id` | Delete application |
 
 ### Admin
 | Method | Endpoint | Description |

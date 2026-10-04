@@ -34,7 +34,6 @@ frontend/
 │   │   │   └── StudentManagement.jsx   # Manage student accounts
 │   │   ├── Applications/        # Application management
 │   │   │   ├── Applications.jsx         # List user's applications
-│   │   │   ├── ApplicationTracking.jsx  # Track specific application
 │   │   │   └── NewApplication.jsx       # Create new application
 │   │   ├── Auth/                # Authentication components
 │   │   │   ├── Login.jsx               # User login
@@ -104,7 +103,6 @@ frontend/
 2. **Applications Management**
    - **Applications** (`/dashboard/applications`): List all user applications with filtering
    - **NewApplication** (`/dashboard/applications/new`): Multi-step application form
-   - **ApplicationTracking** (`/dashboard/applications/track/:id`): Detailed application view
 
 3. **Document Upload** (`/dashboard/documents`)
    - CNIC and academic record uploads

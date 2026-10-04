@@ -164,25 +164,6 @@ router.get('/my-applications', async (req, res) => {
   }
 });
 
-router.get('/tracking/:applicationId', async (req, res) => {
-  try {
-    const { applicationId } = req.params;
-    const userId = req.user.id;
-
-    const application = await Application.findById(applicationId);
-
-    if (!application && req.user.role !== 'admin') {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-
-    // Return empty tracking for now - can be enhanced later with proper tracking model
-    res.json({ tracking: [] });
-  } catch (error) {
-    console.error('Fetch tracking error:', error);
-    res.status(500).json({ error: 'Failed to fetch tracking information' });
-  }
-});
-
 router.get('/programs', async (req, res) => {
   try {
     const programs = await Program.find().sort({ name: 1 });
@@ -259,30 +240,6 @@ router.get('/programs/:id/eligibility', async (req, res) => {
   } catch (error) {
     console.error('Eligibility check error:', error);
     res.status(500).json({ error: 'Failed to check eligibility' });
-  }
-});
-
-router.delete('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const userId = req.user.id;
-
-    const application = await Application.findById(id);
-
-    if (!application) {
-      return res.status(404).json({ error: 'Application not found' });
-    }
-
-    if (application.user_id.toString() !== userId.toString()) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-
-    await Application.findByIdAndDelete(id);
-
-    res.json({ message: 'Application deleted successfully' });
-  } catch (error) {
-    console.error('Delete application error:', error);
-    res.status(500).json({ error: 'Failed to delete application' });
   }
 });
 

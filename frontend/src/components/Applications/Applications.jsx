@@ -1,15 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import toast from 'react-hot-toast';
 import {
   FileText,
   Plus,
   Clock,
   CheckCircle,
   AlertCircle,
-  Eye,
-  Trash2,
-  Loader2,
   Search,
   Filter
 } from 'lucide-react';
@@ -20,8 +16,6 @@ const Applications = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [deleteConfirm, setDeleteConfirm] = useState(null); // holds app to delete
-  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchApplications();
@@ -70,29 +64,6 @@ const Applications = () => {
       case 'pending':
       default:
         return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300';
-    }
-  };
-
-  const handleDelete = async (app) => {
-    setDeleting(true);
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/applications/${app.id || app._id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await response.json();
-      if (response.ok) {
-        toast.success('Application deleted successfully');
-        setApplications(prev => prev.filter(a => (a.id || a._id) !== (app.id || app._id)));
-        setDeleteConfirm(null);
-      } else {
-        toast.error(data.error || 'Failed to delete application');
-      }
-    } catch (error) {
-      toast.error('An error occurred while deleting');
-    } finally {
-      setDeleting(false);
     }
   };
 
@@ -207,20 +178,6 @@ const Applications = () => {
                         {app.admission_category}
                       </span>
                     )}
-                    <Link
-                      to={`/dashboard/applications/track/${app.id}`}
-                      className="p-2 text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
-                      title="Track Application"
-                    >
-                      <Eye className="h-5 w-5" />
-                    </Link>
-                    <button
-                      onClick={() => setDeleteConfirm(app)}
-                      className="p-2 text-gray-500 dark:text-gray-400 hover:text-red-400 dark:hover:text-red-400 transition-colors"
-                      title="Delete Application"
-                    >
-                      <Trash2 className="h-5 w-5" />
-                    </button>
                   </div>
                 </div>
               </div>
@@ -230,42 +187,6 @@ const Applications = () => {
       </div>
     </div>
 
-      {/* Delete Confirmation Modal */}
-      {deleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
-                <Trash2 className="h-6 w-6 text-red-600 dark:text-red-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Delete Application</h3>
-            </div>
-            <p className="text-gray-500 dark:text-gray-400 mb-2">
-              Are you sure you want to delete your application for:
-            </p>
-            <p className="text-gray-900 dark:text-white font-medium mb-1">{deleteConfirm.programs?.name}</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{deleteConfirm.programs?.department}</p>
-            <p className="text-xs text-red-600 dark:text-red-400 mb-6">This action cannot be undone.</p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                disabled={deleting}
-                className="px-4 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleDelete(deleteConfirm)}
-                disabled={deleting}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
-              >
-                {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                {deleting ? 'Deleting...' : 'Delete'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 };
