@@ -261,23 +261,6 @@ const NewApplication = () => {
         </div>
       )}
 
-      {/* Progress Steps */}
-      <div className="flex items-center gap-4">
-        <div className={`flex items-center gap-2 ${step >= 1 ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 dark:text-gray-400'}`}>
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 1 ? 'bg-primary-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}>
-            1
-          </div>
-          <span className="text-sm font-medium">Select Program</span>
-        </div>
-        <div className="flex-1 h-0.5 bg-gray-200 dark:bg-gray-700" />
-        <div className={`flex items-center gap-2 ${step >= 2 ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 dark:text-gray-400'}`}>
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 2 ? 'bg-primary-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}>
-            2
-          </div>
-          <span className="text-sm font-medium">Complete Details</span>
-        </div>
-      </div>
-
       {step === 1 ? (
         <div className="space-y-6">
 
