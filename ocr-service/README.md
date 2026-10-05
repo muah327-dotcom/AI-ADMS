@@ -16,7 +16,7 @@ From `ocr-service`:
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
+python -m pip install -r requirements-dev.txt
 Copy-Item .env.example .env
 python -m uvicorn app:app --host 127.0.0.1 --port 8001
 ```
@@ -46,3 +46,5 @@ python compare_poc.py C:\path\to\test-image.jpg --expected cnic
 ```
 
 This command prints sensitive OCR material to the current terminal and never writes it to disk. Use only with authorized test data in a private development environment.
+
+For Vercel Preview and production preparation, including the private service binding and temporary private Blob transport, see `../VERCEL_PREVIEW.md`.

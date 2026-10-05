@@ -1,6 +1,8 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { sanitizeProfileName } from '../../utils/nameSanitizers';
+import { shouldRejectRapidOcrUpload } from '../../utils/ocrTransport';
 import Tesseract from 'tesseract.js';
+import { upload as uploadPrivateBlob } from '@vercel/blob/client';
 import { useDropzone } from 'react-dropzone';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
@@ -2429,6 +2431,7 @@ const readFileAsBase64 = (file) => {
 };
 
 const OCR_PROVIDER = import.meta.env.VITE_OCR_PROVIDER || 'tesseract';
+const OCR_TRANSPORT = import.meta.env.VITE_OCR_TRANSPORT || 'multipart';
 const RAPIDOCR_TYPES = new Set(['cnic', 'matric', 'intermediate']);
 const RAPIDOCR_IMAGE_PATTERN = /\.(?:jpe?g|jfif|png|bmp)$/i;
 const MAX_RAPIDOCR_FILE_SIZE = 20 * 1024 * 1024;
@@ -2855,18 +2858,52 @@ const DocumentUpload = () => {
       // existing Tesseract implementation below remains intact for rollback via
       // VITE_OCR_PROVIDER=tesseract; a server rejection never falls back silently.
       if (useRapidOcr) {
-        const token = localStorage.getItem('token');
-        const requestBody = new FormData();
-        requestBody.append('image', file);
-        requestBody.append('expected_document_type', documentType === 'intermediate' ? 'inter' : documentType);
+        try {
+          const token = localStorage.getItem('token');
+        const expectedDocumentType = documentType === 'intermediate' ? 'inter' : documentType;
+        let requestBody;
+        const requestHeaders = { 'Authorization': `Bearer ${token}` };
+
+        if (OCR_TRANSPORT === 'blob') {
+          const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+          const pathname = `ocr-temp/${user.id}/${crypto.randomUUID()}.${extension}`;
+          const temporaryBlob = await uploadPrivateBlob(pathname, file, {
+            access: 'private',
+            handleUploadUrl: '/api/ocr/temporary-upload',
+            headers: requestHeaders,
+            contentType: file.type,
+            multipart: false
+          });
+          const referenceResponse = await fetch('/api/ocr/temporary-reference', {
+            method: 'POST',
+            headers: { ...requestHeaders, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: temporaryBlob.url })
+          });
+          const referencePayload = await referenceResponse.json();
+          if (!referenceResponse.ok || !referencePayload.object_reference) {
+            throw new Error(referencePayload.error || 'Temporary OCR upload could not be prepared. You can enter the information manually.');
+          }
+          requestBody = JSON.stringify({
+            expected_document_type: expectedDocumentType,
+            object_reference: referencePayload.object_reference
+          });
+          requestHeaders['Content-Type'] = 'application/json';
+        } else {
+          requestBody = new FormData();
+          requestBody.append('image', file);
+          requestBody.append('expected_document_type', expectedDocumentType);
+        }
+
         const ocrResponse = await fetch('/api/ocr/extract', {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}` },
+          headers: requestHeaders,
           body: requestBody
         });
         const ocrResult = await ocrResponse.json();
         if (!ocrResponse.ok || !ocrResult.success) {
-          throw new Error(ocrResult.message || ocrResult.error || ocrResult.detail || 'OCR could not process this document.');
+          const ocrError = new Error(ocrResult.message || ocrResult.error || ocrResult.detail || 'OCR could not process this document.');
+          ocrError.isDocumentRejection = shouldRejectRapidOcrUpload(ocrResponse.status);
+          throw ocrError;
         }
 
         const extractedData = { ...(ocrResult.fields || {}) };
@@ -2893,7 +2930,9 @@ const DocumentUpload = () => {
         });
         const savedPayload = await saveResponse.json();
         if (!saveResponse.ok) {
-          throw new Error(savedPayload.error || 'Document could not be saved.');
+          const persistenceError = new Error(savedPayload.error || 'Document could not be saved.');
+          persistenceError.skipLocalOcrFallback = true;
+          throw persistenceError;
         }
 
         setUploadedFiles(prev => [
@@ -2919,6 +2958,10 @@ const DocumentUpload = () => {
           toast.success(`${documentTypes.find(d => d.id === documentType)?.name || 'Document'} uploaded and read`);
         }
         return;
+        } catch (rapidOcrError) {
+          if (rapidOcrError.isDocumentRejection || rapidOcrError.skipLocalOcrFallback) throw rapidOcrError;
+          toast.error('Automatic server OCR is temporarily unavailable. Local document reading will be attempted; all fields remain editable.', { duration: 7000 });
+        }
       }
 
       let extractedText = '';

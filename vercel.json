@@ -1,0 +1,49 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "fluid": true,
+  "services": {
+    "backend": {
+      "root": "backend/",
+      "framework": "express",
+      "entrypoint": "api/index.js",
+      "bindings": [
+        {
+          "type": "service",
+          "service": "rapidocr",
+          "format": "url",
+          "env": "RAPIDOCR_SERVICE_URL"
+        }
+      ],
+      "functions": {
+        "api/index.js": {
+          "maxDuration": 210
+        }
+      }
+    },
+    "rapidocr": {
+      "root": "ocr-service/",
+      "framework": "fastapi",
+      "entrypoint": "app:app",
+      "functions": {
+        "app.py": {
+          "maxDuration": 180,
+          "excludeFiles": "{tests/**,.pytest_cache/**,__pycache__/**,**/__pycache__/**,compare_poc.py,README.md,requirements-dev.txt}"
+        }
+      }
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": {
+        "service": "backend"
+      }
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/ocr/cleanup-temp",
+      "schedule": "0 3 * * *"
+    }
+  ]
+}

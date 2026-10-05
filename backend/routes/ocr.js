@@ -1,15 +1,20 @@
 import express from 'express';
 import multer from 'multer';
 import path from 'path';
+import { del, head, list } from '@vercel/blob';
+import { handleUpload } from '@vercel/blob/client';
 import { authenticateToken } from '../middleware/auth.js';
 import Document from '../models/Document.js';
 import User from '../models/User.js';
+import {
+  ALLOWED_OCR_MIME_TYPES, MAX_OCR_UPLOAD_BYTES, OCR_TEMP_PREFIX,
+  isStaleTemporaryBlob, signObjectReference, validateTemporaryBlobMetadata,
+  validateTemporaryBlobUrl, verifyObjectReference
+} from '../utils/ocrTransport.js';
 
 const router = express.Router();
 
-const MAX_OCR_UPLOAD_BYTES = 20 * 1024 * 1024;
 const ALLOWED_OCR_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.jfif', '.bmp']);
-const ALLOWED_OCR_MIME_TYPES = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/bmp', 'image/x-ms-bmp']);
 const uploadOcrImage = multer({
   storage: multer.memoryStorage(),
   limits: { files: 1, fileSize: MAX_OCR_UPLOAD_BYTES },
@@ -22,10 +27,181 @@ const uploadOcrImage = multer({
   }
 });
 
+export const ocrServiceRequest = async (
+  { expectedType, file, objectReference, userId },
+  { fetchImpl = fetch, deleteImpl = del } = {}
+) => {
+  const serviceUrl = process.env.RAPIDOCR_SERVICE_URL;
+  if (!serviceUrl) {
+    const error = new Error('OCR service is not configured.');
+    error.status = 502;
+    throw error;
+  }
+
+  const configuredTimeout = Number.parseInt(process.env.RAPIDOCR_REQUEST_TIMEOUT_MS || '150000', 10);
+  const timeoutMs = Number.isFinite(configuredTimeout) && configuredTimeout > 0 ? configuredTimeout : 150000;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  let temporaryUrl = null;
+
+  try {
+    let body;
+    let headers;
+    if (objectReference) {
+      const decoded = verifyObjectReference(
+        objectReference, process.env.OCR_OBJECT_REFERENCE_SECRET, userId
+      );
+      temporaryUrl = validateTemporaryBlobUrl(decoded.url, process.env.BLOB_STORE_ID, userId);
+      body = JSON.stringify({
+        expected_document_type: expectedType,
+        object_reference: {
+          url: temporaryUrl,
+          content_type: decoded.content_type,
+          size: decoded.size
+        }
+      });
+      headers = {
+        'Content-Type': 'application/json',
+        'X-OCR-Service-Token': process.env.OCR_INTERNAL_SERVICE_SECRET || ''
+      };
+    } else {
+      body = new FormData();
+      body.append('expected_document_type', expectedType);
+      body.append('image', new Blob([file.buffer], { type: file.mimetype }), file.originalname);
+      headers = process.env.OCR_INTERNAL_SERVICE_SECRET
+        ? { 'X-OCR-Service-Token': process.env.OCR_INTERNAL_SERVICE_SECRET }
+        : undefined;
+    }
+
+    const upstream = await fetchImpl(`${serviceUrl.replace(/\/+$/, '')}/ocr`, {
+      method: 'POST', body, headers, signal: controller.signal
+    });
+    const rawBody = await upstream.text();
+    let payload;
+    try { payload = JSON.parse(rawBody); } catch { payload = { error: 'OCR service returned an invalid response.' }; }
+    if ([400, 413, 422].includes(upstream.status)) return { status: upstream.status, payload };
+    if (!upstream.ok) return { status: 502, payload: { error: 'OCR service could not process the image.' } };
+    return { status: 200, payload };
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      return { status: 504, payload: { error: 'OCR processing timed out. Please enter the information manually or try again.' } };
+    }
+    if (error?.message?.startsWith('Invalid temporary') || error?.message?.startsWith('Temporary OCR')) {
+      return { status: 400, payload: { error: error.message } };
+    }
+    return { status: error?.status || 502, payload: { error: error?.message === 'OCR service is not configured.'
+      ? error.message : 'OCR service is unavailable. You can continue by entering the information manually.' } };
+  } finally {
+    clearTimeout(timeout);
+    if (temporaryUrl) {
+      try {
+        await deleteImpl(temporaryUrl);
+      } catch (cleanupError) {
+        console.warn('Temporary OCR object cleanup failed', {
+          error_type: cleanupError?.name || 'Error', operation: 'delete'
+        });
+      }
+    }
+  }
+};
+
+// Vercel Cron safety net for uploads abandoned before OCR. Normal OCR requests delete
+// their object immediately in the finally block above.
+router.get('/cleanup-temp', async (req, res) => {
+  if (!process.env.CRON_SECRET || req.headers.authorization !== `Bearer ${process.env.CRON_SECRET}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  let cursor;
+  let deleted = 0;
+  try {
+    do {
+      const page = await list({ prefix: OCR_TEMP_PREFIX, cursor, limit: 100 });
+      const staleUrls = page.blobs.filter(blob => isStaleTemporaryBlob(blob)).map(blob => blob.url);
+      if (staleUrls.length) {
+        await del(staleUrls);
+        deleted += staleUrls.length;
+      }
+      cursor = page.hasMore ? page.cursor : undefined;
+    } while (cursor);
+    return res.json({ success: true, deleted });
+  } catch (error) {
+    console.error('Temporary OCR retention cleanup failed', {
+      error_type: error?.name || 'Error', http_status: 500
+    });
+    return res.status(500).json({ error: 'Temporary OCR cleanup failed.' });
+  }
+});
+
 router.use(authenticateToken);
+
+router.post('/temporary-upload', async (req, res) => {
+  if (process.env.OCR_TRANSPORT !== 'blob') {
+    return res.status(404).json({ error: 'Temporary OCR uploads are not enabled.' });
+  }
+  try {
+    const response = await handleUpload({
+      request: req,
+      body: req.body,
+      onBeforeGenerateToken: async (pathname) => {
+        const expectedPrefix = `${OCR_TEMP_PREFIX}${String(req.user.id)}/`;
+        if (!pathname.startsWith(expectedPrefix)
+            || !/^[a-zA-Z0-9_-]+\/[0-9a-f-]{36}\.(?:jpe?g|jfif|png|bmp)$/i.test(pathname.slice(OCR_TEMP_PREFIX.length))) {
+          throw new Error('Invalid temporary OCR object name.');
+        }
+        return {
+          allowedContentTypes: [...ALLOWED_OCR_MIME_TYPES],
+          maximumSizeInBytes: MAX_OCR_UPLOAD_BYTES,
+          validUntil: Date.now() + (10 * 60 * 1000),
+          addRandomSuffix: true,
+          allowOverwrite: false,
+          cacheControlMaxAge: 60,
+          tokenPayload: JSON.stringify({ user_id: String(req.user.id) })
+        };
+      }
+    });
+    return res.json(response);
+  } catch (error) {
+    return res.status(400).json({ error: 'Temporary OCR upload could not be authorized.' });
+  }
+});
+
+router.post('/temporary-reference', async (req, res) => {
+  let url;
+  try {
+    url = validateTemporaryBlobUrl(req.body?.url, process.env.BLOB_STORE_ID, req.user.id);
+    const metadata = await head(url);
+    validateTemporaryBlobMetadata(metadata);
+    const reference = signObjectReference({
+      url,
+      contentType: metadata.contentType,
+      size: metadata.size,
+      userId: req.user.id
+    }, process.env.OCR_OBJECT_REFERENCE_SECRET);
+    return res.json({ object_reference: reference });
+  } catch (error) {
+    if (url) {
+      try { await del(url); } catch { /* retention cleanup remains as a safety net */ }
+    }
+    return res.status(error?.message === 'Image exceeds the 20 MB limit.' ? 413 : 400)
+      .json({ error: error?.message || 'Invalid temporary OCR object.' });
+  }
+});
 
 // Analyze an admission image without persisting the file or extracted student fields.
 router.post('/extract', (req, res) => {
+  if (req.is('application/json')) {
+    const expectedType = String(req.body?.expected_document_type || '').trim().toLowerCase();
+    if (!['cnic', 'matric', 'inter'].includes(expectedType)) {
+      return res.status(400).json({ error: 'expected_document_type must be cnic, matric, or inter.' });
+    }
+    if (!req.body?.object_reference) {
+      return res.status(400).json({ error: 'Temporary OCR object reference is required.' });
+    }
+    return ocrServiceRequest({
+      expectedType, objectReference: req.body.object_reference, userId: req.user.id
+    }).then(({ status, payload }) => res.status(status).json(payload));
+  }
+
   uploadOcrImage.single('image')(req, res, async (uploadError) => {
     if (uploadError) {
       if (uploadError.code === 'LIMIT_FILE_SIZE') {
@@ -42,43 +218,8 @@ router.post('/extract', (req, res) => {
       return res.status(400).json({ error: 'expected_document_type must be cnic, matric, or inter.' });
     }
 
-    const serviceUrl = process.env.RAPIDOCR_SERVICE_URL;
-    if (!serviceUrl) {
-      return res.status(502).json({ error: 'OCR service is not configured.' });
-    }
-
-    const configuredTimeout = Number.parseInt(process.env.RAPIDOCR_REQUEST_TIMEOUT_MS || '120000', 10);
-    const timeoutMs = Number.isFinite(configuredTimeout) && configuredTimeout > 0 ? configuredTimeout : 120000;
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), timeoutMs);
-
-    try {
-      const body = new FormData();
-      body.append('expected_document_type', expectedType);
-      body.append('image', new Blob([req.file.buffer], { type: req.file.mimetype }), req.file.originalname);
-      const upstream = await fetch(`${serviceUrl.replace(/\/+$/, '')}/ocr`, {
-        method: 'POST', body, signal: controller.signal
-      });
-      const rawBody = await upstream.text();
-      let payload;
-      try {
-        payload = JSON.parse(rawBody);
-      } catch {
-        payload = { error: 'OCR service returned an invalid response.' };
-      }
-      if (upstream.status === 422) return res.status(422).json(payload);
-      if (upstream.status === 400) return res.status(400).json(payload);
-      if (upstream.status === 413) return res.status(413).json(payload);
-      if (!upstream.ok) return res.status(502).json({ error: 'OCR service could not process the image.' });
-      return res.json(payload);
-    } catch (error) {
-      if (error?.name === 'AbortError') {
-        return res.status(504).json({ error: 'OCR processing timed out. Please try again.' });
-      }
-      return res.status(502).json({ error: 'OCR service is unavailable.' });
-    } finally {
-      clearTimeout(timeout);
-    }
+    const { status, payload } = await ocrServiceRequest({ expectedType, file: req.file, userId: req.user.id });
+    return res.status(status).json(payload);
   });
 });
 
