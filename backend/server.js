@@ -23,6 +23,7 @@ import adminRoutes from './routes/admin.js';
 import meritRoutes from './routes/merit.js';
 import analyticsRoutes from './routes/analytics.js';
 import ocrRoutes from './routes/ocr.js';
+import { createCorsOptions } from './config/cors.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, '.env') });
@@ -50,37 +51,11 @@ app.set('trust proxy', 1);
 // CORS configuration — allow Vercel frontend and local dev
 // Set FRONTEND_ORIGIN to your deployed frontend URL. Additional origins can be added as
 // a comma-separated EXTRA_ORIGINS list.
-const allowedOrigins = [
-  process.env.FRONTEND_ORIGIN,
-  ...(process.env.EXTRA_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean),
-  'http://localhost:5173',
-  'http://localhost:3000'
-].filter(Boolean);
-
-app.use(cors({
-  origin: function (origin, callback) {
-    // Requests with no Origin header (curl, server-to-server, native apps) are not
-    // browser cross-origin requests, so CORS does not apply to them.
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.some(allowed => origin === allowed || origin.startsWith(allowed))) {
-      return callback(null, true);
-    }
-    // Vercel preview deployments get a new subdomain per build.
-    if (/^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin)) {
-      return callback(null, true);
-    }
-    // Previously this fell through to allowing every origin, which made the
-    // allowlist above decorative. Unknown origins are now refused.
-    console.warn(`CORS: blocked origin ${origin}`);
-    return callback(new Error('Origin not allowed by CORS'));
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'X-CSRF-Token']
-}));
+const corsOptions = createCorsOptions();
+app.use(cors(corsOptions));
 
 // Explicitly handle preflight OPTIONS for all routes
-app.options('*', cors());
+app.options('*', cors(corsOptions));
 
 // Enable gzip compression for all responses
 app.use(compression({ level: 6, threshold: 1024 }));

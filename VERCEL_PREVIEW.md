@@ -41,6 +41,7 @@ Configure Preview first, then Production after validation:
 MONGODB_URI=<existing value>
 JWT_SECRET=<existing value>
 FRONTEND_ORIGIN=<frontend preview/production origin>
+VERCEL_PREVIEW_FRONTEND_HOST_PATTERN=projectabc-frontend-*-<team-scope>.vercel.app
 OCR_TRANSPORT=blob
 RAPIDOCR_REQUEST_TIMEOUT_MS=150000
 OCR_OBJECT_REFERENCE_SECRET=<new independent random 32+ byte secret>
