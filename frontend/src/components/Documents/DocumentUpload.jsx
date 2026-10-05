@@ -1,8 +1,15 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { sanitizeProfileName } from '../../utils/nameSanitizers';
 import Tesseract from 'tesseract.js';
 import { useDropzone } from 'react-dropzone';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+
+const sensitiveOcrDebug = (...args) => {
+  if (import.meta.env.DEV && import.meta.env.VITE_OCR_DEBUG === 'true') {
+    console.debug(...args);
+  }
+};
 import {
   Upload,
   FileText,
@@ -612,8 +619,8 @@ const extractCNICData = (rawText) => {
     // Sort by score descending
     unique.sort((a, b) => b.score - a.score);
 
-    console.log('--- Father Name Candidates ---');
-    unique.forEach(c => console.log(`  [${c.strategy}] "${c.name}" (score: ${c.score}${c.anchored ? `, anchored +${c.distance}` : ''})`));
+    sensitiveOcrDebug('--- Father Name Candidates ---');
+    unique.forEach(c => sensitiveOcrDebug(`  [${c.strategy}] "${c.name}" (score: ${c.score}${c.anchored ? `, anchored +${c.distance}` : ''})`));
 
     // The card prints "Father Name" directly above the value, so position is the real
     // evidence and the name list is only a tie-breaker. Requiring a dictionary hit here
@@ -1745,7 +1752,7 @@ const extractAcademicData = (text) => {
   } else if (/\b(?:arts|humanities|faculty\s+of\s+arts|f\s*\.?\s*a\s*\.?)\b/i.test(qt)) {
     interQualification = 'FA';
   }
-  console.log('[OCR] Extracted inter_qualification:', interQualification);
+  sensitiveOcrDebug('[OCR] Extracted inter_qualification:', interQualification);
 
   return {
     document_level: documentLevel,
@@ -2421,6 +2428,11 @@ const readFileAsBase64 = (file) => {
   });
 };
 
+const OCR_PROVIDER = import.meta.env.VITE_OCR_PROVIDER || 'tesseract';
+const RAPIDOCR_TYPES = new Set(['cnic', 'matric', 'intermediate']);
+const RAPIDOCR_IMAGE_PATTERN = /\.(?:jpe?g|jfif|png|bmp)$/i;
+const MAX_RAPIDOCR_FILE_SIZE = 20 * 1024 * 1024;
+
 const DocumentUpload = () => {
   const { user, setUser } = useAuth();
   const navigate = useNavigate();
@@ -2529,8 +2541,8 @@ const DocumentUpload = () => {
     if (initializedProfileUserRef.current === profileUserKey) return;
     initializedProfileUserRef.current = profileUserKey;
 
-    const cleanFullName = sanitizeToEnglishName(user.full_name);
-    const cleanFatherName = sanitizeToEnglishName(user.father_name);
+    const cleanFullName = sanitizeProfileName(user.full_name);
+    const cleanFatherName = sanitizeProfileName(user.father_name);
     setFormData(prev => ({
       ...prev,
       full_name: cleanFullName || prev.full_name,
@@ -2572,11 +2584,11 @@ const DocumentUpload = () => {
 
       if (docType === 'cnic') {
         if (extractedData.name) {
-          updated.full_name = sanitizeToEnglishName(extractedData.name);
+          updated.full_name = sanitizeProfileName(extractedData.name);
           newFilledFields.add('full_name');
         }
         if (extractedData.father_name) {
-          updated.father_name = sanitizeToEnglishName(extractedData.father_name);
+          updated.father_name = sanitizeProfileName(extractedData.father_name);
           newFilledFields.add('father_name');
         }
         if (extractedData.date_of_birth) {
@@ -2601,11 +2613,11 @@ const DocumentUpload = () => {
 
       if (docType === 'matric') {
         if (extractedData.name && (!updated.full_name || updated.full_name.trim() === '')) {
-          updated.full_name = sanitizeToEnglishName(extractedData.name);
+          updated.full_name = sanitizeProfileName(extractedData.name);
           newFilledFields.add('full_name');
         }
         if (extractedData.father_name && (!updated.father_name || updated.father_name.trim() === '')) {
-          updated.father_name = sanitizeToEnglishName(extractedData.father_name);
+          updated.father_name = sanitizeProfileName(extractedData.father_name);
           newFilledFields.add('father_name');
         }
         if (extractedData.passing_year) {
@@ -2624,11 +2636,11 @@ const DocumentUpload = () => {
 
       if (docType === 'intermediate' || docType === 'transcript') {
         if (extractedData.name && (!updated.full_name || updated.full_name.trim() === '')) {
-          updated.full_name = sanitizeToEnglishName(extractedData.name);
+          updated.full_name = sanitizeProfileName(extractedData.name);
           newFilledFields.add('full_name');
         }
         if (extractedData.father_name && (!updated.father_name || updated.father_name.trim() === '')) {
-          updated.father_name = sanitizeToEnglishName(extractedData.father_name);
+          updated.father_name = sanitizeProfileName(extractedData.father_name);
           newFilledFields.add('father_name');
         }
         if (extractedData.passing_year) {
@@ -2759,10 +2771,19 @@ const DocumentUpload = () => {
 
     const file = acceptedFiles[0];
     const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-    const isImage = file.type.startsWith('image/') || /\.(png|jpe?g)$/i.test(file.name);
+    const isImage = file.type.startsWith('image/') || /\.(png|jpe?g|jfif|bmp)$/i.test(file.name);
+    const useRapidOcr = OCR_PROVIDER === 'rapidocr' && RAPIDOCR_TYPES.has(documentType);
 
     if (!isPdf && !isImage) {
-      toast.error('Only PDF, PNG, or JPG/JPEG documents are allowed.');
+      toast.error('Only PDF, PNG, JPG/JPEG, JFIF, or BMP documents are allowed.');
+      return;
+    }
+    if (useRapidOcr && (!RAPIDOCR_IMAGE_PATTERN.test(file.name) || !isImage)) {
+      toast.error('RapidOCR accepts JPG, JPEG, PNG, JFIF, or BMP images.');
+      return;
+    }
+    if (useRapidOcr && file.size > MAX_RAPIDOCR_FILE_SIZE) {
+      toast.error('The document image must not exceed 20 MB.');
       return;
     }
 
@@ -2830,6 +2851,76 @@ const DocumentUpload = () => {
         return;
       }
 
+      // RapidOCR is the default server-backed path for admission documents. The
+      // existing Tesseract implementation below remains intact for rollback via
+      // VITE_OCR_PROVIDER=tesseract; a server rejection never falls back silently.
+      if (useRapidOcr) {
+        const token = localStorage.getItem('token');
+        const requestBody = new FormData();
+        requestBody.append('image', file);
+        requestBody.append('expected_document_type', documentType === 'intermediate' ? 'inter' : documentType);
+        const ocrResponse = await fetch('/api/ocr/extract', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: requestBody
+        });
+        const ocrResult = await ocrResponse.json();
+        if (!ocrResponse.ok || !ocrResult.success) {
+          throw new Error(ocrResult.message || ocrResult.error || ocrResult.detail || 'OCR could not process this document.');
+        }
+
+        const extractedData = { ...(ocrResult.fields || {}) };
+        const confidence = Math.round((ocrResult.confidence?.overall || 0) * 100);
+        if (documentType === 'matric' || documentType === 'intermediate') {
+          extractedData.document_level = documentType;
+          if (Number(extractedData.total_marks) > 0 && Number.isFinite(Number(extractedData.obtained_marks))) {
+            extractedData.percentage = (Number(extractedData.obtained_marks) / Number(extractedData.total_marks)) * 100;
+          }
+        }
+
+        // Populate only the fields RapidOCR actually returned. These remain local,
+        // editable form values until the student submits the existing profile form.
+        autoFillFromOCR(extractedData, documentType);
+
+        const saveResponse = await fetch('/api/ocr/upload-document', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: documentType, name: file.name, file_data: base64Data,
+            mime_type: file.type || 'image/jpeg', size: file.size,
+            extracted_data: extractedData, confidence
+          })
+        });
+        const savedPayload = await saveResponse.json();
+        if (!saveResponse.ok) {
+          throw new Error(savedPayload.error || 'Document could not be saved.');
+        }
+
+        setUploadedFiles(prev => [
+          ...prev.filter(item => item.type !== documentType),
+          {
+            _id: savedPayload.document?._id || `doc-${Date.now()}`,
+            name: file.name, type: documentType, extractedData, confidence,
+            file_data: base64Data, uploaded_at: savedPayload.document?.uploaded_at || new Date()
+          }
+        ]);
+        setUser(prev => {
+          if (!prev) return prev;
+          const current = prev.uploaded_documents || [];
+          return current.includes(documentType) ? prev : { ...prev, uploaded_documents: [...current, documentType] };
+        });
+        if (ocrResult.needs_review) {
+          const missing = (ocrResult.missing_fields || []).join(', ');
+          const message = missing
+            ? `OCR needs review. Missing or unreliable fields: ${missing}. You can enter them manually.`
+            : (ocrResult.warnings?.[0] || 'Review the autofilled information carefully.');
+          toast(message, { icon: '⚠️', duration: 7000 });
+        } else {
+          toast.success(`${documentTypes.find(d => d.id === documentType)?.name || 'Document'} uploaded and read`);
+        }
+        return;
+      }
+
       let extractedText = '';
       let confidence = 0;
       // Holds the per-field merge of pass 1 and pass 2 when a second pass runs.
@@ -2873,9 +2964,9 @@ const DocumentUpload = () => {
             if (cleanedTargetedName && scoreNameCandidate(cleanedTargetedName) > 0) {
               pass1Data.name = cleanedTargetedName;
               pass1Data.name_verification_needed = true;
-              console.log(`[OCR] Used targeted OCR for name: "${cleanedTargetedName}" (confidence: ${Math.round(targetedNameData.confidence)})`);
+              sensitiveOcrDebug(`[OCR] Used targeted OCR for name: "${cleanedTargetedName}" (confidence: ${Math.round(targetedNameData.confidence)})`);
             } else {
-              console.log(`[OCR] Rejected targeted OCR for name: "${targetedNameData.text}" (failed validation)`);
+              sensitiveOcrDebug(`[OCR] Rejected targeted OCR for name: "${targetedNameData.text}" (failed validation)`);
             }
           } else if (targetedNameData && targetedNameData.text) {
             console.log(`[OCR] Rejected targeted OCR for name due to low confidence (${Math.round(targetedNameData.confidence)})`);
@@ -2889,9 +2980,9 @@ const DocumentUpload = () => {
             const cleanedTargetedFatherName = cleanNameCandidate(targetedFatherNameData.text);
             if (cleanedTargetedFatherName && scoreNameCandidate(cleanedTargetedFatherName) > 0 && cleanedTargetedFatherName.toLowerCase() !== pass1Data.name?.toLowerCase()) {
               pass1Data.father_name = cleanedTargetedFatherName;
-              console.log(`[OCR] Used targeted OCR for father name: "${cleanedTargetedFatherName}" (confidence: ${Math.round(targetedFatherNameData.confidence)})`);
+              sensitiveOcrDebug(`[OCR] Used targeted OCR for father name: "${cleanedTargetedFatherName}" (confidence: ${Math.round(targetedFatherNameData.confidence)})`);
             } else {
-              console.log(`[OCR] Rejected targeted OCR for father name: "${targetedFatherNameData.text}" (failed validation)`);
+              sensitiveOcrDebug(`[OCR] Rejected targeted OCR for father name: "${targetedFatherNameData.text}" (failed validation)`);
             }
           } else if (targetedFatherNameData && targetedFatherNameData.text) {
             console.log(`[OCR] Rejected targeted OCR for father name due to low confidence (${Math.round(targetedFatherNameData.confidence)})`);
@@ -2966,7 +3057,7 @@ const DocumentUpload = () => {
           if (cleanedTargetedName && scoreNameCandidate(cleanedTargetedName) > 0) {
             extractedData.name = cleanedTargetedName;
             extractedData.name_verification_needed = true;
-            console.log(`[OCR] Fallback: Used targeted OCR for name: "${cleanedTargetedName}"`);
+            sensitiveOcrDebug(`[OCR] Fallback: Used targeted OCR for name: "${cleanedTargetedName}"`);
           }
         }
       }
@@ -2977,7 +3068,7 @@ const DocumentUpload = () => {
           const cleanedTargetedFatherName = cleanNameCandidate(targetedFatherNameData.text);
           if (cleanedTargetedFatherName && scoreNameCandidate(cleanedTargetedFatherName) > 0 && cleanedTargetedFatherName.toLowerCase() !== extractedData.name?.toLowerCase()) {
             extractedData.father_name = cleanedTargetedFatherName;
-            console.log(`[OCR] Fallback: Used targeted OCR for father name: "${cleanedTargetedFatherName}"`);
+            sensitiveOcrDebug(`[OCR] Fallback: Used targeted OCR for father name: "${cleanedTargetedFatherName}"`);
           }
         }
       }
@@ -2996,7 +3087,7 @@ const DocumentUpload = () => {
         // above only confirm that fields exist.
         const plausibility = validateAcademicPlausibility(documentType, extractedData);
         if (!plausibility.isValid) {
-          console.warn('[OCR] Plausibility gate rejected document:', plausibility.reason, extractedData);
+          sensitiveOcrDebug('[OCR] Plausibility gate rejected document:', plausibility.reason, extractedData);
           setRejectionModal({
             isOpen: true,
             badge: 'Data Validation Advisory',
@@ -3118,7 +3209,7 @@ const DocumentUpload = () => {
     onDrop,
     accept: {
       'application/pdf': ['.pdf'],
-      'image/*': ['.png', '.jpg', '.jpeg']
+      'image/*': ['.png', '.jpg', '.jpeg', '.jfif', '.bmp']
     },
     maxFiles: 1,
     disabled: uploading
@@ -3144,9 +3235,9 @@ const DocumentUpload = () => {
     if (!files || files.length === 0) return;
     const file = files[0];
     const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-    const isImage = file.type.startsWith('image/') || /\.(png|jpe?g)$/i.test(file.name);
+    const isImage = file.type.startsWith('image/') || /\.(png|jpe?g|jfif|bmp)$/i.test(file.name);
     if (!isPdf && !isImage) {
-      toast.error('Only PDF, PNG, or JPG/JPEG documents are allowed.');
+      toast.error('Only PDF, PNG, JPG/JPEG, JFIF, or BMP documents are allowed.');
       return;
     }
     onDrop([file], []);
@@ -3235,7 +3326,7 @@ const DocumentUpload = () => {
 
     // Strictly enforce English letters for Full Name & Father Name
     if (field === 'full_name' || field === 'father_name') {
-      processedValue = sanitizeToEnglishName(value);
+      processedValue = sanitizeProfileName(value);
     } else if (field === 'phone' || field === 'father_phone' || field === 'alternate_phone') {
       processedValue = formatPakistaniPhone(value);
     } else if (field === 'cnic') {
@@ -3350,11 +3441,11 @@ const DocumentUpload = () => {
       });
 
       const payload = {
-        full_name: sanitizeToEnglishName(formData.full_name),
+        full_name: sanitizeProfileName(formData.full_name),
         phone: formData.phone,
         address: formData.address,
         cnic: formData.cnic,
-        father_name: sanitizeToEnglishName(formData.father_name),
+        father_name: sanitizeProfileName(formData.father_name),
         date_of_birth: formData.date_of_birth,
         gender: formData.gender,
         alternate_phone: formData.alternate_phone,
@@ -3548,7 +3639,7 @@ const DocumentUpload = () => {
       <input
         ref={fileInputRef}
         type="file"
-        accept=".pdf,.png,.jpg,.jpeg"
+        accept=".pdf,.png,.jpg,.jpeg,.jfif,.bmp"
         className="hidden"
         onChange={handleFileInputChange}
       />
@@ -3559,7 +3650,9 @@ const DocumentUpload = () => {
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
           {isFullyVerified
             ? 'Your profile is verified. Documents are locked and can no longer be changed.'
-            : 'Click on a document type to upload • Supported: PDF, PNG, JPG (max 10MB)'}
+            : OCR_PROVIDER === 'rapidocr'
+              ? 'Click on a document type to upload • Supported: JPG, JPEG, PNG, JFIF, BMP (max 20 MB)'
+              : 'Click on a document type to upload • Supported: PDF, PNG, JPG/JPEG, JFIF, BMP'}
         </p>
         <div className="grid grid-cols-2 gap-3">
           {documentTypes.filter((type) => type.required).map((type) => {
@@ -3656,10 +3749,10 @@ const DocumentUpload = () => {
           <div>
             <h4 className="font-medium text-primary-600 dark:text-primary-400">Tips for Best Results</h4>
             <ul className="text-sm text-primary-700/80 dark:text-primary-300/80 mt-2 space-y-1 list-disc list-inside">
-              <li>Ensure documents are clear and well-lit</li>
-              <li>Make sure all text is readable and not blurry</li>
+              <li>For best results, upload a clear, straight, well-lit image without glare or blur</li>
               <li>Upload the complete document without cropping</li>
-              <li>Supported file formats: PDF, PNG, JPG</li>
+              <li>{OCR_PROVIDER === 'rapidocr' ? 'Supported: JPG, JPEG, PNG, JFIF, BMP (max 20 MB)' : 'Supported: PDF, PNG, JPG/JPEG, JFIF, BMP'}</li>
+              <li>Wrong document types are rejected; reliable values remain editable and missing values can be entered manually</li>
             </ul>
           </div>
         </div>
