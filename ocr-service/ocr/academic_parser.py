@@ -2,6 +2,11 @@ import re
 from .normalizers import clean_text, normalize_integer, normalize_qualification, normalize_year
 
 
+def _plausible_aggregate(obtained, total):
+    return obtained is not None and total is not None \
+        and 0 < obtained <= total
+
+
 def _label_value(lines, patterns, normalizer):
     for line in lines:
         text = clean_text(line.get("text"))
@@ -26,6 +31,26 @@ def _bounds(line):
 def _center(line):
     left, top, right, bottom = _bounds(line)
     return (left + right) / 2, (top + bottom) / 2
+
+
+def _in_subject_table_header(line, lines):
+    """Identify marks labels that belong to a subject-column header band."""
+    _, top, _, bottom = _bounds(line)
+    center_y = (top + bottom) / 2
+    height = max(bottom - top, 1.0)
+    header_cue = re.compile(
+        r"\b(?:subjects?|max(?:imum)?\s+marks?|practical\s+marks?|percentile|relative\s+grade|remarks?)\b",
+        re.I,
+    )
+    for candidate in lines:
+        if candidate is line or not header_cue.search(clean_text(candidate.get("text"))):
+            continue
+        _, candidate_top, _, candidate_bottom = _bounds(candidate)
+        candidate_center_y = (candidate_top + candidate_bottom) / 2
+        candidate_height = max(candidate_bottom - candidate_top, 1.0)
+        if abs(candidate_center_y - center_y) <= max(height, candidate_height) * 2.0:
+            return True
+    return False
 
 
 def _standalone_integer(line):
@@ -111,10 +136,14 @@ def _summary_marks(lines):
     for line in lines:
         text = clean_text(line.get("text"))
         match = re.search(r"(?:candidate\s+)?(?:secured|obtained)[^\d]{0,20}(\d{2,4})\s*/\s*(\d{2,4})", text, re.I)
-        if match:
+        if match and _plausible_aggregate(int(match.group(1)), int(match.group(2))):
             return int(match.group(1)), int(match.group(2)), line.get("confidence"), line.get("confidence")
 
-    summary_lines = _with_split_mark_labels(lines)
+    # Do not interpret subject-table column headings as aggregate-summary labels.
+    # Their nearby values are individual paper marks, regardless of magnitude.
+    summary_lines = _with_split_mark_labels([
+        line for line in lines if not _in_subject_table_header(line, lines)
+    ])
     obtained, obtained_conf = _label_value(
         summary_lines, (r"marks\s+obtained", r"obtained\s+marks", r"marks\s+secured"), normalize_integer
     )
@@ -123,10 +152,10 @@ def _summary_marks(lines):
         obtained, obtained_conf = _spatial_value(summary_lines, (r"marks\s+obtained", r"obtained\s+marks"))
     if total is None:
         total, total_conf = _spatial_value(summary_lines, (r"total\s+marks", r"marks\s+total"))
-    # A lone number near a marks header is commonly a subject-table cell. Do not
-    # expose it as an overall result unless a valid overall total was also found.
-    if obtained is not None and total is None:
-        obtained, obtained_conf = None, None
+    # Both values must form a semantically valid pair. Subject-table headings have
+    # already been removed by layout/context rather than by a hard numeric minimum.
+    if not _plausible_aggregate(obtained, total):
+        obtained, total, obtained_conf, total_conf = None, None, None, None
     return obtained, total, obtained_conf, total_conf
 
 

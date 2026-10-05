@@ -1,7 +1,9 @@
+import asyncio
 import pytest
 from fastapi import HTTPException
 
-from app import MAX_UPLOAD_BYTES, _validate_object_reference
+from app import MAX_UPLOAD_BYTES, _request_input, _validate_object_reference
+from starlette.requests import Request
 
 
 STORE_ID = "store_abc123"
@@ -36,3 +38,31 @@ def test_rejects_oversized_private_object(monkeypatch):
     with pytest.raises(HTTPException) as exc:
         _validate_object_reference(reference(size=MAX_UPLOAD_BYTES + 1))
     assert exc.value.status_code == 413
+
+
+def test_blob_request_passes_downloaded_bytes_to_ocr_unchanged(monkeypatch):
+    original = b"\xff\xd8exact-original-image-payload\xff\xd9"
+
+    async def fake_read(reference):
+        assert reference == {"url": VALID_URL}
+        return original, "image/jpeg"
+
+    monkeypatch.setattr("app._read_private_object", fake_read)
+    body = b'{"object_reference":{"url":"' + VALID_URL.encode() + b'"},"expected_document_type":"matric"}'
+    sent = False
+
+    async def receive():
+        nonlocal sent
+        if sent:
+            return {"type": "http.request", "body": b"", "more_body": False}
+        sent = True
+        return {"type": "http.request", "body": body, "more_body": False}
+
+    request = Request({
+        "type": "http", "method": "POST", "path": "/ocr", "headers": [(b"content-type", b"application/json")]
+    }, receive)
+
+    content, image_type, expected = asyncio.run(_request_input(request))
+    assert content is original
+    assert image_type == "image/jpeg"
+    assert expected == "matric"

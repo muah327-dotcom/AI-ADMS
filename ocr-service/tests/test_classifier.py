@@ -72,3 +72,13 @@ def test_realistic_academic_headings_reject_wrong_level(actual, wrong_expected):
     detected, _ = classify_document(sample)
     assert detected == actual
     assert not type_matches(wrong_expected, detected)
+
+
+@pytest.mark.parametrize("heading", [
+    "S.S.C ANNUAL EXAMINATION 2022",
+    "S S C ANNUAL EXAMINATION 2022",
+    "S-S-C ANNUAL EXAMINATION 2022",
+])
+def test_matric_accepts_common_ocr_spacing_and_punctuation_in_ssc(heading):
+    detected, _ = classify_document(lines(heading))
+    assert detected == "matric"

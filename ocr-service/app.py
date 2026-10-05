@@ -120,7 +120,9 @@ async def ocr(request: Request):
         supplied_token = request.headers.get("x-ocr-service-token", "")
         if not configured_token or not secrets.compare_digest(configured_token, supplied_token):
             raise HTTPException(status_code=401, detail="Unauthorized")
+    input_started = time.perf_counter()
     content, image_type, expected_document_type = await _request_input(request)
+    input_seconds = time.perf_counter() - input_started
     expected = expected_document_type.strip().lower()
     if expected not in ALLOWED_TYPES:
         raise HTTPException(status_code=400, detail="expected_document_type must be cnic, matric, or inter")
@@ -138,6 +140,8 @@ async def ocr(request: Request):
         raise HTTPException(status_code=500, detail="OCR processing failed")
 
     processing_time = round(time.perf_counter() - started, 3)
+    result["timing"]["input_transport"] = round(input_seconds, 4)
+    result["timing"]["request_total"] = processing_time
     detected = result["detected_type"]
     debug = _debug_response(result)
     if detected == "unknown":

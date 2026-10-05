@@ -7,7 +7,8 @@ CNIC_PATTERNS = (
     r"identity\s+number", r"date\s+of\s+issue", r"date\s+of\s+expiry",
 )
 MATRIC_PATTERNS = (
-    r"\bmatric(?:ulation)?\b", r"\bssc\b", r"secondary\s+school\s+certificate",
+    r"\bmatric(?:ulation)?\b", r"\bs\s*[.\-]?\s*s\s*[.\-]?\s*c\b",
+    r"secondary\s+school\s+certificate",
 )
 INTER_PATTERNS = (
     r"\bintermediate\b", r"\bhssc\b", r"intermediate\s+part\s*(?:i{1,2}|1|2)\b",
@@ -39,7 +40,7 @@ def classify_document(lines):
     # is stronger evidence than those incidental identifiers/footer references.
     matric_heading = re.search(
         r"secondary\s+school\s+certificate(?:\s*\([^)]*\))?\s*(?:annual\s+)?examination|"
-        r"\b(?:matric|matriculation|ssc)\s+(?:annual\s+)?examination\b",
+        r"\b(?:matric|matriculation|s\s*[.\-]?\s*s\s*[.\-]?\s*c)\s+(?:annual\s+)?examination\b",
         discriminating_text, re.I,
     )
     inter_heading = re.search(

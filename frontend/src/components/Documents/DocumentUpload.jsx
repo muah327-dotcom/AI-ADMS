@@ -3549,23 +3549,6 @@ const DocumentUpload = () => {
     user?.is_verified &&
     missingMandatoryDocs.length === 0
   );
-  const renderSubjects = (subjects) => {
-    if (!subjects || subjects.length === 0) return null;
-    return (
-      <div className="mt-4 col-span-1 sm:col-span-2">
-        <h5 className="text-xs font-semibold text-gray-500 uppercase mb-2">Extracted Subjects (Auto-Parsed from Document)</h5>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-          {subjects.map((sub, idx) => (
-            <div key={idx} className="bg-gray-50 dark:bg-gray-800 p-2 rounded-lg border border-gray-200 dark:border-gray-700">
-              <div className="text-[10px] text-gray-500 dark:text-gray-400 font-medium truncate" title={sub.name}>{sub.name}</div>
-              <div className="text-sm font-semibold text-gray-900 dark:text-white">{sub.obtainedMarks} <span className="text-[10px] text-gray-400 font-normal">marks</span></div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
   // Input field helper with OCR indicator
   const renderField = (label, field, type = 'text', options = {}) => {
     const isOcrFilled = ocrFilledFields.has(field);
@@ -3886,7 +3869,6 @@ const DocumentUpload = () => {
                   {renderField('Passing Year', 'matric_passing_year', 'number', { placeholder: 'e.g., 2022' })}
                   {renderField('Marks Obtained', 'matric_obtained_marks', 'number', { placeholder: 'e.g., 950' })}
                   {renderField('Total Marks', 'matric_total_marks', 'number', { placeholder: 'e.g., 1100' })}
-                  {renderSubjects(uploadedFiles.find(f => f.type === 'matric' || f.extractedData?.document_level === 'matric')?.extractedData?.subjects || user?.education?.matric?.subjects)}
                 </div>
               </div>
 
@@ -3901,7 +3883,6 @@ const DocumentUpload = () => {
                   {renderField('Passing Year', 'inter_passing_year', 'number', { placeholder: 'e.g., 2024' })}
                   {renderField('Marks Obtained', 'inter_obtained_marks', 'number', { placeholder: 'e.g., 450' })}
                   {renderField('Total Marks', 'inter_total_marks', 'number', { placeholder: 'e.g., 550' })}
-                  {renderSubjects(uploadedFiles.find(f => f.type === 'intermediate' || f.type === 'transcript' || f.extractedData?.document_level === 'intermediate')?.extractedData?.subjects || user?.education?.intermediate?.subjects)}
                 </div>
               </div>
             </div>

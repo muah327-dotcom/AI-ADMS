@@ -49,6 +49,30 @@ def test_subject_mark_is_not_returned_when_overall_total_is_unavailable():
     assert fields["total_marks"] is None
 
 
+def test_subject_table_pair_is_not_returned_as_aggregate_marks():
+    fields, _ = parse_academic([
+        line("SECONDARY SCHOOL CERTIFICATE ANNUAL EXAMINATION, 2020"),
+        line("SUBJECTS", y=200, x=20, width=180),
+        line("MAX MARKS", y=200, x=210, width=100),
+        line("MARKS OBTAINED", y=200, x=300, width=180),
+        line("275", y=230, x=330, width=45),
+        line("REMARKS", y=200, x=480, width=100),
+        line("TOTAL MARKS", y=200, x=500, width=150),
+        line("550", y=230, x=520, width=45),
+    ], "matric")
+    assert fields["obtained_marks"] is None
+    assert fields["total_marks"] is None
+
+
+def test_explicit_small_aggregate_is_not_rejected_by_arbitrary_minimum():
+    fields, _ = parse_academic([
+        line("SECONDARY SCHOOL CERTIFICATE ANNUAL EXAMINATION, 2020"),
+        line("The candidate secured 240/250 marks", y=600),
+    ], "matric")
+    assert fields["obtained_marks"] == 240
+    assert fields["total_marks"] == 250
+
+
 def test_inter_group_geometry_and_split_summary_fields():
     fields, _ = parse_academic([
         line("INTERMEDIATE PART I & II (FIRST ANNUAL) EXAMINATION, 2024", y=40),
