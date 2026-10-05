@@ -1,11 +1,86 @@
 import express from 'express';
+import multer from 'multer';
+import path from 'path';
 import { authenticateToken } from '../middleware/auth.js';
 import Document from '../models/Document.js';
 import User from '../models/User.js';
 
 const router = express.Router();
 
+const MAX_OCR_UPLOAD_BYTES = 20 * 1024 * 1024;
+const ALLOWED_OCR_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.jfif', '.bmp']);
+const ALLOWED_OCR_MIME_TYPES = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/bmp', 'image/x-ms-bmp']);
+const uploadOcrImage = multer({
+  storage: multer.memoryStorage(),
+  limits: { files: 1, fileSize: MAX_OCR_UPLOAD_BYTES },
+  fileFilter: (_req, file, callback) => {
+    const extension = path.extname(file.originalname || '').toLowerCase();
+    if (!ALLOWED_OCR_EXTENSIONS.has(extension) || !ALLOWED_OCR_MIME_TYPES.has(file.mimetype)) {
+      return callback(new multer.MulterError('LIMIT_UNEXPECTED_FILE', 'image'));
+    }
+    callback(null, true);
+  }
+});
+
 router.use(authenticateToken);
+
+// Analyze an admission image without persisting the file or extracted student fields.
+router.post('/extract', (req, res) => {
+  uploadOcrImage.single('image')(req, res, async (uploadError) => {
+    if (uploadError) {
+      if (uploadError.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({ error: 'Image exceeds the 20 MB limit.' });
+      }
+      return res.status(400).json({ error: 'Upload one JPG, JPEG, PNG, JFIF, or BMP image.' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'Document image is required.' });
+    }
+    const expectedType = String(req.body.expected_document_type || '').trim().toLowerCase();
+    if (!['cnic', 'matric', 'inter'].includes(expectedType)) {
+      return res.status(400).json({ error: 'expected_document_type must be cnic, matric, or inter.' });
+    }
+
+    const serviceUrl = process.env.RAPIDOCR_SERVICE_URL;
+    if (!serviceUrl) {
+      return res.status(502).json({ error: 'OCR service is not configured.' });
+    }
+
+    const configuredTimeout = Number.parseInt(process.env.RAPIDOCR_REQUEST_TIMEOUT_MS || '120000', 10);
+    const timeoutMs = Number.isFinite(configuredTimeout) && configuredTimeout > 0 ? configuredTimeout : 120000;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const body = new FormData();
+      body.append('expected_document_type', expectedType);
+      body.append('image', new Blob([req.file.buffer], { type: req.file.mimetype }), req.file.originalname);
+      const upstream = await fetch(`${serviceUrl.replace(/\/+$/, '')}/ocr`, {
+        method: 'POST', body, signal: controller.signal
+      });
+      const rawBody = await upstream.text();
+      let payload;
+      try {
+        payload = JSON.parse(rawBody);
+      } catch {
+        payload = { error: 'OCR service returned an invalid response.' };
+      }
+      if (upstream.status === 422) return res.status(422).json(payload);
+      if (upstream.status === 400) return res.status(400).json(payload);
+      if (upstream.status === 413) return res.status(413).json(payload);
+      if (!upstream.ok) return res.status(502).json({ error: 'OCR service could not process the image.' });
+      return res.json(payload);
+    } catch (error) {
+      if (error?.name === 'AbortError') {
+        return res.status(504).json({ error: 'OCR processing timed out. Please try again.' });
+      }
+      return res.status(502).json({ error: 'OCR service is unavailable.' });
+    } finally {
+      clearTimeout(timeout);
+    }
+  });
+});
 
 const verifyAcademicDocumentPayload = (type, extractedData, confidence) => {
   if (type !== 'matric' && type !== 'intermediate') {
@@ -185,7 +260,7 @@ router.post('/upload-document', async (req, res) => {
       document
     });
   } catch (error) {
-    console.error('Save document error:', error);
+    console.error('OCR document save failed', { error_type: error?.name || 'Error', http_status: 500 });
     res.status(500).json({ error: 'Failed to save document in database' });
   }
 });
@@ -236,7 +311,7 @@ router.get('/my-documents', async (req, res) => {
       is_verified: user?.is_verified ?? false
     });
   } catch (error) {
-    console.error('Fetch documents error:', error);
+    console.error('OCR document fetch failed', { error_type: error?.name || 'Error', http_status: 500 });
     res.status(500).json({ error: 'Failed to fetch documents' });
   }
 });
@@ -274,7 +349,7 @@ router.delete('/my-documents/type/:docType', async (req, res) => {
 
     res.json({ message: 'Document deleted from database' });
   } catch (error) {
-    console.error('Delete document error:', error);
+    console.error('OCR document delete failed', { error_type: error?.name || 'Error', http_status: 500 });
     res.status(500).json({ error: 'Failed to delete document' });
   }
 });
@@ -316,7 +391,7 @@ router.delete('/my-documents/:id', async (req, res) => {
       is_verified: user?.is_verified ?? false
     });
   } catch (error) {
-    console.error('Delete document error:', error);
+    console.error('OCR document delete-all failed', { error_type: error?.name || 'Error', http_status: 500 });
     res.status(500).json({ error: 'Failed to delete document' });
   }
 });
@@ -336,7 +411,7 @@ router.get('/document/:id', async (req, res) => {
 
     res.json({ document: doc });
   } catch (error) {
-    console.error('Get document error:', error);
+    console.error('OCR document read failed', { error_type: error?.name || 'Error', http_status: 500 });
     res.status(500).json({ error: 'Failed to get document' });
   }
 });
