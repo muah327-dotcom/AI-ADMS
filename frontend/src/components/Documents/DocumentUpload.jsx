@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { sanitizeProfileName } from '../../utils/nameSanitizers';
+import { API_URL, buildApiUrl } from '../../config/api';
 import { shouldRejectRapidOcrUpload } from '../../utils/ocrTransport';
 import Tesseract from 'tesseract.js';
 import { upload as uploadPrivateBlob } from '@vercel/blob/client';
@@ -2869,12 +2870,12 @@ const DocumentUpload = () => {
           const pathname = `ocr-temp/${user.id}/${crypto.randomUUID()}.${extension}`;
           const temporaryBlob = await uploadPrivateBlob(pathname, file, {
             access: 'private',
-            handleUploadUrl: '/api/ocr/temporary-upload',
+            handleUploadUrl: buildApiUrl(API_URL, 'ocr/temporary-upload'),
             headers: requestHeaders,
             contentType: file.type,
             multipart: false
           });
-          const referenceResponse = await fetch('/api/ocr/temporary-reference', {
+          const referenceResponse = await fetch(buildApiUrl(API_URL, 'ocr/temporary-reference'), {
             method: 'POST',
             headers: { ...requestHeaders, 'Content-Type': 'application/json' },
             body: JSON.stringify({ url: temporaryBlob.url })
@@ -2894,7 +2895,7 @@ const DocumentUpload = () => {
           requestBody.append('expected_document_type', expectedDocumentType);
         }
 
-        const ocrResponse = await fetch('/api/ocr/extract', {
+        const ocrResponse = await fetch(buildApiUrl(API_URL, 'ocr/extract'), {
           method: 'POST',
           headers: requestHeaders,
           body: requestBody
